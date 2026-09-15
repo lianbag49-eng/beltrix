@@ -38,3 +38,7 @@ These steps have NOT been executed with a funded wallet in this task. Public API
 CI adds iPhone 13 viewport/touch emulation in WebKit for practice, order signing mocks and navigation. This is not physical iOS, an OKX/MetaMask in-app browser, Face ID, app switching or a real signing sheet. Those require a physical device and its owner.
 
 Before release: independent audit and remediation; real-device acceptance; funded execution evidence; approved liquidity pairs/size limits; reviewed terms/privacy and operating jurisdiction; an owner for support/incident response. On suspected compromise stop new signatures, inform users, preserve evidence, and redeploy the last known safe commit after review. A rollback does not cancel venue orders or erase wallet approvals.
+
+## Test-network isolation
+
+Browser tests explicitly block service workers so Playwright network interception controls mocked info/exchange responses. WebKit exposed worker interception bypass in the earlier harness: a dummy signature reached testnet and was rejected as an unrecoverable signer. No valid funded signature was used. Public market and depth measurements run separately as read-only scripts. The mocked suite does not validate production service-worker behavior; offline/PWA lifecycle remains part of device acceptance.
