@@ -1,0 +1,18 @@
+{
+  "name": "beltrix",
+  "private": true,
+  "scripts": {
+    "build": "node web/build.mjs",
+    "test": "playwright test --config=web/playwright.config.cjs",
+    "test:unit": "node --test web/tests/wallet-core.test.mjs web/tests/terminal-core.test.mjs"
+  },
+  "dependencies": {
+    "@nktkas/hyperliquid": "0.33.3",
+    "qrcode": "1.5.4",
+    "viem": "2.56.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "esbuild": "0.25.9"
+  }
+}

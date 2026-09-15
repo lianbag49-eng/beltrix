@@ -1,0 +1,76 @@
+name: Deploy BELTRIX
+on:
+  push:
+    branches: [main]
+    paths: ['web/**','.github/workflows/deploy.yml','package.json','package-lock.json']
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: beltrix-pages-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser tests
+        run: npm ci
+      - name: Validate wallet transaction logic
+        run: npm run test:unit
+      - name: Validate public market API
+        run: node web/tests/public-market-smoke.mjs
+      - name: Bundle wallet and trading clients
+        run: npm run build
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Validate JavaScript
+        run: node --check web/app.js
+      - name: Test prototype
+        run: npx playwright test --config=web/playwright.config.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: beltrix-test-results
+          path: test-results/
+      - name: Emit compact UI previews
+        if: always()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64
+          for p in Path("test-results").glob("wallet-*.jpg"):
+            print("WALLET_UI_"+p.stem+":"+base64.b64encode(p.read_bytes()).decode())
+          PY
+      - name: Prepare web-only artifact
+        run: node web/prepare-site.mjs --root
+      - uses: actions/configure-pages@v5
+        if: github.ref == 'refs/heads/main'
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          path: public
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Verify published BELTRIX page and assets
+        run: node web/tests/deployment-smoke.mjs "${{ steps.deployment.outputs.page_url }}"

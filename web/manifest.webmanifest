@@ -1,0 +1,23 @@
+{
+  "name": "BELTRIX Wallet & DEX",
+  "short_name": "BELTRIX",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#08090b",
+  "theme_color": "#08090b",
+  "description": "BELTRIX wallet and Hyperliquid mainnet and testnet trading",
+  "icons": [
+    {
+      "src": "./beltrix-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon.svg?v=beltrix",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
