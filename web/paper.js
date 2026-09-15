@@ -43,3 +43,5 @@ for(const id of ['paperSide','paperMargin','paperLeverage'])$(id).addEventListen
  if(state.position)$('paperCoin').value=state.position.coin;
  setInterval(()=>{render();if(document.body.dataset.page==='swap'&&!document.hidden&&!$('paperReview').open)refresh()},10000);
  render();
+
+if(document.body.dataset.page==='swap')refresh();
