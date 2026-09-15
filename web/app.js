@@ -1,7 +1,7 @@
 
 const $=id=>document.getElementById(id);
 const PRICES={ETH:2506.18,USDC:1,DAI:0.9998,cbBTC:78442.1};
-const INITIAL={ETH:10,USDC:10000,DAI:1000,cbBTC:0.1};
+const INITIAL={ETH:10,USDC:100000,DAI:1000,cbBTC:0.1};
 const KEY='qorvexa-preview-v2';
 let state={balances:{...INITIAL},records:[],slippage:0.5,persist:true};
 let pending=null,timer;
@@ -81,3 +81,6 @@ $('exportBtn').onclick=()=>{
 };
 window.openPage('markets');render();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+
+
+$("paperTopup").onclick=()=>{if(!confirm("Add 100,000 practice USDC? These funds cannot be withdrawn."))return;pending=null;state.balances.USDC+=100000;save();render();toast("Added 100,000 spot practice USDC");};

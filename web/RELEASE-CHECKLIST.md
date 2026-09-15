@@ -1,3 +1,26 @@
+# Current release status — 2026-09-15
+
+**Development preview; release blocked.** This section supersedes historical entries below.
+
+- Existing spot/perpetual Hyperliquid clients, chart/order book, signing, cancellation, leverage and TWAP remain in the deployed bundle. Both mainnet and testnet exist; mainnet can use real funds and still requires explicit acknowledgement and wallet signing. This update adds no mainnet transactions.
+- Spot practice starts with 100,000 simulated USDC plus starter tokens. Existing balances are preserved; Add 100,000 spot practice USDC tops up the local practice balance.
+- A separate futures practice account starts with 100,000 simulated USDC. BTC/ETH long/short, 1–20x educational isolated margin, explicit review, position close, net PnL and history are implemented. Reset restores this account only.
+- Futures practice uses fresh Hyperliquid TESTNET bid/ask. No wallet access or exchange write request. Price unavailability blocks execution; no fallback fabricated quotes. The old spot practice swap still uses fixed reference prices.
+- Futures simulation uses a flat 0.05% fee per side, unlimited top-of-book liquidity and capped margin loss on settlement. It does NOT model funding, depth, queue priority, liquidation, partial fills or execution while closed. It is an educational model, not a venue backtest.
+- Paper data is browser-local and editable by its owner, not authoritative money or performance records. Clearing browser storage loses it. Do not enter private keys to obtain practice funds.
+
+## Release gates still required
+
+1. User-owned funded TESTNET wallet: spot buy/sell and perpetual open/partial-fill/cancel/close, reconciliation after timeouts, leverage and trigger/TWAP checks against actual venue records. Mock signatures do not pass this gate.
+2. Liquidity: measure available depth and slippage for intended pairs and sizes; an ALO order option is not capital or guaranteed liquidity. No funds were deposited and no market-making strategy was launched.
+3. Independent frontend/wallet security audit, findings remediation and retest. Existing dependency scans and these internal checks are not an independent audit.
+4. Actual iPhone wallet compatibility and recovery tests, release monitoring and incident response, product/legal and privacy review.
+
+Internal checks in this update cover paper accounting, invalid inputs, margin reservation, loss cap, state restoration, fresh quotes, confirmation and absence of wallet signing. Full regression is enforced by the deployment workflow. CI results, not this checklist, are the source of truth for test outcomes.
+
+---
+## Historical implementation notes (may describe superseded behavior)
+
 # BELTRIX development preview 0.3
 This is a simulation frontend, NOT a release-ready DEX.
 ## Implemented
@@ -58,3 +81,4 @@ References:
 ## Wallet workspace update (2026-09-14)
 
 The earlier read-only Assets/Discover prototype is now incorporated into the expanded Wallet/Explore workspace. It retains Hyperliquid account inspection, watch-only access, app discovery and explicit OKX provider selection. Native/ERC-20 wallet transfers and indexed blockchain history are now implemented; Hyperliquid order execution remains testnet-only. See WALLET-RELEASE.md for implemented features, data coverage and outstanding funded-wallet/audit gates.
+
