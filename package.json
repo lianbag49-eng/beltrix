@@ -4,7 +4,7 @@
   "scripts": {
     "build": "node web/build.mjs",
     "test": "playwright test --config=web/playwright.config.cjs",
-    "test:unit": "node --test web/tests/wallet-core.test.mjs web/tests/terminal-core.test.mjs web/tests/paper-core.test.mjs web/tests/signing-guard.test.mjs"
+    "test:unit": "node --test web/tests/wallet-core.test.mjs web/tests/terminal-core.test.mjs web/tests/paper-core.test.mjs web/tests/signing-guard.test.mjs web/tests/wallet-ux.test.mjs"
   },
   "dependencies": {
     "@nktkas/hyperliquid": "0.33.3",
@@ -16,4 +16,3 @@
     "esbuild": "0.25.9"
   }
 }
-
