@@ -1,0 +1,54 @@
+name: Validate BELTRIX wallet UX
+on:
+  push:
+    branches: ['update/wallet-terminal-ui']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: beltrix-wallet-ux-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned dependencies
+        run: npm ci
+      - name: Production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+      - name: Unit regression tests
+        run: npm run test:unit
+      - name: Build wallet and trading bundles
+        run: npm run build
+      - name: Check JavaScript syntax
+        run: |
+          node --check web/app.js
+          node --check web/wallet-ux.js
+          node --check web/wallet-entry.js
+      - name: Install browsers
+        run: npx playwright install --with-deps chromium webkit
+      - name: Chromium regression tests
+        run: npx playwright test --config=web/playwright.config.cjs
+      - name: iPhone WebKit emulation regression tests
+        run: npx playwright test --config=web/playwright.ios.config.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: beltrix-wallet-ux-tests
+          path: |
+            test-results/
+            test-results-ios/
+          retention-days: 7
+      - name: Prepare preview artifact without deployment
+        run: node web/prepare-site.mjs --root
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BELTRIX-wallet-ux-preview
+          path: public/
+          if-no-files-found: error
+          retention-days: 7
