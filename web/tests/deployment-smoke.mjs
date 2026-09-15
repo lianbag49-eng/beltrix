@@ -4,10 +4,10 @@ async function verify() {
   const response = await fetch(base, {cache:'no-store'});
   if (!response.ok) throw Error(`Page HTTP ${response.status}`);
   const html = await response.text();
-  for (const marker of ['BELTRIX','tradeTwapMinutes','tradeLiveAck']) {
+  for (const marker of ['BELTRIX','tradeTwapMinutes','tradeLiveAck','paperTopup','paperReview']) {
     if (!html.includes(marker)) throw Error(`Missing page marker: ${marker}`);
   }
-  const assets = ['trading.bundle.js','wallet.bundle.js','market.js','terminal.css','beltrix-icon.png','manifest.webmanifest'];
+  const assets = ['paper.js','paper-core.js','trading.bundle.js','wallet.bundle.js','market.js','terminal.css','beltrix-icon.png','manifest.webmanifest'];
   for (const asset of assets) {
     const r = await fetch(new URL(asset,base), {cache:'no-store'});
     if (!r.ok || (r.headers.get('content-type') || '').includes('text/html')) throw Error(`${asset}: invalid response ${r.status}`);
@@ -19,3 +19,4 @@ for (let attempt = 0; ; attempt++) {
   catch (error) { if (attempt === 3) throw error; await new Promise(resolve=>setTimeout(resolve,5000)); }
 }
 console.log(`BELTRIX page, TWAP controls and production assets verified at ${base}`);
+
