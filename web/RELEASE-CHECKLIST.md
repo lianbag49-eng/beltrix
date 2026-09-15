@@ -9,6 +9,8 @@
 - Futures simulation uses a flat 0.05% fee per side, unlimited top-of-book liquidity and capped margin loss on settlement. It does NOT model funding, depth, queue priority, liquidation, partial fills or execution while closed. It is an educational model, not a venue backtest.
 - Paper data is browser-local and editable by its owner, not authoritative money or performance records. Clearing browser storage loses it. Do not enter private keys to obtain practice funds.
 
+See [SECURITY-REVIEW.md](SECURITY-REVIEW.md) for the scoped internal review, funded-test procedure and independent-audit handoff. CI also measures public testnet depth and runs selected flows under iPhone WebKit emulation; neither proves actual funded execution or physical iPhone compatibility.
+
 ## Release gates still required
 
 1. User-owned funded TESTNET wallet: spot buy/sell and perpetual open/partial-fill/cancel/close, reconciliation after timeouts, leverage and trigger/TWAP checks against actual venue records. Mock signatures do not pass this gate.

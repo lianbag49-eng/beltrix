@@ -1,4 +1,5 @@
 import {ExchangeClient,HttpTransport,InfoClient} from '@nktkas/hyperliquid';
+import {guardedWallet} from './signing-guard.js';
 import {createWalletClient,custom} from 'viem';
 import {arbitrum,arbitrumSepolia} from 'viem/chains';
 import {makeOrder,freshMarket} from './order-validation.js';
@@ -73,7 +74,7 @@ $('tradeConnect').onclick=async()=>{if(busy)return;window.openPage?.('markets');
  if(Number(await provider.request({method:'eth_chainId'}))!==config.chain.id)throw Error('Wallet did not switch to '+config.chain.name);
  const actual=await provider.request({method:'eth_accounts'});if(actual[0]?.toLowerCase()!==selected.toLowerCase()||net!==$('marketNetwork').value)throw Error('Wallet account or network changed');account=selected;connectedNetwork=net;info=infos[net];
  const wallet=createWalletClient({account,chain:config.chain,transport:custom(provider)});
- client=new ExchangeClient({transport:transports[net],wallet,isTestnet:net==='testnet',defaultExpiresAfter:()=>Date.now()+30000});
+ client=new ExchangeClient({transport:transports[net],wallet:guardedWallet(wallet,()=>guard(false),()=>`${epoch}:${account}:${connectedNetwork}`),isTestnet:net==='testnet',defaultExpiresAfter:()=>Date.now()+30000});
  provider.on?.('accountsChanged',disconnect);provider.on?.('chainChanged',disconnect);provider.on?.('disconnect',disconnect);
  $('tradeConnect').textContent=account.slice(0,6)+'…'+account.slice(-4)+' ×';$('tradeAccount').textContent=account+' · Hyperliquid '+config.label;window.dispatchEvent(new CustomEvent('beltrix:wallet',{detail:{account,provider,chainId:config.chain.id}}));status('Connected · '+config.label+' Hyperliquid account');await refresh();
  }catch(e){status(e.shortMessage||e.message||'Connection cancelled')}finally{busy=false;availability()}};
@@ -166,3 +167,4 @@ function renderTwaps(){
  table('tradeTwaps',['TWAP ID','Market','Side','Total size','Filled','Duration','Status','Actions'],rows);
  if(twapHistory===null){const note=document.createElement('p');note.className='muted';note.textContent='TWAP history unavailable. Accepted IDs saved in this browser are shown above.';$('tradeTwaps').append(note)}
 }
+

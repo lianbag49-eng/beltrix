@@ -30,16 +30,22 @@ jobs:
       - name: Bundle wallet and trading clients
         run: npm run build
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
       - name: Validate JavaScript
         run: node --check web/app.js
       - name: Test prototype
         run: npx playwright test --config=web/playwright.config.cjs
+      - name: Test iPhone WebKit emulation
+        run: npx playwright test --config=web/playwright.ios.config.cjs
+      - name: Measure testnet liquidity
+        run: node web/tests/testnet-liquidity.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: beltrix-test-results
-          path: test-results/
+          path: |
+            test-results/
+            test-results-ios/
       - name: Emit compact UI previews
         if: always()
         run: |
@@ -51,6 +57,8 @@ jobs:
           PY
       - name: Prepare web-only artifact
         run: node web/prepare-site.mjs --root
+      - name: Publish public read-only release evidence
+        run: cp test-results/testnet-liquidity.json public/release-evidence.json
       - uses: actions/configure-pages@v5
         if: github.ref == 'refs/heads/main'
         with:
