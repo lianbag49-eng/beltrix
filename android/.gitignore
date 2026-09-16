@@ -1,0 +1,7 @@
+.gradle/
+**/build/
+local.properties
+*.jks
+*.keystore
+app/src/main/assets/beltrix/
+app/src/main/res/mipmap-*/ic_launcher.png
