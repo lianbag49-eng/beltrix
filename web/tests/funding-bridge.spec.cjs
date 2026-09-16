@@ -68,7 +68,9 @@ test('account change inside wallet signing withholds withdrawal submission',asyn
 });
 test('ambiguous withdrawal is journaled and cannot be submitted again',async({page})=>{
  const {posted,state}=await setup(page,'withdraw');await review(page,'withdraw');state.ambiguous=true;
- await page.locator('#fundingAck').check();await page.locator('#fundingSubmit').click();await expect(page.locator('#fundingFormStatus')).toContainText('Do not repeat');
+ await page.locator('#fundingAck').check();await page.locator('#fundingSubmit').click();// Wait for the final durable state, not the earlier 'Waiting for wallet' warning.
+ await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('beltrix-funding-journal-v1')||'{"records":[]}').records[0]?.status)).toBe('Unknown');
+ await expect(page.locator('#fundingFormStatus')).toContainText('Do not repeat');
  expect(posted).toHaveLength(1);expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('beltrix-funding-journal-v1')).records[0].status)).toBe('Unknown');
  await page.locator('#fundingBack').click();await page.locator('#fundingEnv').selectOption('testnet');await page.locator('#fundingConnect').click();await expect(page.locator('#fundingReview')).toBeEnabled();
  await page.locator('#fundingAmount').fill('10');await page.locator('#fundingReview').click();await expect(page.locator('#fundingFormStatus')).toContainText('unresolved');expect(posted).toHaveLength(1);
