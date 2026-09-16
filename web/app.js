@@ -13,13 +13,28 @@ try{
 }catch{}
 function toast(s){$('toast').textContent=s;$('toast').classList.add('show');clearTimeout(timer);timer=setTimeout(()=>$('toast').classList.remove('show'),4000)}
 window.toast=toast;
+// body[data-page] is display state, never a navigation control.
+const NAV_BUTTONS='.nav button[data-page], .bottom-nav button[data-page]';
 window.openPage=id=>{
+ const target=document.getElementById(id);
+ if(!target?.classList.contains('page'))return false;
  document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===id));
- document.querySelectorAll('[data-page]').forEach(x=>{x.classList.toggle('active',x.dataset.page===id);x.setAttribute('aria-current',x.dataset.page===id?'page':'false')});
+ document.querySelectorAll(NAV_BUTTONS).forEach(x=>{x.classList.toggle('active',x.dataset.page===id);x.setAttribute('aria-current',x.dataset.page===id?'page':'false')});
  document.body.dataset.page=id;
  window.dispatchEvent(new CustomEvent('beltrix:page',{detail:id}));
+ return true;
 };
-document.addEventListener('click',e=>{const b=e.target.closest('[data-page]');if(b&&document.getElementById(b.dataset.page)){window.openPage(b.dataset.page);window.scrollTo({top:0,behavior:'instant'});}});
+document.addEventListener('click',e=>{
+ if(e.defaultPrevented||!(e.target instanceof Element))return;
+ const b=e.target.closest(NAV_BUTTONS);
+ if(!b||b.disabled||b.getAttribute('aria-disabled')==='true')return;
+ const id=b.dataset.page;
+ if(document.body.dataset.page===id||!document.getElementById(id)?.classList.contains('page'))return;
+ window.openPage(id);
+ // Start at the top only when the user deliberately changes pages.
+ // Form fields, tabs, dialogs and current-page taps must keep their context.
+ if(document.body.dataset.page===id)window.scrollTo({top:0,behavior:'instant'});
+});
 function save(){try{if(state.persist)localStorage.setItem(KEY,JSON.stringify(state));else localStorage.removeItem(KEY)}catch{toast('Storage unavailable: changes last for this session only')}}
 function validAmount(value){return /^(?:0|[1-9]\d*)(?:\.\d{1,8})?$/.test(value)&&Number(value)>0&&Number.isFinite(Number(value))}
 function quote(){

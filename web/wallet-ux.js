@@ -49,11 +49,13 @@ export function installWalletUx(win = window) {
   const originalOpenPage = win.openPage;
   const activate = (id, { record = true, focus = true } = {}) => {
     if (!PAGES.includes(id) || !doc.getElementById(id)?.classList.contains('page')) return false;
-    if (doc.body.dataset.page !== id) originalOpenPage(id);
+    const changed = doc.body.dataset.page !== id;
+    if (changed) originalOpenPage(id);
     if (record && win.location.hash !== '#' + id) {
       try { win.history.pushState(null, '', '#' + id); } catch { /* Navigation still works without history. */ }
     }
-    if (focus) {
+    // Reopening the current page must not steal focus from a field or dialog.
+    if (focus && changed) {
       const target = doc.getElementById(id);
       target.setAttribute('tabindex', '-1');
       target.focus({ preventScroll: true });
