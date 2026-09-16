@@ -9,16 +9,26 @@ if(!ticket||$('fastOrderBar'))throw Error('Futures terminal cannot mount');
 const css=document.createElement('link');css.rel='stylesheet';css.href=new URL('./mobile-futures.css',import.meta.url).href;css.id='futuresStyles';document.head.append(css);
 function element(tag,cls,html){const e=document.createElement(tag);e.className=cls;e.innerHTML=html;return e;}
 const bar=element('div','fast-order-bar',`<div class="fast-row fast-open-close" role="group" aria-label="Position intent"><button type="button" data-intent="open" aria-pressed="true">Open</button><button type="button" data-intent="close" aria-pressed="false">Close</button></div><div class="fast-row" role="group" aria-label="Order direction"><button type="button" data-fast-side="buy">Long</button><button type="button" data-fast-side="sell">Short</button></div><div class="fast-row fast-types" role="group" aria-label="Quick order type"><button type="button" data-fast-type="Market">Market</button><button type="button" data-fast-type="Gtc">Limit</button><button type="button" data-fast-type="Stop">SL</button><button type="button" data-fast-type="TakeProfit">TP</button></div>`);bar.id='fastOrderBar';
-ticket.prepend(bar);ticket.prepend($('tradeLeveragePanel'));
+ticket.prepend(bar);
+const leverageDrawer=element('details','futures-leverage','<summary id="futuresLeverageSummary">Margin &amp; leverage <span>Change</span></summary>');leverageDrawer.id='futuresLeverageDrawer';
+$('tradeLeveragePanel').before(leverageDrawer);leverageDrawer.append($('tradeLeveragePanel'));ticket.prepend(leverageDrawer);
+const extra=element('details','futures-extra','<summary>Order details &amp; account</summary>');extra.id='futuresExtra';ticket.append(extra);
+extra.append($('tradeAccount'));
+const estimates=ticket.querySelector('.order-estimate');
+const available=$('tradeAvailable').closest('div'),availableList=element('dl','order-estimate futures-available','');available.before(availableList);availableList.append(available);ticket.insertBefore(availableList,estimates);extra.append(estimates);
+for(const p of [...ticket.querySelectorAll(':scope > .feed-note')])if(p.id!=='tradeModeNote')extra.append(p);
+const heading=ticket.querySelector(':scope > h3');if(heading)extra.append(heading);
+
 const sizes=element('div','fast-size',`<label for="futuresSizePercent">Position size <output id="futuresSizeLabel">Manual</output></label><input id="futuresSizePercent" type="range" min="0" max="100" step="1" value="0" aria-label="Order size percentage"><div class="fast-row" role="group" aria-label="Quick size"><button type="button" data-size-pct="25">25%</button><button type="button" data-size-pct="50">50%</button><button type="button" data-size-pct="75">75%</button><button type="button" data-size-pct="100">MAX</button></div><p id="futuresSizingStatus" class="futures-note">Connect to load size limits.</p>`);
 $('tradeSize').closest('label').after(sizes);
 const actions=element('div','futures-actions',`<button type="button" id="futuresLong" class="futures-long" disabled>Open Long</button><button type="button" id="futuresShort" class="futures-short" disabled>Open Short</button><small>Opens a review. Wallet approval is still required.</small>`);$('tradeReview').before(actions);
 const note=element('p','futures-note','');note.id='futuresModeHint';bar.after(note);
 const bookMid=element('div','futures-book-mid','<small>Mark price</small><strong id="futuresBookPrice">—</strong><small id="futuresBookFeed">Waiting for live book</small>');$('marketSpread').before(bookMid);
+const funding=element('div','futures-funding','<small>Funding / 1h · indicative</small><strong id="futuresFunding">—</strong><span id="futuresFundingClock">—</span>');document.querySelector('.depth').prepend(funding);
 const imbalance=element('div','futures-imbalance',`<div><span id="futuresBidShare">Bids —</span><span id="futuresAskShare">Asks —</span></div><div class="futures-ratio-track"><i id="futuresRatioFill"></i></div><small>Displayed depth, not trader long/short ratio</small>`);$('marketBids').after(imbalance);
 const accountPanel=document.querySelector('.terminal-account'),chart=document.querySelector('.chart-panel'),layout=document.querySelector('.trade-layout');
 const chartDrawer=element('details','futures-chart','<summary>Chart <span>Expand / collapse</span></summary>');chartDrawer.id='futuresChart';accountPanel.after(chartDrawer);
-const mq=matchMedia('(max-width:680px)');function arrange(){if(mq.matches){chartDrawer.append(chart);chartDrawer.hidden=false;}else{layout.prepend(chart);chartDrawer.hidden=true;}window.dispatchEvent(new Event('resize'));}mq.addEventListener('change',arrange);arrange();
+const mq=matchMedia('(max-width:680px)');function arrange(){leverageDrawer.open=!mq.matches;extra.open=!mq.matches;if(mq.matches){chartDrawer.append(chart);chartDrawer.hidden=false;}else{layout.prepend(chart);chartDrawer.hidden=true;}window.dispatchEvent(new Event('resize'));}mq.addEventListener('change',arrange);arrange();
 function setText(id,text){if($(id).textContent!==text)$(id).textContent=text;}
 function emitInput(el){internalInput=true;try{el.dispatchEvent(new Event('input',{bubbles:true}));}finally{internalInput=false;}}
 function editable(){return !$('tradeSize').disabled&&!$('tradeType').disabled&&!$('tradeDialog').open;}
@@ -37,9 +47,6 @@ async function refreshSizing(){
     if(v!==version||u!==user||n!==network||coin!==market?.market?.value)return;
     if(!spot&&(asset?.coin!==coin||asset?.user&&asset.user.toLowerCase()!==u.toLowerCase()||!Array.isArray(perps?.assetPositions)))throw Error('Account or market mismatch');
     snapshot={version:v,coin,at:Date.now(),asset,position:perps?.assetPositions.map(x=>x.position).find(p=>p.coin===coin)||null};
-    if(!marginEdited&&asset?.leverage&&Number.isInteger(asset.leverage.value)&&['cross','isolated'].includes(asset.leverage.type)){
-      $('tradeLeverage').value=String(asset.leverage.value);$('tradeMarginMode').value=asset.leverage.type;emitInput($('tradeLeverage'));
-    }
   }catch{if(v===version)snapshot=null;}finally{clearTimeout(timer);if(v===version){loading=false;sync();}}
 }
 function sizingIssue(){
@@ -91,6 +98,11 @@ window.addEventListener('beltrix:wallet',e=>{invalidate();user=e.detail?.account
 window.addEventListener('beltrix:market',e=>{const next=e.detail;if(market?.network!==next.network||market?.market?.value!==next.market?.value){invalidate();marginEdited=false;}market=next;sync();if(!snapshot&&!loading)refreshSizing();});
 function updateCounts(){for(const [tab,id,label] of [['positions','tradePositions','Positions'],['orders','tradeOrders','Open orders']]){const root=$(id),count=root.querySelector('table')?root.querySelectorAll('tbody tr').length:root.textContent.trim()==='No records'?0:'—';const b=document.querySelector(`[data-account-tab="${tab}"]`),text=`${label} (${count})`;if(b.textContent!==text)b.textContent=text;}}
 function sync(){
+  // A background refresh must never modify a pending review or signing form.
+  const leverage=current()?snapshot.asset?.leverage:null;
+  if(!marginEdited&&editable()&&leverage&&Number.isInteger(leverage.value)&&['cross','isolated'].includes(leverage.type)&&(Number($('tradeLeverage').value)!==leverage.value||$('tradeMarginMode').value!==leverage.type)){
+    $('tradeLeverage').value=String(leverage.value);$('tradeMarginMode').value=leverage.type;emitInput($('tradeLeverage'));
+  }
   const spot=!!market?.market?.spot,close=closeMode(),side=$('tradeSide').value,type=$('tradeType').value,edit=editable(),posSide=closingSide(position()?.szi),issue=sizingIssue();
   for(const b of bar.querySelectorAll('[data-intent]')){b.disabled=!edit||spot;b.setAttribute('aria-pressed',String((b.dataset.intent==='close')===close));}
   for(const b of bar.querySelectorAll('[data-fast-side]')){b.disabled=!edit||$('tradeSide').disabled;b.setAttribute('aria-pressed',String(b.dataset.fastSide===side));b.textContent=spot?(b.dataset.fastSide==='buy'?'Buy':'Sell'):(b.dataset.fastSide==='buy'?'Long':'Short');}
@@ -99,6 +111,10 @@ function sync(){
   $('futuresSizePercent').disabled=!edit||!!issue;setText('futuresSizeLabel',selectedPct===null?'Manual':selectedPct+'%');
   setText('futuresSizingStatus',issue||(close?'Percentage of the current position.':'Venue max size · 2% buffer · rounded down.'));
   setText('futuresModeHint',spot?'Spot uses tokens, not leveraged positions.':['Stop','TakeProfit'].includes(type)?'Standalone TP/SL for an existing position. Not a paired bracket; no automatic OCO.':close?'Reduce only. Cannot open or reverse a position.':'Net position mode. Opposite orders can reduce or reverse a position.');
+  leverageDrawer.hidden=spot;
+  const applied=current()?snapshot.asset?.leverage:null;
+  setText('futuresLeverageSummary',applied?`${applied.type==='isolated'?'Isolated':'Cross'} · ${applied.value}x · Change`:'Margin & leverage · Change');
+  funding.hidden=spot;setText('futuresFunding',$('marketFunding').textContent);setText('futuresFundingClock',$('marketFundingCountdown').textContent);
   setText('futuresLong',spot?'Buy':close?'Close Long':'Open Long');setText('futuresShort',spot?'Sell':close?'Close Short':'Open Short');
   $('futuresLong').disabled=$('tradeReview').disabled||!edit||(close&&posSide!=='sell');$('futuresShort').disabled=$('tradeReview').disabled||!edit||(close&&posSide!=='buy');
   const fresh=freshMarket(market),ctx=market?.context;setText('futuresBookPrice',fresh&&Number(ctx?.markPx)>0&&Date.now()-market.contextReceived<90000?Number(ctx.markPx).toLocaleString('en-US',{maximumFractionDigits:8}):'—');
