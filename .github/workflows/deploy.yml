@@ -90,6 +90,8 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Verify published futures UI without connecting a wallet
         run: node web/tests/live-ui-smoke.mjs "${{ steps.deployment.outputs.page_url }}"
+      - name: Verify Simple Spot and Perps on the public site without a wallet
+        run: node web/tests/simple-live-smoke.mjs "${{ steps.deployment.outputs.page_url }}"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

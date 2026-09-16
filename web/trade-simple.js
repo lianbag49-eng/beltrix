@@ -65,8 +65,9 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
       [interval,type,slippage,reduce,...triggers,notional,margin].forEach(restore);
     }
     options.hidden = !simple; chartTools.hidden = !simple;
-    $('futuresExtra').open = !simple;
-    $('futuresLeverageDrawer').open = !simple;
+    const expanded = !simple && !matchMedia('(max-width:680px)').matches;
+    $('futuresExtra').open = expanded;
+    $('futuresLeverageDrawer').open = expanded;
     statsDrawer.open = !simple;
     if (recent) recent.open = !simple;
     // The original review button is invoked by the existing large directional buttons.
@@ -76,7 +77,7 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
   }
   function sync() {
     const spot = $('marketType').value === 'spot', simple = mode === 'simple';
-    root.dataset.tradeProduct = spot ? 'spot' : 'perp';
+    root.dataset.activeProduct = spot ? 'spot' : 'perp';
     $('tradeLayoutMode').disabled = locked();
     for (const b of toolbar.querySelectorAll('[data-trade-product]')) {
       b.disabled = locked();

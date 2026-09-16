@@ -20,7 +20,7 @@
 #markets[data-trade-layout=simple] .fast-row button{min-height:38px;font-size:12px}
 #markets[data-trade-layout=simple] .futures-actions button{min-height:46px;border-radius:8px;font-size:15px}
 #markets[data-trade-layout=simple] .futures-actions small{line-height:1.4}
-#markets[data-trade-layout=simple][data-trade-product=spot] .fast-open-close,#markets[data-trade-layout=simple][data-trade-product=spot] .fast-size,#markets[data-trade-layout=simple][data-trade-product=spot] .simple-margin-estimate{display:none!important}
+#markets[data-trade-layout=simple][data-active-product=spot] .fast-open-close,#markets[data-trade-layout=simple][data-active-product=spot] .fast-size,#markets[data-trade-layout=simple][data-active-product=spot] .simple-margin-estimate{display:none!important}
 #markets[data-trade-layout=simple] .order-estimate>div{gap:10px}
 #markets[data-trade-layout=simple] #tradeModeNote,#markets[data-trade-layout=simple] #futuresModeHint{line-height:1.5}
 #markets[data-trade-layout=simple] #marketContextStatus:empty{display:none}
