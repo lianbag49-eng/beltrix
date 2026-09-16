@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.SystemClock;
 import android.view.MotionEvent;
+import android.webkit.WebView;
 import org.json.JSONArray;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -70,6 +71,13 @@ public class NativeShellTest {
         waitFor("document.getElementById('usdtQR')?.width>100");Thread.sleep(300);
     }
     private void screenshot(String name)throws Exception{
+        // JS callbacks precede compositing: wait for the requested DOM frame, not an old page.
+        CountDownLatch frame=new CountDownLatch(1);
+        scenario.onActivity(a->a.webView().postVisualStateCallback(SystemClock.uptimeMillis(),new WebView.VisualStateCallback(){
+            @Override public void onComplete(long id){a.webView().postOnAnimation(()->a.webView().postOnAnimation(frame::countDown));}
+        }));
+        assertTrue("Rendered WebView frame timed out",frame.await(15,TimeUnit.SECONDS));
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync();Thread.sleep(250);
         Context c=InstrumentationRegistry.getInstrumentation().getTargetContext();File dir=new File(c.getExternalFilesDir(null),"screenshots");dir.mkdirs();
         Bitmap shot=InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
         try(FileOutputStream out=new FileOutputStream(new File(dir,name+".png"))){assertTrue(shot.compress(Bitmap.CompressFormat.PNG,100,out));}shot.recycle();
@@ -77,10 +85,13 @@ public class NativeShellTest {
     @Test public void packagedUiAndNoSigner()throws Exception{
         assertEquals("true",js("location.origin==='https://appassets.androidplatform.net' && !window.ethereum && !window.tronWeb && !window.solana"));
         assertEquals("true",js("document.documentElement.dataset.simpleTrade==='v1'"));
-        js("window.openPage('markets')");waitFor("document.getElementById('futuresLong')?.disabled");
-        assertEquals("true",js("document.getElementById('futuresShort').disabled"));screenshot("android-perps");
-        js("document.querySelector('[data-trade-product=spot]').click()");waitFor("document.getElementById('marketType').value==='spot'");
-        assertEquals("true",js("document.getElementById('futuresLong').disabled"));screenshot("android-spot");
+        tapWeb(".bottom-nav [data-page=markets]");
+        waitFor("document.body.dataset.page==='markets' && document.getElementById('markets').getBoundingClientRect().height>0 && document.getElementById('futuresLong')?.disabled");
+        assertEquals("true",js("document.getElementById('futuresShort').disabled"));
+        waitFor("document.querySelector('[data-trade-product=perp]').getAttribute('aria-pressed')==='true'");screenshot("android-perps");
+        tapWeb("[data-trade-product=spot]");
+        waitFor("document.getElementById('marketType').value==='spot' && document.querySelector('[data-trade-product=spot]').getAttribute('aria-pressed')==='true'");
+        assertEquals("true",js("document.body.dataset.page==='markets' && document.getElementById('futuresLong').disabled"));screenshot("android-spot");
     }
     @Test public void walletButtonIsBrowseHandoffNotAConnection()throws Exception{
         onView(withContentDescription("Open external wallet")).perform(click());
