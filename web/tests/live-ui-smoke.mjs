@@ -55,6 +55,15 @@ try{
  await page.screenshot({path:'test-results/funding-live-mobile.png',fullPage:true});
  await page.locator('#fundingClose').click();
  evidence.fundingUI={deposit:'passed',withdrawal:'passed',disconnectedSubmissionLock:'passed'};
+ // USDT lazy entry is checked on the public site without a wallet or any write.
+ await page.locator('#markets [data-usdt-open]').click();await page.waitForSelector('#usdtDialog[open]');
+ assert.equal(await page.locator('#usdtNetwork option').count(),8);
+ for(const id of ['ethereum','bnb','arbitrum','optimism','polygon','avalanche','tron','solana']){
+  await page.locator('#usdtNetwork').selectOption(id);await page.locator('[data-usdt-tab=send]').click();
+  assert.ok(await page.locator('#usdtReview').isDisabled());
+ }
+ await page.screenshot({path:'test-results/usdt-live-mobile.png',fullPage:true});
+ await page.locator('#usdtClose').click();evidence.usdtUI={routes:8,entry:'passed',disconnectedSubmissionLock:'passed'};
  evidence.marketStatus=await page.locator('#marketStatus').innerText();assert.deepEqual(errors,[]);assert.deepEqual(submissions,[]);
  evidence.pageErrors=errors;evidence.exchangeSubmissions=submissions;console.log(JSON.stringify(evidence,null,2));
  await writeFile('test-results/futures-v2-live.json',JSON.stringify(evidence,null,2));

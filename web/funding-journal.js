@@ -1,3 +1,4 @@
+import {assertNoUsdtWrite,withWalletWriteLock} from './wallet-write-coordination.js';
 import {address,same,hashOK} from './wallet-core.js';
 import {fundingRoute} from './funding-core.js';
 export const FUNDING_JOURNAL='beltrix-funding-journal-v1';
@@ -20,6 +21,7 @@ export function saveFundingRecord(row,storage=localStorage){
  storage.setItem(FUNDING_JOURNAL,JSON.stringify({version:1,records:[...active,...completed]}));
 }
 export function assertNoPendingFunding(account,env,storage=localStorage){
+ assertNoUsdtWrite(fundingRoute(env).chainId,account,storage);
  if(readFundingJournal(storage).some(r=>r.env===env&&same(r.account,account)&&!TERMINAL.has(r.status)))throw Error('An earlier funding action is unresolved. Check Funding history before trying again.');
  // Never start a bridge operation during a known unresolved wallet/order write.
  for(const key of ['beltrix-transactions-v1','beltrix-trade-submissions-v1']){
@@ -31,9 +33,5 @@ export function assertNoPendingFunding(account,env,storage=localStorage){
  }
 }
 export async function fundingLock(account,env,task,locks=navigator.locks){
- if(!locks?.request)throw Error('This browser cannot safely coordinate funding requests. Use a current browser or the official venue.');
- return locks.request(`beltrix-funding:${env}:${account.toLowerCase()}`,{mode:'exclusive',ifAvailable:true},lock=>{
-  if(!lock)throw Error('A funding request is already open in another tab.');
-  return task();
- });
+ return withWalletWriteLock(fundingRoute(env).chainId,account,task,locks);
 }
