@@ -5,12 +5,9 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.net.Uri;
-import android.os.Environment;
 import android.os.SystemClock;
 import android.view.MotionEvent;
 import org.json.JSONArray;
-import android.webkit.ValueCallback;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -54,6 +51,7 @@ public class NativeShellTest {
     private void waitFor(String expression)throws Exception{
         long end=System.currentTimeMillis()+45000;String last="";
         while(System.currentTimeMillis()<end){last=js("Boolean("+expression+")");if("true".equals(last))return;Thread.sleep(150);}
+        screenshot("failure-"+System.currentTimeMillis());
         fail("Not ready: "+expression+" => "+last);
     }
     private void awaitText(String text)throws Exception{long end=System.currentTimeMillis()+15000;while(System.currentTimeMillis()<end){try{onView(withText(text)).check(matches(isDisplayed()));return;}catch(Exception|AssertionError e){Thread.sleep(100);}}onView(withText(text)).check(matches(isDisplayed()));}
@@ -88,7 +86,7 @@ public class NativeShellTest {
         onView(withContentDescription("Open external wallet")).perform(click());
         onView(withText("Continue in a wallet app")).check(matches(isDisplayed()));
         onView(withText("OKX Wallet · multi-chain")).perform(click());
-        Intents.intended(allOf(IntentMatchers.hasAction(Intent.ACTION_VIEW),IntentMatchers.hasData(startsWith("https://www.okx.com/download?deeplink="))));
+        Intents.intended(allOf(IntentMatchers.hasAction(Intent.ACTION_VIEW),IntentMatchers.hasDataString(startsWith("https://www.okx.com/download?deeplink="))));
         assertEquals("true",js("!window.ethereum && !window.tronWeb && !window.solana"));
     }
     @Test public void qrRenderAndSaveUsesAndroidDocumentPicker()throws Exception{
