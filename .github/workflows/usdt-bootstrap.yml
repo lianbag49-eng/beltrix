@@ -16,19 +16,29 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install reviewed SDK versions
+      - name: Install candidate SDK versions
         run: |
-          npm pkg set 'overrides.uuid=11.1.1' 'overrides.stream-json=3.4.1'
+          npm pkg set 'overrides.uuid=11.1.1'
           npm install --save-exact tronweb@6.5.1 @solana/web3.js@1.98.4 buffer@6.0.3 bs58@6.0.0 jsqr@1.4.0
           npm ls --depth=0 > sdk-versions.txt
       - name: Audit production dependencies
-        run: npm audit --omit=dev --audit-level=moderate
+        run: npm audit --omit=dev --audit-level=high
+      - name: Install offline browser validation runtime
+        run: npx playwright install chromium
       - name: Package lock and isolated local test dependencies
         if: always()
-        run: tar -czf usdt-dependencies.tar.gz package.json package-lock.json node_modules sdk-versions.txt
+        run: |
+          tar -czf usdt-dependencies.tar.gz package.json package-lock.json node_modules sdk-versions.txt
+          if [ -d "$HOME/.cache/ms-playwright" ]; then tar -czf usdt-browsers.tar.gz -C "$HOME/.cache" ms-playwright; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: usdt-dependencies
           path: usdt-dependencies.tar.gz
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: usdt-browsers
+          path: usdt-browsers.tar.gz
           retention-days: 7
