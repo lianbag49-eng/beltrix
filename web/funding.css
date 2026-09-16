@@ -4,3 +4,8 @@
 
 /* Keep the chart clock from shifting a focused ticket on its first live tick. */
 #marketClock{min-height:1.5em}
+
+/* Four real actions must keep usable widths on narrow iPhone/WebKit screens.
+   Flex shrinking plus nowrap let the USDT label escape its near-zero button.
+   Allow labels to wrap rather than clipping content or hiding root overflow. */
+@media(max-width:680px){.funding-bar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}.funding-bar button{width:100%;min-width:0;white-space:normal;overflow-wrap:anywhere;min-height:44px}}
