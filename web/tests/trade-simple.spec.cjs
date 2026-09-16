@@ -70,7 +70,7 @@ test('special order options and price chosen from the book remain truthful',asyn
 
 test('Simple perps retains applied-leverage MAX sizing, Open/Close, and stale data locks',async({page})=>{
  await setup(page);await connect(page);await page.locator('[data-fast-type=Market]').click();await page.locator('[data-size-pct="50"]').click();
- await expect($(page,'tradeSize')).toHaveValue('4.9605');await page.locator('[data-fast-side=sell]').click();await expect($(page,'tradeSize')).toHaveValue('4.8939');
+ await expect($(page,'tradeSize')).toHaveValue('4.9605');await options(page);await page.locator('[data-fast-side=sell]').click();await expect($(page,'tradeSize')).toHaveValue('4.8939');
  await page.locator('[data-intent=close]').click();await expect($(page,'tradeSize')).toHaveValue('2');await expect($(page,'tradeReduce')).toBeChecked();
  await page.locator('[data-intent=open]').click();await expect($(page,'tradeReduce')).not.toBeChecked();
  await page.evaluate(()=>window.stopBook=true);await expect($(page,'futuresLong')).toBeDisabled({timeout:10000});await expect(page.locator('[data-size-pct="50"]')).toBeDisabled();

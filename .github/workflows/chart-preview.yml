@@ -1,0 +1,49 @@
+name: Clean navigation and chart preview
+on:
+  pull_request:
+    paths: ['web/**', 'package.json', '.github/workflows/chart-preview.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: chart-preview-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run test:unit
+      - run: npm run build
+      - run: node web/prepare-site.mjs --root && node web/tests/html-integrity.mjs public
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npx playwright test --config=web/playwright.chart.config.cjs
+      - name: Preserve design previews before the regression runner clears test-results
+        if: always()
+        run: |
+          mkdir -p chart-evidence/previews
+          cp test-results/clean-*.png chart-evidence/previews/ 2>/dev/null || true
+      - run: npx playwright test --config=web/playwright.config.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: beltrix-clean-chart-preview
+          path: |
+            chart-evidence/
+            test-results/
+          retention-days: 14
+      - name: Preserve exact proposed source
+        if: always()
+        run: git archive --format=tar.gz -o chart-preview-source.tar.gz HEAD
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: beltrix-clean-chart-source
+          path: chart-preview-source.tar.gz
+          retention-days: 7

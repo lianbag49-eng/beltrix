@@ -1,0 +1,49 @@
+/* Clean BELTRIX terminal: global navigation belongs to the bottom bar only. */
+html[data-clean-terminal] .app>.nav{display:none!important}
+html[data-clean-terminal] .bottom-nav{gap:8px;padding-top:9px;padding-bottom:max(10px,env(safe-area-inset-bottom));min-height:62px;box-sizing:border-box;background:#0c0e12f5;border-color:#232831;z-index:40}
+html[data-clean-terminal] .bottom-nav .dex-circle{width:22px;height:22px;display:contents;background:none!important;border:0;margin:0;box-shadow:none;color:inherit}
+html[data-clean-terminal] .bottom-nav .dex-circle .w-icon{width:22px;height:22px}
+html[data-clean-terminal] .bottom-nav button{min-height:44px;justify-content:center;font-size:11px;gap:5px}
+html[data-clean-terminal] .bottom-nav button.active{color:var(--gold)}
+.clean-icon-button{display:grid;place-items:center;min-width:36px;min-height:40px;padding:5px;border:1px solid #29303a;border-radius:8px;background:#14181e;color:var(--text);font-size:22px}
+.clean-icon-button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5}
+.clean-more-dialog{width:min(360px,90vw);border:1px solid #343b46;border-radius:18px;background:#11151b;color:#e5eaf0;padding:18px}
+.clean-menu-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.clean-menu-head button{min-height:40px;min-width:40px;background:none;border:0;color:inherit;font-size:24px}
+.clean-more-dialog>[data-clean-route]{width:100%;min-height:48px;text-align:left;padding:12px;border:1px solid #2c3440;border-radius:8px;background:#1c222b;color:inherit;margin:5px 0}.clean-more-dialog p{font-size:12px;color:#9ba6b3;line-height:1.6}
+.clean-more-dialog::backdrop{background:#000a}
+html[data-clean-terminal] #markets .simple-products{background:none;border:0;padding:0;border-radius:0;gap:14px}
+html[data-clean-terminal] #markets .simple-products button{flex:0 1 auto;border-radius:0;padding:8px 2px;background:none;color:var(--muted);font-size:18px;border-bottom:2px solid transparent}
+html[data-clean-terminal] #markets .simple-products [aria-pressed=true]{color:var(--text);border-color:var(--gold)}
+html[data-clean-terminal] #markets .simple-view-toggle{font-size:11px;padding:7px;min-height:40px;max-width:100px;background:none;border-color:#29303a}
+html[data-clean-terminal] #markets .simple-trade-toolbar{gap:9px;align-items:center;border-bottom:1px solid #252a32;padding-bottom:5px}
+html[data-clean-terminal] #markets .simple-products{flex:1}
+html[data-clean-terminal] #markets .book-head,html[data-clean-terminal] #markets .book-level{grid-template-columns:1.2fr 1fr}
+html[data-clean-terminal] #markets .book-head>span:nth-child(3),html[data-clean-terminal] #markets .book-level>span:nth-child(3){display:none}
+html[data-clean-terminal] #markets .futures-book-mid strong{font-size:20px}
+html[data-clean-terminal] #markets .order-ticket input{font-variant-numeric:tabular-nums}
+@media(max-width:680px){
+ html[data-clean-terminal] body[data-page=markets] .app{padding:0 14px 92px}
+ html[data-clean-terminal] body[data-page=markets] .top{min-height:46px;padding:3px 0;margin-bottom:4px;gap:7px}
+ html[data-clean-terminal] body[data-page=markets] .top .brand small,html[data-clean-terminal] body[data-page=markets] .top .testnet{display:none}
+ html[data-clean-terminal] body[data-page=markets] #tradeConnect{min-height:34px;max-width:135px;padding:6px 8px;font-size:11px}
+ html[data-clean-terminal] #markets .market-card{padding:0}
+ html[data-clean-terminal] #markets .simple-market-details>summary{padding:7px 0;min-height:32px}
+ html[data-clean-terminal] #markets .funding-bar{gap:5px;margin:6px 0 10px;flex-wrap:wrap}
+ html[data-clean-terminal] #markets .funding-bar button{padding:7px 8px;min-height:32px;font-size:10px}
+ html[data-clean-terminal] #markets .trade-layout{grid-template-columns:minmax(0,58fr) minmax(0,42fr);column-gap:13px}
+ html[data-clean-terminal] #markets .depth .book-level{font-size:11px;line-height:1.5;padding:5px 0}
+ html[data-clean-terminal] #markets .depth .book-head{font-size:9px;line-height:1.4}
+ html[data-clean-terminal] #markets .futures-funding{font-size:10px;line-height:1.5}
+ html[data-clean-terminal] #markets .futures-book-mid{padding:10px 0}
+ html[data-clean-terminal] #markets .futures-book-mid small{font-size:9px}
+ html[data-clean-terminal] #markets[data-trade-layout=simple] .futures-actions button{min-height:48px;font-size:15px;border-radius:9px}
+ html[data-clean-terminal] #markets[data-trade-layout=simple] .futures-actions small{font-size:9px}
+ html[data-clean-terminal] #markets[data-trade-layout=simple] .simple-order-options{background:none;border:0;border-bottom:1px solid #262c35;border-radius:0;padding:0;margin:0 0 6px}
+ html[data-clean-terminal] #markets[data-trade-layout=simple] .simple-order-options>summary{font-size:10px;min-height:30px;padding:8px 0}
+ html[data-clean-terminal] #markets .account-tabs{gap:17px}
+ html[data-clean-terminal] #markets .account-tabs button{font-size:12px;padding:12px 0}
+ html[data-clean-terminal] #markets .futures-chart>summary{min-height:48px;gap:10px;color:var(--text);font-size:12px}
+ html[data-clean-terminal] #chartDrawerTitle{overflow-wrap:anywhere}
+ html[data-clean-terminal] #chartDrawerState{font-size:9px;color:var(--gold);white-space:nowrap}
+}
+@media(max-width:350px){html[data-clean-terminal] #markets .trade-layout{column-gap:8px}html[data-clean-terminal] #markets .depth .book-level{font-size:10px}.clean-icon-button{min-width:32px}}
