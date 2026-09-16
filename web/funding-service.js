@@ -8,7 +8,7 @@ import {readFundingJournal,saveFundingRecord,assertNoPendingFunding,fundingLock,
 export class FundingService {
  constructor({provider,account,env,assertCurrent,storage=localStorage,locks=navigator.locks,fetcher=fetch}){
   this.provider=provider;this.account=address(account);this.route=fundingRoute(env);
-  this.assertCurrent=assertCurrent;this.storage=storage;this.locks=locks;this.fetcher=fetcher;
+  this.assertCurrent=assertCurrent;this.storage=storage;this.locks=locks;this.fetcher=fetcher.bind(globalThis);
   this.client=readClient(network(this.route.chainId),provider);this.reviews=new WeakSet();
  }
  async guard(){
