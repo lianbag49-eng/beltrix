@@ -84,4 +84,15 @@ jobs:
         uses: actions/deploy-pages@v4
       - name: Verify published BELTRIX page and assets
         run: node web/tests/deployment-smoke.mjs "${{ steps.deployment.outputs.page_url }}"
-
+      - name: Install live-site browser checks
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Verify published futures UI without connecting a wallet
+        run: node web/tests/live-ui-smoke.mjs "${{ steps.deployment.outputs.page_url }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: beltrix-live-ui-evidence
+          path: test-results/
+          retention-days: 7
