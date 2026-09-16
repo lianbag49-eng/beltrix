@@ -21,6 +21,13 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
   const stats = root.querySelector('.market-stats');
   const statsDrawer = node('details', 'simple-market-details', `<summary><span>Market details</span><span class="simple-market-snapshot"><b id="simpleMark">—</b><b id="simpleChange">—</b></span></summary>`);
   statsDrawer.id = 'simpleMarketDetails'; stats.before(statsDrawer); statsDrawer.append(stats);
+  // The wallet bundle may mount funding actions later beside .market-stats.
+  // Keep these primary actions outside a collapsed secondary-information drawer.
+  const keepFundingVisible = () => {
+    for (const bar of statsDrawer.querySelectorAll(':scope > .funding-bar')) statsDrawer.before(bar);
+  };
+  keepFundingVisible();
+  new MutationObserver(keepFundingVisible).observe(statsDrawer, { childList: true });
 
   // Mark original locations before moving actual nodes; never clone financial controls.
   const homes = new Map();
