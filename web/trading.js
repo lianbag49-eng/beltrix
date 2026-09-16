@@ -168,3 +168,13 @@ function renderTwaps(){
  if(twapHistory===null){const note=document.createElement('p');note.className='muted';note.textContent='TWAP history unavailable. Accepted IDs saved in this browser are shown above.';$('tradeTwaps').append(note)}
 }
 
+
+// Funding shares the trade session and its busy lock, but never needs a fresh price book.
+export function getFundingSession(){return {account,provider,network:connectedNetwork||$('marketNetwork').value,epoch,connected:!!client&&!!account&&connectedNetwork===$('marketNetwork').value,blocked:busy||!!pending||!!unresolved()};}
+export async function withFundingSession(expected,operation){
+ const matches=()=>{const s=getFundingSession();if(!s.connected||s.epoch!==expected.epoch||s.provider!==expected.provider||s.account?.toLowerCase()!==expected.account?.toLowerCase()||s.network!==expected.network)throw Error('Funding account or network changed. Review again.');};
+ matches();if(busy||pending||unresolved())throw Error('Finish or reconcile the current trading request first.');
+ busy=true;availability();
+ const check=async()=>{matches();await guard(false);matches();};
+ try{await check();return await operation({check});}finally{busy=false;availability();if(account)refresh().catch(()=>{});}
+}

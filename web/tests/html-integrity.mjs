@@ -11,5 +11,7 @@ const paths=[...html.matchAll(/<(?:script|link)\b[^>]*?(?:src|href)="\.\/([^"?#]
 for(const path of paths){assert.ok(!path.includes('..'));assert.ok((await stat(resolve(root,path))).size>0,`Missing/empty asset: ${path}`);}
 assert.ok((await stat(resolve(root,'mobile-futures.css'))).size>0,'Missing futures stylesheet');
 const trading=await readFile(resolve(root,'trading.bundle.js'),'utf8');
-for(const marker of ['fastOrderBar','futuresSizePercent','futuresLong','futuresChart'])assert.ok(trading.includes(marker),`Unwired futures control: ${marker}`);
+for(const marker of ['fastOrderBar','futuresSizePercent','futuresLong','futuresChart','fundingDialog','tradeDeposit','fConfirm'])assert.ok(trading.includes(marker),`Unwired futures control: ${marker}`);
 console.log(`HTML integrity passed: ${ids.length} unique IDs and ${paths.length} local assets (${root})`);
+
+assert.ok((await stat(resolve(root,'funding.css'))).size>0,'Missing funding stylesheet');

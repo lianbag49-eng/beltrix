@@ -4,7 +4,7 @@ import {mkdir,writeFile} from 'node:fs/promises';
 const base=new URL(process.argv[2]);if(base.protocol!=='https:')throw Error('Expected HTTPS');
 const browser=await chromium.launch();const page=await browser.newPage({serviceWorkers:'block'}),errors=[],submissions=[];page.on('pageerror',e=>errors.push(e.message));
 await page.route('**/exchange',r=>{submissions.push(r.request().url());return r.abort();});
-const evidence={url:base.href,checkedAt:new Date().toISOString(),walletConnected:false,viewports:[],scrollChecks:[]};
+const evidence={url:base.href,checkedAt:new Date().toISOString(),walletConnected:false,viewports:[],scrollChecks:[],fundingControls:[]};
 await mkdir('test-results',{recursive:true});
 try{
  base.hash='markets';base.searchParams.set('release',process.env.GITHUB_SHA||'futures-v2');
@@ -38,6 +38,16 @@ try{
     evidence.scrollChecks.push({selector,before,after,result:'passed'});
    }
   }
+  for(const id of ['tradeDeposit','tradeWithdraw','tradeTransferFunds','tradeFundingHistory']){
+   await page.locator('#'+id).click();
+   assert.ok(await page.locator('#fundingDialog').isVisible());
+   assert.ok(await page.locator('#fConnect').isVisible());
+   assert.equal(await page.locator('#fQR').count(),0,'No invented account QR');
+   assert.equal(await page.locator('#fConfirm').count(),0,'No disconnected funding writes');
+   if(width===390&&id==='tradeDeposit')await page.screenshot({path:'test-results/funding-live-disconnected.png',fullPage:true});
+   await page.locator('#fundingClose').click();
+  }
+  evidence.fundingControls.push({width,disconnectedGate:'passed'});
   if(width===390)await page.screenshot({path:'test-results/futures-v2-live-mobile.png',fullPage:true});
  }
  evidence.marketStatus=await page.locator('#marketStatus').innerText();assert.deepEqual(errors,[]);assert.deepEqual(submissions,[]);
