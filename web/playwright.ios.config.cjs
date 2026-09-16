@@ -1,3 +1,3 @@
 const {devices}=require('@playwright/test');
 const base=require('./playwright.config.cjs');
-module.exports={...base,testMatch:['**/smoke.spec.cjs','**/paper.spec.cjs','**/trading.spec.cjs','**/wallet-ux.spec.cjs','**/futures-ux.spec.cjs'],outputDir:'../test-results-ios',use:{...base.use,...devices['iPhone 13'],browserName:'webkit'},reporter:'list'};
+module.exports={...base,testMatch:['**/smoke.spec.cjs','**/paper.spec.cjs','**/trading.spec.cjs','**/wallet-ux.spec.cjs','**/futures-ux.spec.cjs','**/navigation-scroll.spec.cjs'],outputDir:'../test-results-ios',use:{...base.use,...devices['iPhone 13'],browserName:'webkit'},reporter:'list'};
