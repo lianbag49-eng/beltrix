@@ -33,6 +33,7 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
   const homes = new Map();
   const remember = el => { const marker = document.createComment('simple-trade-home'); el.before(marker); homes.set(el, marker); return el; };
   const restore = el => homes.get(el).after(el);
+  const refreshMarket = remember($('marketRefresh'));
   const interval = remember($('marketInterval'));
   const chartTools = node('div', 'simple-chart-tools', '<label for="marketInterval">Chart interval</label>');
   root.querySelector('.chart-panel').prepend(chartTools);
@@ -64,12 +65,13 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
     $('tradeLayoutMode').setAttribute('aria-pressed', String(!simple));
     if (simple) {
       chartTools.append(interval);
+      statsDrawer.append(refreshMarket);
       $('simpleOrderTypeLabel').after(type);
       optionFields.append(slippage, reduce);
       $('simpleTriggerTools').append(...triggers);
       amounts.append(notional, margin);
     } else {
-      [interval,type,slippage,reduce,...triggers,notional,margin].forEach(restore);
+      [refreshMarket,interval,type,slippage,reduce,...triggers,notional,margin].forEach(restore);
     }
     options.hidden = !simple; chartTools.hidden = !simple;
     const expanded = !simple && !matchMedia('(max-width:680px)').matches;

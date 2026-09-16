@@ -35,6 +35,7 @@ test('Spot is token-only and product switches use the real market selector',asyn
  await expect($(page,'tradeReduce')).not.toBeChecked();await options(page);await expect($(page,'simpleTriggerTools')).toBeHidden();
  await page.locator('[data-trade-product=perp]').click();await expect($(page,'marketType')).toHaveValue('perp');await expect($(page,'futuresLeverageDrawer')).toBeVisible();
  await expect(page.locator('.fast-open-close')).toBeVisible();
+ await expect($(page,'tradeStatus')).not.toContainText('Invalid type');
 });
 
 test('both product reviews keep mainnet acknowledgement and never sign on a large button click',async({page})=>{
@@ -102,4 +103,16 @@ test('typing and expanding settings preserve focus without invoking page navigat
  await $(page,'tradeSize').click();await page.keyboard.type('0.5');await page.waitForTimeout(350);
  await expect($(page,'tradeSize')).toBeFocused();expect(Math.abs(await page.evaluate(()=>scrollY)-before)).toBeLessThanOrEqual(2);
  expect(await page.evaluate(()=>window.simpleScrolls)).toEqual([]);
+});
+
+// Product selection emits a transient empty market before loading its metadata.
+test('changing products never submits an undefined coin to account refresh',async({page})=>{
+ const {posted}=await setup(page);await connect(page);
+ for(const product of ['spot','perp','spot','perp']){
+  await page.locator(`[data-trade-product=${product}]`).click();
+  await expect($(page,'marketSymbol')).toHaveValue(product==='spot'?'@0':'ETH');
+  await page.waitForTimeout(150);
+  await expect($(page,'tradeStatus')).not.toContainText('Invalid type');
+ }
+ expect(posted).toHaveLength(0);
 });
