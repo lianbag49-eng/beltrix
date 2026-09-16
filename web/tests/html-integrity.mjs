@@ -13,3 +13,7 @@ assert.ok((await stat(resolve(root,'mobile-futures.css'))).size>0,'Missing futur
 const trading=await readFile(resolve(root,'trading.bundle.js'),'utf8');
 for(const marker of ['fastOrderBar','futuresSizePercent','futuresLong','futuresChart'])assert.ok(trading.includes(marker),`Unwired futures control: ${marker}`);
 console.log(`HTML integrity passed: ${ids.length} unique IDs and ${paths.length} local assets (${root})`);
+
+const wallet=await readFile(resolve(root,'wallet.bundle.js'),'utf8');
+for(const marker of ['fundingDialog','fundingReceiveQR','fundingSubmit','fundingPaymentImport'])assert.ok(wallet.includes(marker),`Unwired funding control: ${marker}`);
+assert.ok((await stat(resolve(root,'funding.css'))).size>0,'Missing funding stylesheet');
