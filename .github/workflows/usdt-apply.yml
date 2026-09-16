@@ -35,18 +35,24 @@ jobs:
           npm run test:unit
           npm run build
           git diff --check
-      - name: Commit only the reviewed feature-branch changes
+      - name: Commit source files only within runner permissions
         run: |
           test "$GITHUB_REF" = "refs/heads/update/usdt-multichain"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          # GITHUB_TOKEN cannot modify workflow files. They remain unchanged here.
+          # The connected authorized GitHub action applies reviewed workflow edits separately.
+          git restore --source=HEAD --worktree -- .github/workflows
           git add -A
           python3 - <<'PY'
-          import json,os,subprocess
+          import hashlib,json,os,subprocess
           from pathlib import Path
-          allowed=set(json.loads(Path(os.environ['RUNNER_TEMP'],'usdt-source-manifest.json').read_text()))
+          manifest=json.loads(Path(os.environ['RUNNER_TEMP'],'usdt-source-manifest.json').read_text())
           changed=set(subprocess.check_output(['git','diff','--cached','--name-only'],text=True).splitlines())
-          extra=changed-allowed
-          assert all(p.startswith('usdt-stage/') or p in ['.github/workflows/usdt-bootstrap.yml','.github/workflows/usdt-apply.yml'] for p in extra),extra
+          assert not any(p.startswith('.github/workflows/') for p in changed)
+          assert all(p in manifest or p.startswith('usdt-stage/') for p in changed)
+          for p,digest in manifest.items():
+              if not p.startswith('.github/workflows/'):
+                  assert hashlib.sha256(Path(p).read_bytes()).hexdigest()==digest,p
           PY
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Implement reviewed eight-network USDT wallet and guarded transfer adapters'
           git push origin HEAD:refs/heads/update/usdt-multichain
