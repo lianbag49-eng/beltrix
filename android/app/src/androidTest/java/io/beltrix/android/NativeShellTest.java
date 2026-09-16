@@ -37,7 +37,7 @@ public class NativeShellTest {
     ActivityScenario<MainActivity> scenario;
     @Before public void start()throws Exception{
         Context c=InstrumentationRegistry.getInstrumentation().getTargetContext();
-        c.getSharedPreferences("MainActivity",Context.MODE_PRIVATE).edit().putBoolean("previewAcknowledged",true).commit();
+        c.getSharedPreferences(MainActivity.class.getName(),Context.MODE_PRIVATE).edit().putBoolean("previewAcknowledged",true).commit();
         Intents.init();
         Intents.intending(IntentMatchers.hasAction(Intent.ACTION_VIEW)).respondWith(new Instrumentation.ActivityResult(Activity.RESULT_CANCELED,null));
         Intents.intending(IntentMatchers.hasAction(Intent.ACTION_OPEN_DOCUMENT)).respondWith(new Instrumentation.ActivityResult(Activity.RESULT_CANCELED,null));
@@ -107,7 +107,7 @@ public class NativeShellTest {
         awaitText("Copy public details?");onView(withText("Copy public details?")).check(matches(isDisplayed()));onView(withText("Cancel")).perform(click());
     }
     @Test public void nativeBackClosesModalBeforePageNavigation()throws Exception{
-        openUsdt();scenario.onActivity(MainActivity::onBackPressed);waitFor("!document.getElementById('usdtDialog').open");
+        openUsdt();scenario.onActivity(a->a.getOnBackPressedDispatcher().onBackPressed());waitFor("!document.getElementById('usdtDialog').open");
         assertEquals("\"wallet\"",js("document.body.dataset.page"));
     }
     @Test public void webSettingsAndEndpointProtection()throws Exception{

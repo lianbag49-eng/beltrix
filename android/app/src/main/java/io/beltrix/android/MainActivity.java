@@ -1,7 +1,8 @@
 package io.beltrix.android;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
+import androidx.activity.ComponentActivity;
+import androidx.activity.OnBackPressedCallback;
 import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -57,7 +58,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /** Installable, non-custodial Android preview. There is deliberately no signing bridge. */
-public final class MainActivity extends Activity {
+public final class MainActivity extends ComponentActivity {
     private static final int PICK_IMAGE=101, SAVE_FILE=102;
     private final ExecutorService io=Executors.newSingleThreadExecutor();
     private WebView web;
@@ -153,7 +154,9 @@ public final class MainActivity extends Activity {
             });
         }else toast("Update Android System WebView for QR export and wallet handoff.");
         if(savedState==null||web.restoreState(savedState)==null)web.loadUrl(NavigationPolicy.HOME+"#wallet");
-        if(Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,this::handleBack);
+        getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){
+            @Override public void handleOnBackPressed(){handleBack();}
+        });
         if(!getPreferences(MODE_PRIVATE).getBoolean("previewAcknowledged",false)){
             nativeDialog=new AlertDialog.Builder(this).setTitle("BELTRIX Android preview")
                 .setMessage("This APK contains the reviewed web interface. Use public addresses for balances and receive QR.\n\nSigning is NOT built into this APK. Open BELTRIX in your wallet app for orders and sends. App and wallet-browser history are separate. Returning here does not confirm a transfer.\n\nNo seed phrase or private key is required. Real-device, funded transfer and independent security validation are still pending.")
@@ -162,6 +165,7 @@ public final class MainActivity extends Activity {
     }
     private WebResourceResponse blocked(int status){return new WebResourceResponse("text/plain","UTF-8",status,status==404?"Not found":"Blocked",Collections.singletonMap("Cache-Control","no-store"),new ByteArrayInputStream("Unavailable in Android preview".getBytes(StandardCharsets.UTF_8)));}
     private void respond(JavaScriptReplyProxy reply,String id,boolean ok,String value){
+        if(!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER))return;
         try{JSONObject out=new JSONObject().put("id",id).put("ok",ok).put(ok?"value":"error",value);reply.postMessage(out.toString());}catch(Exception ignored){/* Never replay an action after a document closes. */}
     }
     private void handleMessage(JSONObject o,JavaScriptReplyProxy reply)throws Exception{
@@ -262,7 +266,6 @@ public final class MainActivity extends Activity {
             if(web!=null&&web.canGoBack())web.goBack();else moveTaskToBack(true);
         });
     }
-    @Override public void onBackPressed(){handleBack();}
     @Override protected void onSaveInstanceState(Bundle out){if(web!=null)web.saveState(out);super.onSaveInstanceState(out);}
     @Override protected void onResume(){super.onResume();if(web!=null)web.onResume();/* Never reload or infer transaction success on return. */}
     @Override protected void onPause(){if(web!=null)web.onPause();super.onPause();}
