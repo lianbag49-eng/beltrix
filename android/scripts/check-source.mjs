@@ -1,0 +1,16 @@
+import {readFile} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const main=await readFile('android/app/src/main/java/io/beltrix/android/MainActivity.java','utf8');
+const xml=await readFile('android/app/src/main/AndroidManifest.xml','utf8');
+const js=await readFile('android/web/android-adapter.js','utf8');
+assert.ok(!main.includes('addJavascriptInterface'));
+assert.ok(main.includes('Collections.singleton(NavigationPolicy.ORIGIN)'));
+assert.ok(main.includes('if(!main||!NavigationPolicy.trustedOrigin'));
+assert.ok(main.includes('handler.cancel()'));
+assert.ok(main.includes('setWebContentsDebuggingEnabled(false)'));
+assert.ok(main.includes('setAllowFileAccess(false)')&&main.includes('setAllowContentAccess(false)'));
+assert.ok(!/uses-permission[^>]+(?:CAMERA|READ_MEDIA|READ_EXTERNAL|WRITE_EXTERNAL|QUERY_ALL_PACKAGES)/.test(xml));
+assert.ok(xml.includes('android:allowBackup="false"'));
+assert.ok(!js.includes('eth_sendTransaction')&&!js.includes('eth_sign')&&!js.includes('window.ethereum ='));
+assert.ok(js.includes('window.top !== window.self'));
+console.log('Android native origin, permissions, no-signing bridge and packaging source checks passed.');
