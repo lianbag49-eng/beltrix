@@ -33,6 +33,11 @@ jobs:
       - run: node web/tests/usdt-rpc-probe.mjs
       - run: npm run build
       - run: node web/tests/html-integrity.mjs
+      - name: Preserve metadata and browser build evidence outside Playwright output cleanup
+        run: |
+          mkdir -p validation-evidence
+          cp test-results/usdt-*.json validation-evidence/
+          tar -czf validation-evidence/browser-bundles.tar.gz web/trading.bundle.js web/wallet.bundle.js web/usdt.bundle.js
       - run: npx playwright install --with-deps chromium webkit
       - run: npx playwright test --config=web/playwright.config.cjs
       - run: npx playwright test --config=web/playwright.ios.config.cjs
@@ -45,6 +50,7 @@ jobs:
           path: |
             test-results/
             test-results-ios/
+            validation-evidence/
           retention-days: 7
       - uses: actions/upload-artifact@v4
         with:
