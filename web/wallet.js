@@ -1,3 +1,4 @@
+import {assertNoUsdtWrite,withWalletWriteLock} from './wallet-write-coordination.js';
 import QRCode from 'qrcode';
 import {erc20Abi,formatUnits,toHex,isAddress,decodeFunctionResult} from 'viem';
 import {address,amount,displayAmount,transferRequest,revokeRequest,assertReview,same,short,hashOK,csvCell,cleanText,mergeHistory} from './wallet-core.js';
@@ -29,7 +30,7 @@ function needed(sign=false){if(!s.account){showAccounts();return false}if(sign&&
 function snapshot(){return {chainId:s.net.chain.id,account:s.account,provider:s.provider,epoch:s.epoch,watchOnly:s.watchOnly};}
 function unchanged(epoch,account,chain){return s.epoch===epoch&&same(s.account,account)&&s.net.chain.id===chain;}
 function publicClient(){return readClient(s.net,s.watchOnly?null:s.provider);}
-function hasUncertain(){return journal.some(r=>r.chainId===s.net.chain.id&&same(r.account,s.account)&&['Preparing','Unknown'].includes(r.status));}
+function hasUncertain(){assertNoUsdtWrite(s.net.chain.id,s.account);return journal.some(r=>r.chainId===s.net.chain.id&&same(r.account,s.account)&&['Preparing','Unknown'].includes(r.status));}
 function currentJournal(){return journal.filter(r=>same(r.account,s.account)&&r.chainId===s.net.chain.id);}
 function clearAccountData(){s.epoch++;s.tokens=[];s.holdings=null;s.updated=0;s.loading=false;s.history=[];s.historyCursors={};s.historyErrors=[];s.historyLoaded=false;s.approvals=[];historyLoading=false;historyEpoch++;pending=null;renderHome();}
 function setAccount(account,watchOnly=true,name=''){
@@ -177,6 +178,10 @@ function showReview(review){
  on('wSignTransfer',submitReviewed);
 }
 async function submitReviewed(){
+ if(s.busy||!pending)return;
+ return withWalletWriteLock(pending.chainId,pending.account,()=>submitReviewedUnlocked());
+}
+async function submitReviewedUnlocked(){
  if(s.busy||!pending||!$('wReviewAck')?.checked)return;const review=pending;pending=null;s.busy=true;$('wSignTransfer').disabled=true;let record=null;
  try{
   assertReview(review,snapshot());await guard(review);if(hasUncertain())throw Error('Reconcile the previous unconfirmed submission first.');

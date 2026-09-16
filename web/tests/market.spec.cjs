@@ -1,6 +1,12 @@
 const {test,expect}=require('@playwright/test');
 test('market selection loads spot metadata, candles, and shows failures',async({page})=>{
  const requests=[];
+ // Book rendering is part of this test; never depend on an unmocked live socket.
+ await page.addInitScript(()=>{window.WebSocket=class{
+  constructor(){this.readyState=1;setTimeout(()=>this.onopen?.(),0);}
+  send(raw){const s=JSON.parse(raw).subscription;if(s?.type==='l2Book')this.timer=setInterval(()=>this.onmessage?.({data:JSON.stringify({channel:'l2Book',data:{coin:s.coin,time:Date.now(),levels:[[{px:'20',sz:'10'}],[{px:'22',sz:'12'}]]}})}),250);}
+  close(){clearInterval(this.timer);this.readyState=3;}
+ };});
  await page.route('https://api.hyperliquid.xyz/info',async route=>{const body=route.request().postDataJSON();requests.push(body);let data;
  if(body.type==='meta')data={universe:[{name:'ETH'},{name:'BTC'}]};
  else if(body.type==='spotMeta')data={tokens:[{name:'USDC',index:0},{name:'HYPE',index:150}],universe:[{name:'@107',tokens:[150,0]}]};

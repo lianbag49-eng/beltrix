@@ -17,3 +17,8 @@ console.log(`HTML integrity passed: ${ids.length} unique IDs and ${paths.length}
 const wallet=await readFile(resolve(root,'wallet.bundle.js'),'utf8');
 for(const marker of ['fundingDialog','fundingReceiveQR','fundingSubmit','fundingPaymentImport'])assert.ok(wallet.includes(marker),`Unwired funding control: ${marker}`);
 assert.ok((await stat(resolve(root,'funding.css'))).size>0,'Missing funding stylesheet');
+
+assert.ok(wallet.includes('walletUsdtEntry'),'Missing USDT entry point');
+for(const name of ['usdt.bundle.js','usdt.css'])assert.ok((await stat(resolve(root,name))).size>0,'Missing USDT asset: '+name);
+const usdt=await readFile(resolve(root,'usdt.bundle.js'),'utf8');
+for(const marker of ['usdtDialog','usdtRecipientAck','usdtSignAck','usdtNetwork','TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t','Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB'])assert.ok(usdt.includes(marker),'Unwired USDT feature: '+marker);
