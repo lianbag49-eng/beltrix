@@ -40,6 +40,21 @@ try{
   }
   if(width===390)await page.screenshot({path:'test-results/futures-v2-live-mobile.png',fullPage:true});
  }
+ // Read-only funding UI smoke: no account request, signature or transfer.
+ await page.setViewportSize({width:390,height:844});
+ await page.locator('#markets [data-funding=deposit]').click();
+ assert.ok(await page.locator('#fundingWalletChoice').isVisible());
+ await page.locator('#fundingTradingChoice').click();
+ assert.ok(await page.locator('#fundingReview').isDisabled());
+ assert.ok((await page.locator('#fundingBody').innerText()).includes('minimum 5 USDC'));
+ await page.locator('#fundingClose').click();
+ await page.locator('#markets [data-funding=withdraw]').click();
+ await page.locator('#fundingTradingChoice').click();
+ assert.ok(await page.locator('#fundingDestination').isVisible());
+ assert.ok(await page.locator('#fundingReview').isDisabled());
+ await page.screenshot({path:'test-results/funding-live-mobile.png',fullPage:true});
+ await page.locator('#fundingClose').click();
+ evidence.fundingUI={deposit:'passed',withdrawal:'passed',disconnectedSubmissionLock:'passed'};
  evidence.marketStatus=await page.locator('#marketStatus').innerText();assert.deepEqual(errors,[]);assert.deepEqual(submissions,[]);
  evidence.pageErrors=errors;evidence.exchangeSubmissions=submissions;console.log(JSON.stringify(evidence,null,2));
  await writeFile('test-results/futures-v2-live.json',JSON.stringify(evidence,null,2));
