@@ -18,7 +18,6 @@ const NAV_BUTTONS='.nav button[data-page], .bottom-nav button[data-page]';
 window.openPage=id=>{
  const target=document.getElementById(id);
  if(!target?.classList.contains('page'))return false;
- if(document.body.dataset.page===id&&target.classList.contains('active'))return true;
  document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===id));
  document.querySelectorAll(NAV_BUTTONS).forEach(x=>{x.classList.toggle('active',x.dataset.page===id);x.setAttribute('aria-current',x.dataset.page===id?'page':'false')});
  document.body.dataset.page=id;
