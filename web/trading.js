@@ -130,7 +130,8 @@ function table(target,headers,rows){const root=$(target);root.replaceChildren();
 function button(label,fn){const b=document.createElement('button');b.className='wallet';b.textContent=label;b.onclick=()=>{if(!busy)Promise.resolve(fn()).catch(e=>status(errorText(e)))};return b}
 function positionAction(pos,type){if(market?.network!==connectedNetwork||market.market?.value!==pos.coin)throw Error('Select '+pos.coin+' on the connected network first');$('tradeSide').value=Number(pos.szi)>0?'sell':'buy';$('tradeType').value=type;$('tradeSize').value=String(pos.szi).replace(/^-/,'');$('tradeReduce').checked=true;clearPending();updateTicket();$('tradeSize').scrollIntoView({block:'center',behavior:'smooth'});status(type==='Market'?'Review the reduce-only close order before signing.':'Enter the trigger price, then review.');}
 async function refresh(){
- if(!account||refreshing)return;if(market?.network!==connectedNetwork){clearAccount();return}
+ // Product changes briefly clear the selected market; never query the SDK with an undefined coin.
+ if(!account||refreshing||!market?.market?.value)return;if(market?.network!==connectedNetwork){clearAccount();return}
  refreshing=true;const user=account,version=epoch,coin=market?.market?.value;const valid=()=>version===epoch&&account===user&&market?.network===connectedNetwork&&coin===market?.market?.value;
  try{
  const jobs=[info.frontendOpenOrders({user}),info.clearinghouseState({user}),info.spotClearinghouseState({user}),info.userFills({user}),info.userFunding({user,startTime:Date.now()-7*86400000}),market?.market?.spot?Promise.resolve(null):info.activeAssetData({user,coin}),info.twapHistory({user})];
@@ -167,4 +168,3 @@ function renderTwaps(){
  table('tradeTwaps',['TWAP ID','Market','Side','Total size','Filled','Duration','Status','Actions'],rows);
  if(twapHistory===null){const note=document.createElement('p');note.className='muted';note.textContent='TWAP history unavailable. Accepted IDs saved in this browser are shown above.';$('tradeTwaps').append(note)}
 }
-

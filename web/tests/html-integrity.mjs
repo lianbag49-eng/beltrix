@@ -22,3 +22,6 @@ assert.ok(wallet.includes('walletUsdtEntry'),'Missing USDT entry point');
 for(const name of ['usdt.bundle.js','usdt.css'])assert.ok((await stat(resolve(root,name))).size>0,'Missing USDT asset: '+name);
 const usdt=await readFile(resolve(root,'usdt.bundle.js'),'utf8');
 for(const marker of ['usdtDialog','usdtRecipientAck','usdtSignAck','usdtNetwork','TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t','Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB'])assert.ok(usdt.includes(marker),'Unwired USDT feature: '+marker);
+
+assert.ok((await stat(resolve(root,'trade-simple.css'))).size>0,'Missing simple trading stylesheet');
+for(const marker of ['tradeLayoutMode','simpleOrderOptions','simpleMarketDetails','data-trade-product'])assert.ok(trading.includes(marker),'Unwired simple trading UI: '+marker);
