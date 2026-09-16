@@ -1,0 +1,52 @@
+name: Validate futures UX
+on:
+  push:
+    branches: [update/futures-ux-v2]
+  pull_request:
+    paths: ['web/**', 'package*.json', '.github/workflows/futures-validation.yml']
+permissions:
+  contents: read
+concurrency:
+  group: futures-validation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Package exact source snapshot for review
+        run: git archive --format=tar.gz -o source-snapshot.tar.gz HEAD
+      - uses: actions/upload-artifact@v4
+        with:
+          name: futures-source
+          path: source-snapshot.tar.gz
+          retention-days: 7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run test:unit
+      - run: npm run build
+      - run: node web/tests/html-integrity.mjs
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npx playwright test --config=web/playwright.config.cjs
+      - run: npx playwright test --config=web/playwright.ios.config.cjs
+      - run: node web/prepare-site.mjs --root
+      - run: node web/tests/html-integrity.mjs public
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: futures-validation-results
+          path: |
+            test-results/
+            test-results-ios/
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: futures-preview
+          path: public/
+          retention-days: 7
