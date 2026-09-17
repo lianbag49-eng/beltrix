@@ -29,8 +29,9 @@ if(paths.length && box){
 const files=[];
 for(const name of (await readdir(out)).sort()){const bytes=await readFile(out+'/'+name);files.push({name,bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex')});}
 let source = process.env.GITHUB_SHA; if(!source) {try{source=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim()}catch{source='local'}}
-const manifest={app:'BELTRIX Android Preview',version:'0.1.0-preview',source,packagedAt:new Date().toISOString(),mode:'packaged-read-only-with-external-wallet-handoff',files};
+const manifest={app:'BELTRIX Android Preview',version:'0.1.1-preview',source,packagedAt:new Date().toISOString(),mode:'packaged-read-only-with-external-wallet-handoff',files};
 await writeFile(out+'/android-build.json',JSON.stringify(manifest,null,2));
 await mkdir('android-evidence',{recursive:true});await writeFile('android-evidence/packaged-assets.json',JSON.stringify(manifest,null,2));
 assert.ok(files.some(f=>f.name==='usdt.bundle.js'));assert.ok(files.some(f=>f.name==='trade-simple.css'));
+assert.ok(files.some(f=>f.name==='chart-ui.js'));assert.ok(files.some(f=>f.name==='terminal-clean.css'));
 console.log('Packaged',files.length,'assets; source',source);

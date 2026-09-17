@@ -67,12 +67,12 @@ jobs:
       - name: Verify and prepare APK download
         run: |
           mkdir -p android-download
-          cp android/app/build/outputs/apk/debug/app-debug.apk android-download/BELTRIX-Android-0.1.0-preview.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs android-download/BELTRIX-Android-0.1.0-preview.apk | tee android-evidence/apk-signature.txt
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging android-download/BELTRIX-Android-0.1.0-preview.apk > android-evidence/apk-badging.txt
+          cp android/app/build/outputs/apk/debug/app-debug.apk android-download/BELTRIX-Android-0.1.1-preview.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs android-download/BELTRIX-Android-0.1.1-preview.apk | tee android-evidence/apk-signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging android-download/BELTRIX-Android-0.1.1-preview.apk > android-evidence/apk-badging.txt
           cp android/README.md android-download/RELEASE-NOTES.md
           cp android-evidence/packaged-assets.json android-download/APK-SOURCE.json
-          cd android-download && sha256sum BELTRIX-Android-0.1.0-preview.apk > SHA256SUMS.txt
+          cd android-download && sha256sum BELTRIX-Android-0.1.1-preview.apk > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
           name: beltrix-android-apk
@@ -108,13 +108,13 @@ jobs:
         with:
           name: beltrix-android-apk
           path: download
-      - name: Publish first Android preview without replacing an existing release
+      - name: Publish versioned Android preview without replacing an existing release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          if gh release view android-v0.1.0-preview >/dev/null 2>&1; then
+          if gh release view android-v0.1.1-preview >/dev/null 2>&1; then
             echo 'This preview version is already published; never replace its signed APK.'
             exit 0
           fi
-          gh release create android-v0.1.0-preview download/* --target "$GITHUB_SHA" --prerelease --title 'BELTRIX Android 0.1.0 Preview' --notes-file download/RELEASE-NOTES.md
+          gh release create android-v0.1.1-preview download/* --target "$GITHUB_SHA" --prerelease --title 'BELTRIX Android 0.1.1 Preview — Black Gold' --notes-file download/RELEASE-NOTES.md

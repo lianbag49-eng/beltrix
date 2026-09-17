@@ -8,7 +8,9 @@ test('Simple is the default; redundant selectors and generic review are not visi
  await setup(page);await expect($(page,'markets')).toHaveAttribute('data-trade-layout','simple');
  for(const id of ['marketType','tradeSide','tradeType','tradeReview'])await expect($(page,id)).toBeHidden();
  await expect(page.locator('[data-trade-product=perp]')).toHaveAttribute('aria-pressed','true');
- for(const id of ['tradeSize','marketNetwork','futuresLong','futuresShort','tradeModeNote','tradeStatus'])await expect($(page,id)).toBeVisible();
+ for(const id of ['tradeSize','marketNetwork','futuresLong','tradeStatus'])await expect($(page,id)).toBeVisible();
+ await expect($(page,'futuresShort')).toBeHidden();await expect($(page,'tradeModeNote')).toBeHidden();
+ await page.locator('#futuresExtra > summary').click();await expect($(page,'tradeModeNote')).toBeVisible();await page.locator('#futuresExtra > summary').click();
  await expect($(page,'simpleMarketDetails')).not.toHaveAttribute('open','');
  await expect($(page,'futuresExtra')).not.toHaveAttribute('open','');
  await expect($(page,'futuresLong')).toBeDisabled();await expect($(page,'futuresShort')).toBeDisabled();
@@ -44,7 +46,7 @@ test('both product reviews keep mainnet acknowledgement and never sign on a larg
   await page.locator(`[data-trade-product=${product}]`).click();
   await expect($(page,'marketSymbol')).toHaveValue(product==='spot'?'@0':'ETH');
   await page.locator('[data-fast-type=Market]').click();await $(page,'tradeSize').fill('1');
-  await expect($(page,'futuresShort')).toBeEnabled();await $(page,'futuresShort').click();
+  await page.locator('[data-gold-direction=sell]').click();await expect($(page,'futuresShort')).toBeEnabled();await $(page,'futuresShort').click();
   await expect($(page,'tradeDialog')).toBeVisible();await expect($(page,'tradeLiveAckField')).toBeVisible();await expect($(page,'tradeSubmit')).toBeDisabled();
   await expect($(page,'tradeLayoutMode')).toBeDisabled();await expect(page.locator('[data-trade-product=spot]')).toBeDisabled();
   expect(posted).toHaveLength(0);expect(await page.evaluate(()=>window.calls.filter(x=>/sign|send/i.test(x.method)))).toEqual([]);
@@ -70,7 +72,7 @@ test('special order options and price chosen from the book remain truthful',asyn
 
 test('Simple perps retains applied-leverage MAX sizing, Open/Close, and stale data locks',async({page})=>{
  await setup(page);await connect(page);await page.locator('[data-fast-type=Market]').click();await page.locator('[data-size-pct="50"]').click();
- await expect($(page,'tradeSize')).toHaveValue('4.9605');await page.locator('[data-fast-side=sell]').click();await expect($(page,'tradeSize')).toHaveValue('4.8939');
+ await expect($(page,'tradeSize')).toHaveValue('4.9605');await options(page);await page.locator('[data-gold-direction=sell]').click();await expect($(page,'tradeSize')).toHaveValue('4.8939');
  await page.locator('[data-intent=close]').click();await expect($(page,'tradeSize')).toHaveValue('2');await expect($(page,'tradeReduce')).toBeChecked();
  await page.locator('[data-intent=open]').click();await expect($(page,'tradeReduce')).not.toBeChecked();
  await page.evaluate(()=>window.stopBook=true);await expect($(page,'futuresLong')).toBeDisabled({timeout:10000});await expect(page.locator('[data-size-pct="50"]')).toBeDisabled();
@@ -115,4 +117,20 @@ test('changing products never submits an undefined coin to account refresh',asyn
   await expect($(page,'tradeStatus')).not.toContainText('Invalid type');
  }
  expect(posted).toHaveLength(0);
+});
+
+test('compact Close direction reverses the order side and never opens the wrong position',async({page})=>{
+ const {posted}=await setup(page);await connect(page);await page.locator('[data-fast-type=Market]').click();
+ await page.locator('[data-intent=close]').click();
+ await expect($(page,'tradeSide')).toHaveValue('sell');await expect($(page,'tradeReduce')).toBeChecked();
+ await expect($(page,'futuresLong')).toBeVisible();await expect($(page,'futuresLong')).toHaveText('Close Long');
+ await expect($(page,'futuresShort')).toBeHidden();
+ await page.locator('[data-gold-direction=sell]').click();
+ await expect($(page,'tradeSide')).toHaveValue('buy');await expect($(page,'futuresShort')).toBeVisible();
+ await expect($(page,'futuresShort')).toHaveText('Close Short');await expect($(page,'futuresShort')).toBeDisabled();
+ await page.locator('[data-gold-direction=buy]').click();await $(page,'futuresLong').click();
+ await expect($(page,'tradeDialog')).toBeVisible();await expect($(page,'tradeReduce')).toBeChecked();
+ expect(posted).toHaveLength(0);expect(await page.evaluate(()=>window.calls.filter(x=>/sign|send/i.test(x.method)))).toEqual([]);
+ await $(page,'tradeClose').click();await page.locator('[data-intent=open]').click();
+ await expect($(page,'tradeReduce')).not.toBeChecked();
 });
