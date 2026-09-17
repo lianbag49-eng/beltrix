@@ -1,37 +1,40 @@
-# BELTRIX Android 0.1.0 Preview
+# BELTRIX Android 0.1.1 Preview — Black / Gold
 
-**Android first; this is a test-signed preview, not a Play Store or production wallet release.**
+Android test-signed preview, not a Play Store or production wallet release.
 
-## What is in this APK
+## UI update
 
-- The existing Spot / Perps Simple and Advanced views, market data, order book, and practice tools packaged from the exact source revision. No additional trading-screen redesign and no iOS project changes.
-- Eight-network USDT receive/watch UI, address-only QR and existing payment-request options, public balances and limited on-chain history when the public providers respond.
-- Native PNG/CSV Save and Share, native clipboard confirmation, system image picker for QR imports, Android Back closes a dialog before changing pages, status/navigation/keyboard insets, and no reload on return from another app.
-- An explicit **Wallet** handoff to the BELTRIX public website inside OKX Wallet, MetaMask, TronLink or Phantom. These links only open a DApp; they contain no recipient, amount, private data, signing request or approval.
+The user approved a shared Spot-like Futures layout in Black / Gold. Both products now use a left order ticket, right price/quantity book, explicit direction tabs and a single primary review action. Futures keeps Open/Close and applied margin/leverage controls. Global navigation appears only at the bottom; Practice and Settings are available from More. The candle chart can fold or open in an expanded view, with VOL/RSI/MACD/MA/EMA/BOLL selection, period settings and visibility memory.
 
-## Important distinction: installation is not native wallet signing
+The APK packages the source revision and asset hashes in APK-SOURCE.json. Existing order/signature/nonce protections remain in the web frontend; this UI does not introduce new markets, Spot percentage sizing, attached/OCO TP/SL, or native signing. Market labels and real venue quote currencies remain authoritative over illustrative mockup text.
 
-The APK's embedded view has **no injected signing provider, WalletConnect session, seed phrase storage or custody keys**. It can watch public addresses and generate receive QR. It cannot sign a real order or send a transfer inside the embedded view. Use **Wallet** to open the public BELTRIX DApp in a supported wallet and connect there. Wallet availability and deep-link behavior depend on the installed wallet version and still require real-device acceptance.
+## What works inside the preview
 
-APK and wallet-browser storage are separate. Nothing copies a pending order/transfer into another app. Returning to the APK does not establish a connection, synchronize a transaction journal, or prove payment. The web DApp's existing confirmation, signing and unknown-submission protections still apply where the wallet provider actually runs. The Hyperliquid USDC funding route remains separate from same-network USDT transfers.
+Existing Spot/Futures Simple and Advanced views, market data, public-address watch/receive tools for the eight-network USDT module, receive QR, and limited on-chain history when public providers respond. Native PNG/CSV Save and Share, confirmed clipboard copy, user-selected PNG/JPEG/WebP QR image import, dialog-first Android Back and system/keyboard insets remain included. Public RPC failures are not represented as zero balances.
 
-Do not treat this as a self-contained wallet or an audited real-money app. Physical-device checks, external-wallet acceptance, funded end-to-end execution and an independent security audit remain outstanding. No real user signature or funds are used by CI. Public RPCs can rate-limit; a missing balance is not zero. There is no background transaction monitoring.
+## No in-APK signer
 
-## Install
+The embedded view has NO injected signing wallet, WalletConnect session, seed phrase or private key storage. It cannot sign real orders or sends. The native Wallet menu opens the canonical BELTRIX public DApp in an external wallet browser (OKX, MetaMask, TronLink or Phantom); users connect and review there. These browse links carry no recipient, amount, approval or signing request. Actual installed-wallet acceptance remains a physical-device test, not a CI claim.
 
-Minimum OS: Android 8.0 (API 26), with an up-to-date Android System WebView. The build targets API 36. Download the APK from the repository's Android preview release and open it on Android. Android may require permission for that browser/file app to install unknown apps. This is not an iOS package.
+APK and wallet-browser data/journals are separate. Returning does not establish a wallet connection, synchronize a transfer or prove payment. No automatic resend, secret transfer or background transaction monitoring is added. Hyperliquid USDC funding remains separate from same-network USDT transfers.
 
-The first version uses a generated **debug/test signing key** and application ID `io.beltrix.preview`. A permanent privately managed signing key has not been configured. Subsequent builds may require uninstall/reinstall until release signing is established; uninstall erases this preview's local data. Do not erase transaction records while an outcome is unresolved. No keystore or private signing material is published.
+## Install and upgrade limitations
 
-## Security and build notes
+Version 0.1.1-preview, application ID io.beltrix.preview, versionCode 2, min Android 8/API26, target API36. Keep Android System WebView current. Download the new APK from its versioned GitHub prerelease and open it on Android; Android may ask to authorize installation for the browser/file app.
 
-Only bundled assets at `https://appassets.androidplatform.net/assets/beltrix/index.html` can use the native message endpoint. Exact origin and main-frame checks apply, with no `addJavascriptInterface`, no file/universal file access, no mixed content, and no TLS-error bypass. External pages never load in the privileged WebView; HTTPS links require confirmation. Native wallet schemes are constructed only for fixed DApp browsing destinations. Cleartext traffic and backups are disabled. No storage, camera, microphone, contacts or broad app-discovery permission is requested.
+This is DEBUG/TEST signing. A permanent privately managed signing key is not configured. CI builds may have different test certificates, so installation over 0.1.0 may fail and require uninstall/reinstall. Uninstall erases the preview's local records/settings. Preserve any needed records first and do not erase unresolved transaction evidence. No private signing key or keystore is published. Version 0.1.0 remains available and is not overwritten.
 
-QR input uses a user-selected image, checks PNG/JPEG/WebP magic and dimensions, caps size, and copies to a narrow app-private cache provider. Export accepts only bounded PNG and UTF-8 CSV. Exports require native consent and use the system document/share chooser. There is no arbitrary native file path, native HTTP proxy, address-signing method or transaction API. Explicit exchange/broadcast endpoints are blocked inside the preview.
+## Security and validation scope
 
-The existing frontend dependency audit gate is retained, including previously documented moderate Node-only transitive findings. This is not a zero-vulnerability claim. The native bridge/browser adapter, packaging manifest, Java unit tests and Android emulator suite are separate checks; see the Actions run and attached validation artifacts for actual results. Emulator tests are not physical-device tests.
+Only packaged content at https://appassets.androidplatform.net/assets/beltrix/index.html receives native capabilities, guarded by exact origin and main-frame checks. No addJavascriptInterface, file/universal-file access, mixed content, TLS bypass or broad storage/camera/contact permissions. Native exports are bounded PNG/UTF-8 CSV and require consent; QR imports are size/format/dimension checked and copied through a narrow private-cache FileProvider. External sites do not load inside the privileged view. There is no native signing, native HTTP proxy or arbitrary file-path method.
 
-Build with JDK 17, Gradle 8.13, Android platform 36 and Build Tools 35.0.0:
+CI runs the existing frontend unit tests/audit/build, adapter browser tests, Java policy tests, Android 15 emulator tests with actual native QR file IO, lint and APK signature/metadata verification. Consult the actual run/artifacts for results; this document does not assert tests passed. External-wallet intents and document-picker selections are mocked, not live wallet execution. Existing non-fatal lint and moderate Node dependency findings are not a zero-vulnerability claim.
+
+Physical-device testing, installed-wallet handoff acceptance, funded execution, permanent release signing and independent security audit remain outstanding. Use as a UI/watch/receive preview, not an audited self-contained money wallet. No iOS build is included.
+
+## Build
+
+JDK17, Gradle8.13, Android platform36 and build-tools35.0.0:
 
 ```sh
 npm ci
@@ -40,18 +43,7 @@ node web/prepare-site.mjs --root
 node android/scripts/check-source.mjs
 node android/scripts/package-web.mjs
 gradle -p android testDebugUnitTest lintDebug assembleDebug
-# With a running Android device/emulator:
 gradle -p android connectedDebugAndroidTest
 ```
 
-The generated asset directory is not committed; APK-SOURCE.json binds bundled files to the source SHA and SHA-256 digests. SHA256SUMS.txt identifies the exact published APK. A published preview version is never overwritten.
-
-Primary integration references reviewed for this implementation:
-- Android bundled WebView content: https://developer.android.com/develop/ui/views/layout/webapps/load-local-content
-- Native-bridge origin risks: https://developer.android.com/privacy-and-security/risks/insecure-webview-native-bridges
-- Android WebView message API: https://developer.android.com/reference/androidx/webkit/WebViewCompat
-- AGP/Gradle/JDK compatibility: https://developer.android.com/build/releases/agp-8-13-0-release-notes
-- OKX DApp browse link reference in the official TRON adapter project: https://github.com/tronprotocol/tronwallet-adapter/issues/47
-- TronLink browse links: https://docs.tronlink.org/mobile/deeplink/
-- Phantom browse links: https://docs.phantom.com/phantom-deeplinks/other-methods/browse
-- MetaMask DApp links: https://metamask.github.io/metamask-deeplinks/
+Bundled asset digests and source SHA are recorded in APK-SOURCE.json and android-build.json. SHA256SUMS.txt identifies the exact published APK. Published versions are never intentionally overwritten.

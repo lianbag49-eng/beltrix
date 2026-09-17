@@ -28,7 +28,7 @@ jobs:
         if: always()
         run: |
           mkdir -p chart-evidence/previews
-          cp test-results/clean-*.png chart-evidence/previews/ 2>/dev/null || true
+          cp test-results/clean-*.png test-results/gold-*.png chart-evidence/previews/ 2>/dev/null || true
       - run: npx playwright test --config=web/playwright.config.cjs
       - uses: actions/upload-artifact@v4
         if: always()

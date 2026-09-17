@@ -91,6 +91,6 @@
     }
     return 'unhandled';
   };
-  Object.defineProperty(window, 'BeltrixNative', {value: Object.freeze({back, publicPage, version: '0.1.0-preview'}), configurable: false});
+  Object.defineProperty(window, 'BeltrixNative', {value: Object.freeze({back, publicPage, version: '0.1.1-preview'}), configurable: false});
   document.documentElement.dataset.androidPreview = '1';
 })();
