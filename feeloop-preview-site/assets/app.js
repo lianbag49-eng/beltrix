@@ -1,284 +1,312 @@
-
 const FeeLoop = (() => {
-  const EXCHANGES = [
-    {id:"bingx",name:"BingX",short:"BX",status:"Partner API pending",maker:"TBD",taker:"TBD",cashback:"TBD",tone:"blue",
-      description:"Exchange connector profile prepared for referral UID verification, eligible-fee sync and payout reconciliation."},
-    {id:"toobit",name:"Toobit",short:"TB",status:"Partner API pending",maker:"TBD",taker:"TBD",cashback:"TBD",tone:"blue",
-      description:"One-level referral adapter reserved. Final cashback rules will be published only after partner terms are verified."},
-    {id:"bitget",name:"Bitget",short:"BG",status:"Partner API pending",maker:"TBD",taker:"TBD",cashback:"TBD",tone:"blue",
-      description:"Designed for UID mapping, source-level commission records and auditable cashback ledger entries."},
-    {id:"coinw",name:"CoinW",short:"CW",status:"Partner API pending",maker:"TBD",taker:"TBD",cashback:"TBD",tone:"blue",
-      description:"Connector slot prepared for commission ingestion, deduplication and manual payout workflow."}
-  ];
+  const $=(q,r=document)=>r.querySelector(q);
+  const $$=(q,r=document)=>[...r.querySelectorAll(q)];
+  const query=k=>new URLSearchParams(location.search).get(k);
+  const money=v=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:2}).format(Number(v)||0);
+  const pct=v=>v===null||v===undefined?"Pending":Number(v).toFixed(2)+"%";
+  const escapeHtml=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
 
-  const EVENTS = [];
+  let publicConfig={exchanges:[],blockedCountries:["KR"],environment:"staging"};
+  let currentUser=null;
 
-  const DEMO_LEDGER = [];
+  async function api(url,opts={}){
+    const init={credentials:"same-origin",headers:{"Content-Type":"application/json",...(opts.headers||{})},...opts};
+    if(init.body && typeof init.body!=="string") init.body=JSON.stringify(init.body);
+    const res=await fetch(url,init);
+    let data={};
+    try{data=await res.json()}catch{}
+    if(!res.ok){
+      const err=new Error(data.error||"REQUEST_FAILED");
+      err.status=res.status;err.data=data;throw err;
+    }
+    return data;
+  }
 
-  const PAYOUTS = [];
+  function toast(msg,type=""){
+    let el=$("#toast");
+    if(!el){el=document.createElement("div");el.id="toast";el.className="toast";document.body.appendChild(el)}
+    el.textContent=msg;el.className="toast show"+(type?" "+type:"");
+    setTimeout(()=>el.className="toast",2600);
+  }
 
-  const fmtMoney = v => new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(Number(v)||0);
-  const $ = (q,root=document) => root.querySelector(q);
-  const $$ = (q,root=document) => [...root.querySelectorAll(q)];
-  const query = key => new URLSearchParams(location.search).get(key);
-  const escapeHtml = s => String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+  function errorText(err){
+    const map={
+      INVALID_CREDENTIALS:"Invalid email or password.",
+      PASSWORD_TOO_SHORT:"Use at least 10 characters for your password.",
+      COUNTRY_REQUIRED:"Select your country or region.",
+      COUNTRY_NOT_SUPPORTED:"FEELOOP is not available for customer onboarding in this jurisdiction.",
+      TERMS_REQUIRED:"You must accept the Terms and Privacy Policy.",
+      EMAIL_EXISTS:"An account already exists with this email.",
+      AUTH_REQUIRED:"Please log in to continue.",
+      ADMIN_REQUIRED:"Administrator access is required.",
+      UID_ALREADY_REGISTERED:"This UID is already registered.",
+      INVALID_UID:"Enter a valid exchange UID.",
+      INSUFFICIENT_AVAILABLE_BALANCE:"The requested amount exceeds your available cashback.",
+      PAYMENT_REFERENCE_REQUIRED:"A transfer ID or TXID is required before marking a payout paid.",
+      INVALID_MFA_CODE:"The authentication code is invalid.",
+      MFA_SESSION_EXPIRED:"The MFA login session expired. Please log in again."
+    };
+    return map[err.message]||err.message.replaceAll("_"," ").toLowerCase().replace(/^./,c=>c.toUpperCase());
+  }
 
-  function toast(msg){
-    let t=$("#toast");
-    if(!t){t=document.createElement("div");t.id="toast";t.className="toast";document.body.appendChild(t)}
-    t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200);
+  async function loadPublicConfig(){
+    try{publicConfig=await api("/api/public/config")}catch{
+      publicConfig={exchanges:[
+        {id:"bingx",name:"BingX",short:"BX",cashbackRate:null,makerFee:null,takerFee:null,connectorStatus:"pending"},
+        {id:"toobit",name:"Toobit",short:"TB",cashbackRate:null,makerFee:null,takerFee:null,connectorStatus:"pending"},
+        {id:"bitget",name:"Bitget",short:"BG",cashbackRate:null,makerFee:null,takerFee:null,connectorStatus:"pending"},
+        {id:"coinw",name:"CoinW",short:"CW",cashbackRate:null,makerFee:null,takerFee:null,connectorStatus:"pending"}
+      ],blockedCountries:["KR"],environment:"offline"};
+    }
+  }
+
+  async function loadMe(){
+    try{currentUser=(await api("/api/auth/me")).user;return currentUser}catch{currentUser=null;return null}
   }
 
   function exchangeCard(e){
-    return `<a class="card exchange-card" href="exchange.html?id=${e.id}">
-      <div class="ex-head"><div class="exlogo">${e.short}</div><span class="pill ${e.tone}">${e.status}</span></div>
-      <div style="margin-top:18px"><h3>${e.name}</h3><div class="big-number">${e.cashback === "TBD" ? "Rate pending" : e.cashback}</div>
-      <p class="meta">${e.description}</p></div>
+    const rate=e.cashbackRate===null||e.cashbackRate===undefined?"Rate pending":pct(e.cashbackRate);
+    return `<a class="card exchange-card" href="exchange.html?id=${encodeURIComponent(e.id)}">
+      <div class="ex-head"><div class="exlogo">${escapeHtml(e.short||e.name.slice(0,2).toUpperCase())}</div><span class="pill blue">${escapeHtml(e.connectorStatus||"pending")}</span></div>
+      <div style="margin-top:18px"><h3>${escapeHtml(e.name)}</h3><div class="big-number">${rate}</div>
+      <p class="meta">Direct referral UID mapping, source-level fee records and cashback payout tracking.</p></div>
       <div class="feature-list">
-        <div class="feature"><i></i> Direct referral UID verification</div>
-        <div class="feature"><i></i> Source-level fee ledger</div>
-        <div class="feature"><i></i> Manual payout in V1</div>
+        <div class="feature"><i></i> UID connection workflow</div>
+        <div class="feature"><i></i> Deduplicated fee ledger</div>
+        <div class="feature"><i></i> Manual payout V1</div>
       </div>
     </a>`;
   }
 
   function eventCard(e){
-    return `<a class="card event-card" href="event.html?id=${e.id}" data-exchange="${e.exchangeId}" data-type="${e.type.toLowerCase()}">
-      <div class="tag">${escapeHtml(e.exchange)} · ${escapeHtml(e.type)}</div>
+    const ex=publicConfig.exchanges.find(x=>x.id===e.exchangeId);
+    return `<a class="card event-card" href="event.html?id=${encodeURIComponent(e.id)}" data-exchange="${escapeHtml(e.exchangeId)}" data-type="${escapeHtml(String(e.type||"").toLowerCase())}">
+      <div class="tag">${escapeHtml(ex?.name||e.exchangeId)} · ${escapeHtml(e.type||"Promotion")}</div>
       <h3 style="margin-top:10px">${escapeHtml(e.title)}</h3>
-      <p class="meta">${escapeHtml(e.summary)}</p>
-      <div class="event-meta"><span class="pill blue">${escapeHtml(e.status)}</span><span class="pill gray">${escapeHtml(e.period)}</span></div>
-      <div class="spacer"></div>
-      <div class="feature">View event detail <span aria-hidden="true">→</span></div>
+      <p class="meta">${escapeHtml(e.summary||"")}</p>
+      <div class="event-meta">${e.startAt?`<span class="pill gray">${escapeHtml(new Date(e.startAt).toLocaleDateString())}</span>`:""}${e.reward?`<span class="pill blue">${escapeHtml(e.reward)}</span>`:""}</div>
+      <div class="spacer"></div><div class="feature">View event detail →</div>
     </a>`;
   }
 
-  function renderCards(){
-    $$("[data-exchanges]").forEach(el=>el.innerHTML=EXCHANGES.map(exchangeCard).join(""));
-    $$("[data-events]").forEach(el=>{
-      const limit=Number(el.dataset.limit||0);
-      el.innerHTML=(limit?EVENTS.slice(0,limit):EVENTS).map(eventCard).join("");
+  function renderExchangeCards(){
+    $$("[data-exchanges]").forEach(el=>{
+      el.innerHTML=publicConfig.exchanges.length?publicConfig.exchanges.map(exchangeCard).join(""):'<div class="panel empty" style="grid-column:1/-1">No exchanges configured yet.</div>';
     });
   }
 
+  async function renderEvents(targetSelector="[data-events]",limit=0){
+    let events=[];
+    try{events=(await api("/api/events")).events||[]}catch{}
+    $$(targetSelector).forEach(el=>{
+      const list=limit?events.slice(0,limit):events;
+      el.innerHTML=list.length?list.map(eventCard).join(""):'<div class="panel empty" style="grid-column:1/-1">No verified exchange events are published yet.</div>';
+    });
+    return events;
+  }
+
   function initFeeLab(){
-    const form=$("#feeLab"); if(!form) return;
+    const form=$("#feeLab");if(!form)return;
     const calc=()=>{
       const vol=Math.max(0,Number($("#vol")?.value||0));
       const fee=Math.max(0,Number($("#fee")?.value||0))/100;
       const rebate=Math.min(100,Math.max(0,Number($("#rebate")?.value||0)))/100;
       const eligible=Math.min(100,Math.max(0,Number($("#eligible")?.value||0)))/100;
-      const fees=vol*fee*eligible, cash=fees*rebate, cost=fees-cash;
-      if($("#cash")) $("#cash").textContent=fmtMoney(cash);
-      if($("#fees")) $("#fees").textContent=fmtMoney(fees);
-      if($("#cost")) $("#cost").textContent=fmtMoney(cost);
-      if($("#saved")) $("#saved").textContent=(rebate*100).toFixed(2)+"%";
+      const fees=vol*fee*eligible,cash=fees*rebate,cost=fees-cash;
+      if($("#cash"))$("#cash").textContent=money(cash);
+      if($("#fees"))$("#fees").textContent=money(fees);
+      if($("#cost"))$("#cost").textContent=money(cost);
+      if($("#saved"))$("#saved").textContent=(rebate*100).toFixed(2)+"%";
     };
-    form.addEventListener("input",calc);form.addEventListener("submit",e=>{e.preventDefault();calc();toast("Estimate updated")});calc();
+    form.addEventListener("input",calc);form.addEventListener("submit",e=>{e.preventDefault();calc()});calc();
   }
 
-  function initLogin(){
-    const form=$("#loginForm"); if(!form) return;
-    form.addEventListener("submit",e=>{
-      e.preventDefault();
-      const email=$("#email").value.trim().toLowerCase();
-      const password=$("#password").value;
-      const isAdmin=email==="admin@feeloop.app" && password==="Admin123!";
-      const isUser=email==="demo@feeloop.app" && password==="Demo123!";
-      if(!isAdmin&&!isUser){$("#loginError").textContent="Use the demo credentials shown below.";return}
-      localStorage.removeItem("feeloop_session");
-      const nextSession={email,role:isAdmin?"admin":"user",created:Date.now(),version:5};
-      localStorage.setItem("feeloop_session",JSON.stringify(nextSession));
-      location.replace(isAdmin?"admin.html":"dashboard.html");
-    });
-    $("[data-fill-login]").forEach(btn=>btn.addEventListener("click",()=>{
-      localStorage.removeItem("feeloop_session");
-      const type=btn.dataset.fillLogin;
-      $("#email").value=type==="admin"?"admin@feeloop.app":"demo@feeloop.app";
-      $("#password").value=type==="admin"?"Admin123!":"Demo123!";
-      $("#loginError").textContent="";
-    }));
-  }
-
-  function session(){try{return JSON.parse(localStorage.getItem("feeloop_session")||"null")}catch{return null}}
-  function enforceAuth(){
-    const required=document.body.dataset.authRole;
-    const s=session();
-    if(required==="user"){
-      const validMember=s && s.role==="user" && s.email==="demo@feeloop.app";
-      const validAdminPreview=s && s.role==="admin" && s.email==="admin@feeloop.app" && query("preview")==="1";
-      if(!validMember && !validAdminPreview){
-        if(s && s.role==="admin") location.replace("admin.html");
-        else {
-          localStorage.removeItem("feeloop_session");
-          location.replace("login.html?switch=member");
+  async function initLogin(){
+    const form=$("#loginForm");if(!form)return;
+    const me=await loadMe();
+    if(me){location.replace(me.role==="admin"?"admin.html":"dashboard.html");return}
+    let mfaToken=null;
+    form.addEventListener("submit",async e=>{
+      e.preventDefault();$("#loginError").textContent="";
+      try{
+        if(mfaToken){
+          const data=await api("/api/auth/mfa-login",{method:"POST",body:{mfaToken,code:$("#mfaCode").value.trim()}});
+          location.replace(data.user.role==="admin"?"admin.html":"dashboard.html");return;
         }
-        return false;
-      }
-    }
-    if(required==="admin"){
-      const valid=s && s.role==="admin" && s.email==="admin@feeloop.app";
-      if(!valid){
-        if(s && s.role==="user") location.replace("dashboard.html");
-        else {
-          localStorage.removeItem("feeloop_session");
-          location.replace("login.html?switch=admin");
+        const data=await api("/api/auth/login",{method:"POST",body:{email:$("#email").value.trim(),password:$("#password").value}});
+        if(data.mfaRequired){
+          mfaToken=data.mfaToken;$("#loginFields").style.display="none";$("#mfaFields").style.display="grid";$("#loginButton").textContent="Verify code";$("#mfaCode").focus();return;
         }
-        return false;
-      }
-    }
-    return true;
-  }
-  function logout(){localStorage.removeItem("feeloop_session");location.href="index.html"}
-
-  function initDashboard(){
-    const root=$("#dashboardLedger"); if(!root) return;
-    root.innerHTML=DEMO_LEDGER.length
-      ? DEMO_LEDGER.map(r=>`<tr><td>${r.date}</td><td><strong>${r.exchange}</strong></td><td>${r.uid}</td><td>${fmtMoney(r.fee)}</td><td>${fmtMoney(r.cashback)}</td><td><span class="status ${r.status==="Paid"?"paid":r.status==="Pending"?"processing":"pending"}">${r.status}</span></td></tr>`).join("")
-      : '<tr><td colspan="6"><div class="empty">No fee records yet. Data will appear after an exchange UID is connected and verified.</div></td></tr>';
-    const eventEl=$("#dashboardEvents");if(eventEl) eventEl.innerHTML=EVENTS.length
-      ? EVENTS.slice(0,3).map(e=>`<a href="event.html?id=${e.id}" class="step"><div class="step-no">↗</div><div><b>${e.exchange}</b><div class="meta">${e.title}</div></div></a>`).join("")
-      : '<div class="empty">No verified exchange events yet.</div>';
-    const modal=$("#payoutModal"), open=$("#requestPayout"), close=$("#closePayout"), form=$("#payoutForm");
-    open?.addEventListener("click",()=>modal.classList.add("open"));
-    close?.addEventListener("click",()=>modal.classList.remove("open"));
-    modal?.addEventListener("click",e=>{if(e.target===modal)modal.classList.remove("open")});
-    form?.addEventListener("submit",e=>{
-      e.preventDefault();
-      const amount=Number($("#payoutAmount").value||0);
-      if(amount<=0||amount>437.13){toast("Enter an amount up to $437.13");return}
-      modal.classList.remove("open");toast("Payout backend is not connected yet");
+        location.replace(data.user.role==="admin"?"admin.html":"dashboard.html");
+      }catch(err){$("#loginError").textContent=errorText(err)}
     });
   }
 
-  function initEvents(){
-    const grid=$("#eventGrid"); if(!grid) return;
-    const render=()=>{grid.innerHTML=EVENTS.length?EVENTS.map(eventCard).join(""):'<div class="panel empty" style="grid-column:1/-1">No verified exchange events are published yet.</div>'};
-    render();
+  function countryOptions(){
+    const countries=[
+      ["US","United States"],["CA","Canada"],["MX","Mexico"],["BR","Brazil"],["AR","Argentina"],["CL","Chile"],["CO","Colombia"],
+      ["GB","United Kingdom"],["IE","Ireland"],["FR","France"],["DE","Germany"],["ES","Spain"],["PT","Portugal"],["IT","Italy"],["NL","Netherlands"],["BE","Belgium"],["CH","Switzerland"],["AT","Austria"],["SE","Sweden"],["NO","Norway"],["DK","Denmark"],["FI","Finland"],["PL","Poland"],["CZ","Czechia"],["RO","Romania"],["GR","Greece"],
+      ["AE","United Arab Emirates"],["SA","Saudi Arabia"],["TR","Türkiye"],["IL","Israel"],["ZA","South Africa"],["NG","Nigeria"],["KE","Kenya"],
+      ["IN","India"],["PK","Pakistan"],["BD","Bangladesh"],["SG","Singapore"],["MY","Malaysia"],["TH","Thailand"],["VN","Vietnam"],["PH","Philippines"],["ID","Indonesia"],["JP","Japan"],["TW","Taiwan"],["HK","Hong Kong"],["AU","Australia"],["NZ","New Zealand"]
+    ];
+    return '<option value="">Select country / region</option>'+countries.filter(([c])=>!publicConfig.blockedCountries.includes(c)).map(([c,n])=>`<option value="${c}">${n}</option>`).join("");
+  }
+
+  async function initSignup(){
+    const form=$("#signupForm");if(!form)return;
+    const me=await loadMe();if(me){location.replace(me.role==="admin"?"admin.html":"dashboard.html");return}
+    $("#country").innerHTML=countryOptions();
+    form.addEventListener("submit",async e=>{
+      e.preventDefault();$("#signupError").textContent="";
+      try{
+        const data=await api("/api/auth/register",{method:"POST",body:{
+          email:$("#email").value.trim(),password:$("#password").value,country:$("#country").value,acceptTerms:$("#acceptTerms").checked
+        }});
+        location.replace(data.user.role==="admin"?"admin.html":"dashboard.html");
+      }catch(err){$("#signupError").textContent=errorText(err)}
+    });
+  }
+
+  async function logout(){
+    try{await api("/api/auth/logout",{method:"POST"})}catch{}
+    location.replace("index.html");
+  }
+
+  async function guard(role,{allowAdminPreview=false}={}){
+    const me=await loadMe();
+    if(!me){location.replace("login.html");return null}
+    if(role==="admin"&&me.role!=="admin"){location.replace("dashboard.html");return null}
+    if(role==="user"&&me.role==="admin"&&!(allowAdminPreview&&query("preview")==="1")){location.replace("admin.html");return null}
+    return me;
+  }
+
+  function setText(id,val){const el=$(id);if(el)el.textContent=val}
+  function statusPill(status){
+    const cls=status==="paid"||status==="verified"?"paid":status==="rejected"?"rejected":status==="processing"?"processing":"pending";
+    return `<span class="status ${cls}">${escapeHtml(status)}</span>`;
+  }
+
+  async function initDashboard(){
+    if(!$("#dashboardRoot"))return;
+    const me=await guard("user",{allowAdminPreview:true});if(!me)return;
+    const isPreview=me.role==="admin"&&query("preview")==="1";
+    if(isPreview){$("#backToAdmin").style.display="inline-flex";$("#previewModePill").textContent="Operator preview";$("#previewModePill").className="pill warn";}
+    let data={summary:{totalFees:0,cashback:0,available:0,reserved:0,paid:0},ledger:[],accounts:[],payouts:[],events:[]};
+    if(!isPreview){try{data=await api("/api/dashboard")}catch(err){toast(errorText(err));}}
+    setText("#metricAvailable",money(data.summary.available));setText("#metricFees",money(data.summary.totalFees));setText("#metricCashback",money(data.summary.cashback));setText("#metricPaid",money(data.summary.paid));
+    $("#dashboardLedger").innerHTML=data.ledger.length?data.ledger.map(r=>`<tr><td>${escapeHtml(new Date(r.occurredAt).toLocaleDateString())}</td><td><strong>${escapeHtml(publicConfig.exchanges.find(x=>x.id===r.exchangeId)?.name||r.exchangeId)}</strong></td><td>${escapeHtml(r.sourceRecordId)}</td><td>${money(r.feeAmount)}</td><td>${money(r.cashbackAmount)}</td><td>${statusPill(r.status)}</td></tr>`).join(""):'<tr><td colspan="6"><div class="empty">No fee records yet.</div></td></tr>';
+    $("#uidList").innerHTML=data.accounts.length?data.accounts.map(a=>`<div class="step"><div class="exlogo">${escapeHtml(publicConfig.exchanges.find(x=>x.id===a.exchangeId)?.short||a.exchangeId.slice(0,2).toUpperCase())}</div><div style="flex:1"><b>${escapeHtml(publicConfig.exchanges.find(x=>x.id===a.exchangeId)?.name||a.exchangeId)}</b><div class="meta">${escapeHtml(a.uid)} · ${escapeHtml(a.status)}</div></div><button class="btn sm danger" data-remove-uid="${a.id}">Remove</button></div>`).join(""):'<div class="empty">No exchange UID is connected yet.</div>';
+    $$("[data-remove-uid]").forEach(b=>b.addEventListener("click",async()=>{if(!confirm("Remove this UID connection?"))return;try{await api("/api/exchange-accounts/"+b.dataset.removeUid,{method:"DELETE"});toast("UID removed");initDashboard()}catch(e){toast(errorText(e))}}));
+    $("#payoutHistory").innerHTML=data.payouts.length?data.payouts.map(p=>`<tr><td>${escapeHtml(new Date(p.createdAt).toLocaleDateString())}</td><td>${money(p.amount)}</td><td>${escapeHtml(p.method)}</td><td>${statusPill(p.status)}</td><td>${escapeHtml(p.paymentRef||"—")}</td></tr>`).join(""):'<tr><td colspan="5"><div class="empty">No payout requests yet.</div></td></tr>';
+    $("#dashboardEvents").innerHTML=data.events.length?data.events.map(e=>`<a href="event.html?id=${encodeURIComponent(e.id)}" class="step"><div class="step-no">↗</div><div><b>${escapeHtml(e.title)}</b><div class="meta">${escapeHtml(publicConfig.exchanges.find(x=>x.id===e.exchangeId)?.name||e.exchangeId)}</div></div></a>`).join(""):'<div class="empty">No verified exchange events yet.</div>';
+
+    $("#uidExchange").innerHTML=publicConfig.exchanges.map(x=>`<option value="${x.id}">${escapeHtml(x.name)}</option>`).join("");
+    $("[data-open-uid]")?.addEventListener("click",()=>$("#uidModal").classList.add("open"));
+    $("#closeUid")?.addEventListener("click",()=>$("#uidModal").classList.remove("open"));
+    $("#uidForm")?.addEventListener("submit",async e=>{
+      e.preventDefault();try{await api("/api/exchange-accounts",{method:"POST",body:{exchangeId:$("#uidExchange").value,uid:$("#uidValue").value.trim()}});$("#uidModal").classList.remove("open");toast("UID submitted for verification");setTimeout(()=>location.reload(),500)}catch(err){toast(errorText(err))}
+    });
+
+    $$("[data-open-payout]").forEach(b=>b.addEventListener("click",()=>{$("#payoutAmount").max=data.summary.available;$("#payoutAvailable").textContent=money(data.summary.available);$("#payoutModal").classList.add("open")}));
+    $("#closePayout")?.addEventListener("click",()=>$("#payoutModal").classList.remove("open"));
+    $("#payoutForm")?.addEventListener("submit",async e=>{
+      e.preventDefault();try{await api("/api/payouts",{method:"POST",body:{amount:Number($("#payoutAmount").value),method:$("#payoutMethod").value,destination:$("#payoutDestination").value.trim()}});$("#payoutModal").classList.remove("open");toast("Payout request created");setTimeout(()=>location.reload(),500)}catch(err){toast(errorText(err))}
+    });
+  }
+
+  async function initEventsPage(){
+    const grid=$("#eventGrid");if(!grid)return;
+    const events=(await renderEvents("#eventGrid"))||[];
     $$(".chip[data-filter]").forEach(btn=>btn.addEventListener("click",()=>{
       $$(".chip[data-filter]").forEach(x=>x.classList.remove("active"));btn.classList.add("active");
-      const f=btn.dataset.filter;
-      $$(".event-card",grid).forEach(card=>card.style.display=(f==="all"||card.dataset.exchange===f||card.dataset.type.includes(f))?"flex":"none");
+      const f=btn.dataset.filter;$$(".event-card",grid).forEach(card=>card.style.display=(f==="all"||card.dataset.exchange===f||card.dataset.type.includes(f))?"flex":"none");
     }));
-    $("#eventSearch")?.addEventListener("input",e=>{
-      const q=e.target.value.toLowerCase().trim();
-      $$(".event-card",grid).forEach(card=>card.style.display=card.textContent.toLowerCase().includes(q)?"flex":"none");
-    });
+    $("#eventSearch")?.addEventListener("input",e=>{const q=e.target.value.toLowerCase();$$(".event-card",grid).forEach(card=>card.style.display=card.textContent.toLowerCase().includes(q)?"flex":"none")});
   }
 
-  function initEventDetail(){
-    const root=$("#eventDetail"); if(!root) return;
-    const e=EVENTS.find(x=>x.id===query("id"));
-    if(!e){
-      document.title='Event — FEELOOP';
-      root.innerHTML='<div class="page-hero"><div class="eyebrow">Event Center</div><h1>No event selected.</h1><p class="lead">Verified exchange campaigns will appear here after an official source is connected.</p><div style="margin-top:22px"><a class="btn" href="events.html">← Back to event center</a></div></div>';
-      return;
-    }
-    document.title=`${e.title} — FEELOOP`;
-    root.innerHTML=`
-      <div class="page-hero">
-        <div class="eyebrow">${escapeHtml(e.exchange)} · ${escapeHtml(e.type)}</div>
-        <h1>${escapeHtml(e.title)}</h1>
-        <p class="lead">${escapeHtml(e.summary)}</p>
-      </div>
-      <div class="exchange-hero">
-        <div class="panel hero-panel">
-          <div class="section-head" style="margin-bottom:16px"><div><h3>Event overview</h3><div class="meta">Structured for verified source ingestion later.</div></div><span class="pill blue">${escapeHtml(e.status)}</span></div>
-          <div class="scorebox">
-            <div class="score"><div class="meta">Period</div><b>${escapeHtml(e.period)}</b></div>
-            <div class="score"><div class="meta">Reward</div><b>${escapeHtml(e.reward)}</b></div>
-            <div class="score"><div class="meta">Region</div><b>${escapeHtml(e.region)}</b></div>
-            <div class="score"><div class="meta">Source status</div><b>Awaiting partner feed</b></div>
-          </div>
-          <div class="notice" style="margin-top:18px"><b>UI preview only.</b> This is not an active exchange promotion. FEELOOP will only publish verified dates, rewards and eligibility when an official source is connected.</div>
-        </div>
-        <div class="panel hero-panel">
-          <h3>Participation flow</h3><div class="flow" style="margin-top:14px">
-            ${e.steps.map((s,i)=>`<div class="step"><div class="step-no">${i+1}</div><div>${escapeHtml(s)}</div></div>`).join("")}
-          </div>
-        </div>
-      </div>
-      <div class="grid-2" style="margin-top:18px">
-        <div class="panel"><h3>Terms & controls</h3><div class="feature-list">${e.terms.map(t=>`<div class="feature"><i></i>${escapeHtml(t)}</div>`).join("")}</div></div>
-        <div class="panel"><h3>Related exchange</h3><p class="meta">See connector status, UID flow and future fee settings.</p><div style="margin-top:16px"><a class="btn primary" href="exchange.html?id=${e.exchangeId}">Open ${escapeHtml(e.exchange)} page</a></div></div>
-      </div>`;
+  async function initEventDetail(){
+    const root=$("#eventDetail");if(!root)return;
+    try{
+      const e=(await api("/api/events/"+encodeURIComponent(query("id")||""))).event;
+      const ex=publicConfig.exchanges.find(x=>x.id===e.exchangeId);
+      document.title=e.title+" — FEELOOP";
+      root.innerHTML=`<div class="page-hero"><div class="eyebrow">${escapeHtml(ex?.name||e.exchangeId)} · ${escapeHtml(e.type||"Promotion")}</div><h1>${escapeHtml(e.title)}</h1><p class="lead">${escapeHtml(e.summary||"")}</p></div>
+      <div class="exchange-hero"><div class="panel hero-panel"><h3>Event overview</h3><div class="scorebox">
+        <div class="score"><div class="meta">Start</div><b>${e.startAt?escapeHtml(new Date(e.startAt).toLocaleString()):"TBA"}</b></div>
+        <div class="score"><div class="meta">End</div><b>${e.endAt?escapeHtml(new Date(e.endAt).toLocaleString()):"TBA"}</b></div>
+        <div class="score"><div class="meta">Reward</div><b>${escapeHtml(e.reward||"See official terms")}</b></div>
+        <div class="score"><div class="meta">Region</div><b>${escapeHtml(e.region||"Eligible regions only")}</b></div>
+      </div>${e.sourceUrl?`<div style="margin-top:18px"><a class="btn primary" href="${escapeHtml(e.sourceUrl)}" target="_blank" rel="noopener">Official source ↗</a></div>`:""}</div>
+      <div class="panel hero-panel"><h3>FEELOOP source policy</h3><div class="feature-list"><div class="feature"><i></i> Exchange/source identity stored with the event</div><div class="feature"><i></i> Region eligibility shown separately</div><div class="feature"><i></i> Official terms take precedence over summaries</div></div></div></div>`;
+    }catch{root.innerHTML='<div class="page-hero"><div class="eyebrow">Event Center</div><h1>Event unavailable.</h1><p class="lead">This event may not be published yet.</p><div style="margin-top:20px"><a class="btn" href="events.html">← Back to events</a></div></div>'}
   }
 
-  function initExchangeDetail(){
+  async function initExchangeDetail(){
     const root=$("#exchangeDetail");if(!root)return;
-    const e=EXCHANGES.find(x=>x.id===query("id"))||EXCHANGES[0];
-    const related=EVENTS.filter(x=>x.exchangeId===e.id);
-    document.title=`${e.name} Cashback — FEELOOP`;
-    root.innerHTML=`
-      <div class="page-hero">
-        <div class="eyebrow">Exchange profile</div><h1>${e.name} on FEELOOP</h1>
-        <p class="lead">${escapeHtml(e.description)}</p>
-      </div>
-      <div class="exchange-hero">
-        <div class="panel hero-panel">
-          <div class="ex-head"><div class="exlogo" style="width:62px;height:62px;font-size:20px">${e.short}</div><span class="pill blue">${e.status}</span></div>
-          <div class="scorebox">
-            <div class="score"><div class="meta">Cashback rate</div><b>${e.cashback}</b></div>
-            <div class="score"><div class="meta">Maker fee</div><b>${e.maker}</b></div>
-            <div class="score"><div class="meta">Taker fee</div><b>${e.taker}</b></div>
-            <div class="score"><div class="meta">Settlement</div><b>Manual payout V1</b></div>
-          </div>
-          <div class="notice" style="margin-top:18px">Final referral link, cashback rate and fee values remain unpublished until the partner account and API terms are verified.</div>
-        </div>
-        <div class="panel hero-panel">
-          <h3>Connection flow</h3>
-          <div class="flow" style="margin-top:14px">
-            <div class="step"><div class="step-no">1</div><div><b>Join through FEELOOP</b><div class="meta">Official referral route will appear here.</div></div></div>
-            <div class="step"><div class="step-no">2</div><div><b>Submit UID</b><div class="meta">Direct referral relationship is checked.</div></div></div>
-            <div class="step"><div class="step-no">3</div><div><b>Sync eligible fees</b><div class="meta">Affiliate API records are deduplicated.</div></div></div>
-            <div class="step"><div class="step-no">4</div><div><b>Request payout</b><div class="meta">Operator verifies and records payment receipt.</div></div></div>
-          </div>
-        </div>
-      </div>
-      <div class="section">
-        <div class="section-head"><div><div class="eyebrow">Events</div><h2>${e.name} event center</h2></div><a class="btn" href="events.html">All events</a></div>
-        <div class="grid-3">${related.length?related.map(eventCard).join(""):`<div class="panel empty">No verified events yet.</div>`}</div>
-      </div>`;
+    const e=publicConfig.exchanges.find(x=>x.id===query("id"))||publicConfig.exchanges[0];
+    if(!e){root.innerHTML='<div class="page-hero"><h1>No exchange configured.</h1></div>';return}
+    let events=[];try{events=(await api("/api/events")).events.filter(x=>x.exchangeId===e.id)}catch{}
+    root.innerHTML=`<div class="page-hero"><div class="eyebrow">Exchange profile</div><h1>${escapeHtml(e.name)} on FEELOOP</h1><p class="lead">Partner connection status, UID flow, fee settings and verified exchange events.</p></div>
+      <div class="exchange-hero"><div class="panel hero-panel"><div class="ex-head"><div class="exlogo" style="width:62px;height:62px;font-size:20px">${escapeHtml(e.short||e.name.slice(0,2))}</div><span class="pill blue">${escapeHtml(e.connectorStatus||"pending")}</span></div>
+      <div class="scorebox"><div class="score"><div class="meta">Cashback rate</div><b>${pct(e.cashbackRate)}</b></div><div class="score"><div class="meta">Maker fee</div><b>${pct(e.makerFee)}</b></div><div class="score"><div class="meta">Taker fee</div><b>${pct(e.takerFee)}</b></div><div class="score"><div class="meta">Settlement</div><b>Manual payout V1</b></div></div>
+      <div class="notice" style="margin-top:18px">Values remain pending until verified partner terms are configured.</div></div>
+      <div class="panel hero-panel"><h3>Connection flow</h3><div class="flow" style="margin-top:14px"><div class="step"><div class="step-no">1</div><div><b>Create your FEELOOP account</b></div></div><div class="step"><div class="step-no">2</div><div><b>Submit your exchange UID</b></div></div><div class="step"><div class="step-no">3</div><div><b>UID is verified against partner data</b></div></div><div class="step"><div class="step-no">4</div><div><b>Eligible fees enter your ledger</b></div></div></div><div style="margin-top:16px"><a class="btn primary" href="dashboard.html">Connect UID</a></div></div></div>
+      <div class="section"><div class="section-head"><div><div class="eyebrow">Events</div><h2>${escapeHtml(e.name)} event center</h2></div><a class="btn" href="events.html">All events</a></div><div class="grid-3">${events.length?events.map(eventCard).join(""):'<div class="panel empty">No verified events yet.</div>'}</div></div>`;
   }
 
-  function payoutState(){
-    try{return JSON.parse(localStorage.getItem("feeloop_payouts")||"null")||PAYOUTS}catch{return PAYOUTS}
-  }
-  function savePayouts(v){localStorage.setItem("feeloop_payouts",JSON.stringify(v))}
-  function initAdmin(){
-    const tbody=$("#payoutQueue");if(!tbody)return;
-    const draw=()=>{
-      const rows=payoutState();
-      tbody.innerHTML=rows.length
-        ? rows.map(p=>`<tr><td><strong>${p.id}</strong><div class="meta">${p.created}</div></td><td>${p.user}</td><td>${p.exchange}</td><td>${p.method}</td><td><strong>${fmtMoney(p.amount)}</strong></td><td><span class="status ${p.status}">${p.status}</span></td><td><div class="action-row">${p.status!=="paid"?`<button class="btn sm" data-payout="${p.id}" data-action="processing">Process</button><button class="btn sm primary" data-payout="${p.id}" data-action="paid">Mark paid</button>`:""}${p.status==="pending"?`<button class="btn sm danger" data-payout="${p.id}" data-action="rejected">Reject</button>`:""}</div></td></tr>`).join("")
-        : '<tr><td colspan="7"><div class="empty">No payout requests yet.</div></td></tr>';
-      $$("[data-payout]").forEach(btn=>btn.addEventListener("click",()=>{
-        const list=payoutState();const row=list.find(x=>x.id===btn.dataset.payout);if(row){row.status=btn.dataset.action;savePayouts(list);draw();toast(`${row.id} updated to ${row.status}`)}
-      }));
-    };draw();
+  async function initAdmin(){
+    if(!$("#adminRoot"))return;
+    const me=await guard("admin");if(!me)return;
+    let data;try{data=await api("/api/admin/overview")}catch(err){toast(errorText(err));return}
+    setText("#adminPending",String(data.metrics.pendingPayouts));setText("#adminPendingAmount",money(data.metrics.pendingAmount));setText("#adminUsers",String(data.metrics.users));setText("#adminCommission",money(data.metrics.grossCommission));setText("#adminMargin",money(data.metrics.platformMargin));
 
-    const ex=$("#adminExchanges");if(ex) ex.innerHTML=EXCHANGES.map(e=>`<div class="card"><div class="ex-head"><div class="exlogo">${e.short}</div><span class="pill blue">API pending</span></div><h3 style="margin-top:14px">${e.name}</h3><div class="form-grid" style="margin-top:12px"><div class="field"><label>Cashback %<input placeholder="Pending" disabled></label></div><div class="field"><label>Partner commission %<input placeholder="Pending" disabled></label></div></div><div class="meta" style="margin-top:12px">Unlock after verified partner credentials are available.</div></div>`).join("");
-    const cms=$("#adminEvents");if(cms) cms.innerHTML=EVENTS.length
-      ? EVENTS.map(e=>`<tr><td><strong>${e.exchange}</strong></td><td>${e.title}</td><td>${e.type}</td><td><span class="status processing">draft</span></td><td><a class="btn sm" href="event.html?id=${e.id}">View</a></td></tr>`).join("")
-      : '<tr><td colspan="5"><div class="empty">No event records yet.</div></td></tr>';
+    $("#payoutQueue").innerHTML=data.payouts.length?data.payouts.map(p=>`<tr><td><strong>${escapeHtml(p.id)}</strong><div class="meta">${escapeHtml(new Date(p.createdAt).toLocaleString())}</div></td><td>${escapeHtml(p.userId)}</td><td>${escapeHtml(p.method)}</td><td><strong>${money(p.amount)}</strong></td><td>${statusPill(p.status)}</td><td><div class="action-row">${p.status!=="paid"&&p.status!=="rejected"?`<button class="btn sm" data-payout="${p.id}" data-action="processing">Process</button><button class="btn sm primary" data-payout="${p.id}" data-action="paid">Mark paid</button><button class="btn sm danger" data-payout="${p.id}" data-action="rejected">Reject</button>`:""}</div></td></tr>`).join(""):'<tr><td colspan="6"><div class="empty">No payout requests yet.</div></td></tr>';
+    $$("[data-payout]").forEach(btn=>btn.addEventListener("click",async()=>{
+      const body={status:btn.dataset.action};if(body.status==="paid"){const ref=prompt("Transfer ID / TXID");if(!ref)return;body.paymentRef=ref}
+      try{await api("/api/admin/payouts/"+btn.dataset.payout,{method:"PATCH",body});toast("Payout updated");setTimeout(()=>location.reload(),400)}catch(err){toast(errorText(err))}
+    }));
+
+    $("#uidQueue").innerHTML=data.exchangeAccounts.length?data.exchangeAccounts.map(a=>`<tr><td>${escapeHtml(a.userId)}</td><td><strong>${escapeHtml(publicConfig.exchanges.find(x=>x.id===a.exchangeId)?.name||a.exchangeId)}</strong></td><td>${escapeHtml(a.uid)}</td><td>${statusPill(a.status)}</td><td><div class="action-row"><button class="btn sm primary" data-uid-action="verified" data-id="${a.id}">Verify</button><button class="btn sm danger" data-uid-action="rejected" data-id="${a.id}">Reject</button></div></td></tr>`).join(""):'<tr><td colspan="5"><div class="empty">No UID verification requests yet.</div></td></tr>';
+    $$("[data-uid-action]").forEach(btn=>btn.addEventListener("click",async()=>{try{await api("/api/admin/exchange-accounts/"+btn.dataset.id,{method:"PATCH",body:{status:btn.dataset.uidAction}});toast("UID status updated");setTimeout(()=>location.reload(),400)}catch(err){toast(errorText(err))}}));
+
+    $("#adminExchanges").innerHTML=data.exchanges.map(e=>`<form class="card exchange-config" data-exchange-form="${e.id}"><div class="ex-head"><div class="exlogo">${escapeHtml(e.short||e.id.slice(0,2).toUpperCase())}</div><span class="pill blue">${escapeHtml(e.connectorStatus||"pending")}</span></div><h3 style="margin-top:14px">${escapeHtml(e.name)}</h3>
+      <div class="form-grid" style="margin-top:12px"><div class="field"><label>Cashback %</label><input name="cashbackRate" type="number" step=".01" value="${e.cashbackRate??""}"></div><div class="field"><label>Partner commission %</label><input name="partnerCommissionRate" type="number" step=".01" value="${e.partnerCommissionRate??""}"></div><div class="field"><label>Maker fee %</label><input name="makerFee" type="number" step=".001" value="${e.makerFee??""}"></div><div class="field"><label>Taker fee %</label><input name="takerFee" type="number" step=".001" value="${e.takerFee??""}"></div></div><button class="btn sm primary" style="margin-top:12px">Save settings</button></form>`).join("");
+    $$("[data-exchange-form]").forEach(form=>form.addEventListener("submit",async e=>{e.preventDefault();const fd=new FormData(form);const body=Object.fromEntries(fd.entries());try{await api("/api/admin/exchanges/"+form.dataset.exchangeForm,{method:"PATCH",body});toast("Exchange settings saved")}catch(err){toast(errorText(err))}}));
+
+    $("#adminEvents").innerHTML=data.events.length?data.events.map(e=>`<tr><td><strong>${escapeHtml(publicConfig.exchanges.find(x=>x.id===e.exchangeId)?.name||e.exchangeId)}</strong></td><td>${escapeHtml(e.title)}</td><td>${escapeHtml(e.type)}</td><td>${statusPill(e.status)}</td><td><button class="btn sm" data-event-toggle="${e.id}" data-next="${e.status==="published"?"draft":"published"}">${e.status==="published"?"Unpublish":"Publish"}</button></td></tr>`).join(""):'<tr><td colspan="5"><div class="empty">No event records yet.</div></td></tr>';
+    $$("[data-event-toggle]").forEach(btn=>btn.addEventListener("click",async()=>{try{await api("/api/admin/events/"+btn.dataset.eventToggle,{method:"PATCH",body:{status:btn.dataset.next}});toast("Event status updated");setTimeout(()=>location.reload(),400)}catch(err){toast(errorText(err))}}));
+
+    $("#auditList").innerHTML=data.audit.length?data.audit.slice(0,25).map(a=>`<div class="step"><div class="step-no">•</div><div><b>${escapeHtml(a.action)}</b><div class="meta">${escapeHtml(new Date(a.createdAt).toLocaleString())} · ${escapeHtml(a.target||"system")}</div></div></div>`).join(""):'<div class="empty">No audit records yet.</div>';
+
+    $("#newEvent")?.addEventListener("click",()=>{$("#eventModal").classList.add("open");$("#eventExchange").innerHTML=publicConfig.exchanges.map(e=>`<option value="${e.id}">${escapeHtml(e.name)}</option>`).join("")});
+    $("#closeEvent")?.addEventListener("click",()=>$("#eventModal").classList.remove("open"));
+    $("#eventForm")?.addEventListener("submit",async e=>{e.preventDefault();const fd=new FormData(e.currentTarget);const body=Object.fromEntries(fd.entries());try{await api("/api/admin/events",{method:"POST",body});$("#eventModal").classList.remove("open");toast("Event created");setTimeout(()=>location.reload(),400)}catch(err){toast(errorText(err))}});
+
+    $("#setupMfa")?.addEventListener("click",async()=>{try{const r=await api("/api/auth/mfa/setup",{method:"POST"});$("#mfaSecret").textContent=r.secret;$("#mfaUri").textContent=r.otpauthUri;$("#mfaSetup").style.display="block"}catch(err){toast(errorText(err))}});
+    $("#enableMfa")?.addEventListener("click",async()=>{try{await api("/api/auth/mfa/enable",{method:"POST",body:{code:$("#mfaEnableCode").value.trim()}});toast("MFA enabled");$("#mfaSetup").style.display="none"}catch(err){toast(errorText(err))}});
   }
 
-  function initOperatorPreview(){
-    const s=session();
-    const preview=s && s.role==="admin" && s.email==="admin@feeloop.app" && query("preview")==="1";
-    if(!preview) return;
-    const back=$("#backToAdmin");
-    if(back) back.style.display="inline-flex";
-    const pill=$("#previewModePill");
-    if(pill){pill.textContent="Operator preview";pill.className="pill warn";}
+  async function initForgot(){
+    const form=$("#forgotForm");if(!form)return;
+    form.addEventListener("submit",async e=>{e.preventDefault();try{await api("/api/auth/password-reset/request",{method:"POST",body:{email:$("#email").value.trim()}});$("#forgotResult").textContent="If the account exists, a reset message will be sent when the email provider is connected."}catch(err){$("#forgotResult").textContent=errorText(err)}})
   }
 
-  function bindGlobal(){
-    if(!enforceAuth()) return;
-    renderCards();initFeeLab();initLogin();initDashboard();initEvents();initEventDetail();initExchangeDetail();initAdmin();initOperatorPreview();
+  async function bind(){
+    await loadPublicConfig();
+    renderExchangeCards();
+    initFeeLab();
+    await initLogin();
+    await initSignup();
+    await initDashboard();
+    await initEventsPage();
+    await initEventDetail();
+    await initExchangeDetail();
+    await initAdmin();
+    initForgot();
+    await renderEvents("[data-events]",3);
     $$("[data-logout]").forEach(x=>x.addEventListener("click",logout));
     const y=$("#year");if(y)y.textContent=new Date().getFullYear();
   }
-  return {bindGlobal,fmtMoney,toast,EXCHANGES,EVENTS};
+  return {bind,api,toast,money};
 })();
-document.addEventListener("DOMContentLoaded",FeeLoop.bindGlobal);
+document.addEventListener("DOMContentLoaded",FeeLoop.bind);
