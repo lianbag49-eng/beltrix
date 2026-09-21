@@ -4,7 +4,7 @@
 <div class="sidebar-layout">
   <aside class="sidebar">
     <div class="side-brand"><a class="brand" href="index.html"><span class="mark"></span><span>FEE<span class="word-grad">LOOP</span></span></a></div>
-    <nav class="side-nav"><a class="active" href="dashboard.html">⌂ <span>Overview</span></a><a href="exchanges.html">◇ <span>Exchanges</span></a><a href="events.html">✦ <span>Events</span></a><button id="requestPayout">↗ <span>Request payout</span></button></nav>
+    <nav class="side-nav"><a class="active" href="dashboard.html">⌂ <span>Overview</span></a><a href="exchanges.html">◇ <span>Exchanges</span></a><a href="events.html">✦ <span>Events</span></a><button data-open-payout>↗ <span>Request payout</span></button></nav>
     <div class="side-foot"><button class="btn sm" data-logout>Log out</button></div>
   </aside>
   <main class="app-main">
@@ -17,7 +17,7 @@
       <div class="card metric"><div class="meta">Paid out</div><div class="value">$276.72</div><div class="delta">1 completed payout</div></div>
 
       <section class="card span-3">
-        <div class="section-head"><div><h3>Cashback ledger</h3><div class="meta">Source-level records will sync from partner APIs.</div></div><button class="btn sm" id="requestPayout">Request payout</button></div>
+        <div class="section-head"><div><h3>Cashback ledger</h3><div class="meta">Source-level records will sync from partner APIs.</div></div><button class="btn sm" data-open-payout>Request payout</button></div>
         <div class="table-wrap"><table><thead><tr><th>Date</th><th>Exchange</th><th>UID</th><th>Eligible fee</th><th>Cashback</th><th>Status</th></tr></thead><tbody id="dashboardLedger"></tbody></table></div>
       </section>
 
