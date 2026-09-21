@@ -136,10 +136,14 @@ const FeeLoop = (() => {
     const required=document.body.dataset.authRole;
     const s=session();
     if(required==="user"){
-      const valid=s && s.role==="user" && s.email==="demo@feeloop.app";
-      if(!valid){
-        localStorage.removeItem("feeloop_session");
-        location.replace("login.html?switch=member");
+      const validMember=s && s.role==="user" && s.email==="demo@feeloop.app";
+      const validAdminPreview=s && s.role==="admin" && s.email==="admin@feeloop.app" && query("preview")==="1";
+      if(!validMember && !validAdminPreview){
+        if(s && s.role==="admin") location.replace("admin.html");
+        else {
+          localStorage.removeItem("feeloop_session");
+          location.replace("login.html?switch=member");
+        }
         return false;
       }
     }
@@ -277,9 +281,19 @@ const FeeLoop = (() => {
     const cms=$("#adminEvents");if(cms) cms.innerHTML=EVENTS.map(e=>`<tr><td><strong>${e.exchange}</strong></td><td>${e.title}</td><td>${e.type}</td><td><span class="status processing">preview</span></td><td><a class="btn sm" href="event.html?id=${e.id}">View</a></td></tr>`).join("");
   }
 
+  function initOperatorPreview(){
+    const s=session();
+    const preview=s && s.role==="admin" && s.email==="admin@feeloop.app" && query("preview")==="1";
+    if(!preview) return;
+    const back=$("#backToAdmin");
+    if(back) back.style.display="inline-flex";
+    const pill=$("#previewModePill");
+    if(pill){pill.textContent="Operator preview";pill.className="pill warn";}
+  }
+
   function bindGlobal(){
     if(!enforceAuth()) return;
-    renderCards();initFeeLab();initLogin();initDashboard();initEvents();initEventDetail();initExchangeDetail();initAdmin();
+    renderCards();initFeeLab();initLogin();initDashboard();initEvents();initEventDetail();initExchangeDetail();initAdmin();initOperatorPreview();
     $$("[data-logout]").forEach(x=>x.addEventListener("click",logout));
     const y=$("#year");if(y)y.textContent=new Date().getFullYear();
   }
