@@ -24,7 +24,8 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
 const APP_ENV = process.env.APP_ENV || "staging";
 const COOKIE_NAME = "feeloop_session";
 const COOKIE_SECURE = process.env.COOKIE_SECURE !== "false";
-const BLOCKED_COUNTRIES = new Set((process.env.BLOCKED_COUNTRIES || "KR").split(",").map(v=>v.trim().toUpperCase()).filter(Boolean));\nconst ADMIN_BOOTSTRAP_HASH = "073f3b223eaea762cf26d12aaf9ef0a47b5897121e62a6ba4e98d190e713f090";
+const BLOCKED_COUNTRIES = new Set((process.env.BLOCKED_COUNTRIES || "KR").split(",").map(v=>v.trim().toUpperCase()).filter(Boolean));
+const ADMIN_BOOTSTRAP_HASH = "073f3b223eaea762cf26d12aaf9ef0a47b5897121e62a6ba4e98d190e713f090";
 
 const EXCHANGE_SEED = [
   {id:"bingx",name:"BingX",short:"BX",cashbackRate:null,partnerCommissionRate:null,makerFee:null,takerFee:null,connectorStatus:"pending",enabled:true},
