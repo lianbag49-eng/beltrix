@@ -18,13 +18,13 @@ const PORT = Number(process.env.PORT || 3000);
 const PUBLIC_DIR = path.resolve(__dirname, "../feeloop-preview-site");
 const DATA_FILE = process.env.DATA_FILE || "/tmp/feeloop-state.json";
 const DATABASE_URL = process.env.DATABASE_URL || "";
-const JWT_SECRET = process.env.JWT_SECRET || "replace-me-before-production";
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(48).toString("hex");
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "admin@feeloop.app").trim().toLowerCase();
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
 const APP_ENV = process.env.APP_ENV || "staging";
 const COOKIE_NAME = "feeloop_session";
 const COOKIE_SECURE = process.env.COOKIE_SECURE !== "false";
-const BLOCKED_COUNTRIES = new Set((process.env.BLOCKED_COUNTRIES || "KR").split(",").map(v=>v.trim().toUpperCase()).filter(Boolean));
+const BLOCKED_COUNTRIES = new Set((process.env.BLOCKED_COUNTRIES || "KR").split(",").map(v=>v.trim().toUpperCase()).filter(Boolean));\nconst ADMIN_BOOTSTRAP_HASH = "073f3b223eaea762cf26d12aaf9ef0a47b5897121e62a6ba4e98d190e713f090";
 
 const EXCHANGE_SEED = [
   {id:"bingx",name:"BingX",short:"BX",cashbackRate:null,partnerCommissionRate:null,makerFee:null,takerFee:null,connectorStatus:"pending",enabled:true},
@@ -205,6 +205,26 @@ app.get("/api/public/config",(req,res)=>{
     blockedCountries:[...BLOCKED_COUNTRIES],
     registrationOpen:true
   });
+});
+
+app.get("/api/auth/bootstrap-status",(req,res)=>{
+  res.json({adminExists:state.users.some(u=>u.role==="admin")});
+});
+
+app.post("/api/auth/bootstrap-admin",async(req,res)=>{
+  if(state.users.some(u=>u.role==="admin")) return res.status(410).json({error:"ADMIN_ALREADY_CONFIGURED"});
+  const phraseHash=crypto.createHash("sha256").update(String(req.body.bootstrapPhrase||"")).digest("hex");
+  const a=Buffer.from(phraseHash), b=Buffer.from(ADMIN_BOOTSTRAP_HASH);
+  if(a.length!==b.length || !crypto.timingSafeEqual(a,b)) return res.status(403).json({error:"INVALID_BOOTSTRAP_PHRASE"});
+  const email=cleanEmail(req.body.email);
+  const password=String(req.body.password||"");
+  if(!email || !/^\\S+@\\S+\\.\\S+$/.test(email)) return res.status(400).json({error:"INVALID_EMAIL"});
+  if(password.length<12) return res.status(400).json({error:"PASSWORD_TOO_SHORT"});
+  const passwordHash=await bcrypt.hash(password,12);
+  const user={id:id("usr"),email,passwordHash,role:"admin",country:"",emailVerified:true,mfaEnabled:false,mfaSecret:null,createdAt:now(),updatedAt:now()};
+  await mutate(async()=>{state.users.push(user);audit(user,"ADMIN_BOOTSTRAPPED",user.id,{email});});
+  setAuthCookie(res,user);
+  res.status(201).json({user:publicUser(user)});
 });
 
 app.post("/api/auth/register",async(req,res)=>{
