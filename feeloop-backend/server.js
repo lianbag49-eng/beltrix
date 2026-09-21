@@ -312,6 +312,7 @@ app.post("/api/auth/password-reset/confirm",async(req,res)=>{
 
 app.post("/api/auth/mfa/setup",requireAuth,async(req,res)=>{
   if(req.user.role!=="admin") return res.status(403).json({error:"ADMIN_ONLY"});
+  if(req.user.mfaEnabled) return res.status(409).json({error:"MFA_ALREADY_ENABLED"});
   const secret=authenticator.generateSecret();
   req.user.mfaPendingSecret=secret;
   await saveState();
