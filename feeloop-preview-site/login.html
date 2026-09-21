@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Login — FEELOOP</title><link rel="stylesheet" href="assets/style.css"></head>
+<body>
+<div class="auth-wrap">
+  <section class="auth-visual">
+    <a class="brand" href="index.html"><span class="mark"></span><span>FEE<span class="word-grad">LOOP</span></span></a>
+    <div class="auth-copy"><div class="eyebrow">Member access</div><h1>One account.<br><span class="word-grad">Every fee record.</span></h1><p class="lead">Connect eligible exchange UIDs, track cashback and keep payout receipts in one clean workspace.</p></div>
+    <div class="meta">Preview environment · No live exchange credentials are used.</div>
+  </section>
+  <section class="auth-panel">
+    <form class="card auth-card stack" id="loginForm">
+      <div><div class="eyebrow">Welcome back</div><h2>Log in to FEELOOP</h2><p class="meta">Use a demo account below to preview the product.</p></div>
+      <div class="field"><label>Email</label><input id="email" type="email" autocomplete="username" placeholder="you@example.com" required></div>
+      <div class="field"><label>Password</label><input id="password" type="password" autocomplete="current-password" placeholder="••••••••" required></div>
+      <div id="loginError" style="min-height:18px;color:var(--danger);font-size:12px"></div>
+      <button class="btn primary" type="submit">Continue</button>
+      <div class="divider">DEMO ACCESS</div>
+      <button class="btn" type="button" data-fill-login="user">Fill member demo</button>
+      <button class="btn" type="button" data-fill-login="admin">Fill operator demo</button>
+      <div class="helper"><b>Member:</b> demo@feeloop.app / Demo123!<br><b>Operator:</b> admin@feeloop.app / Admin123!</div>
+      <a class="btn ghost" href="index.html">← Back to site</a>
+    </form>
+  </section>
+</div>
+<script src="assets/app.js"></script></body></html>
