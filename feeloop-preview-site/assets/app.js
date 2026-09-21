@@ -123,6 +123,12 @@ const FeeLoop = (() => {
 
   async function initLogin(){
     const form=$("#loginForm");if(!form)return;
+    try{
+      const bs=await api("/api/auth/bootstrap-status");
+      if(!bs.adminExists && $("#adminBootstrapNotice")){
+        $("#adminBootstrapNotice").innerHTML='<div class="notice"><b>Administrator setup required.</b><br>The permanent database is connected, but no administrator exists yet. <a href="admin-setup.html" style="text-decoration:underline">Initialize the administrator →</a></div>';
+      }
+    }catch{}
     const me=await loadMe();
     if(me){location.replace(me.role==="admin"?"admin.html":"dashboard.html");return}
     let mfaToken=null;
