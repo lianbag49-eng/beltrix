@@ -1,36 +1,37 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard — FEELOOP</title><link rel="stylesheet" href="assets/style.css?v=7"></head>
-<body data-auth-role="user">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard — FEELOOP</title><link rel="stylesheet" href="assets/style.css?v=8"></head>
+<body>
 <div class="sidebar-layout">
   <aside class="sidebar">
     <div class="side-brand"><a class="brand" href="index.html"><span class="mark"></span><span>FEE<span class="word-grad">LOOP</span></span></a></div>
-    <nav class="side-nav"><a class="active" href="dashboard.html">⌂ <span>Overview</span></a><a href="exchanges.html">◇ <span>Exchanges</span></a><a href="events.html">✦ <span>Events</span></a><button data-open-payout>↗ <span>Request payout</span></button></nav>
+    <nav class="side-nav"><a class="active" href="dashboard.html">⌂ <span>Overview</span></a><a href="exchanges.html">◇ <span>Exchanges</span></a><a href="events.html">✦ <span>Events</span></a><button data-open-uid>＋ <span>Connect UID</span></button><button data-open-payout>↗ <span>Request payout</span></button></nav>
     <div class="side-foot"><button class="btn sm" data-logout>Log out</button></div>
   </aside>
-  <main class="app-main">
-    <div class="app-top"><div><div class="meta">Member workspace</div><h1>Dashboard</h1></div><div class="actions"><a class="btn sm" id="backToAdmin" href="admin.html" style="display:none">← Back to admin</a><span class="pill gray" id="previewModePill">No live data</span><div class="avatar">D</div></div></div>
-
+  <main class="app-main" id="dashboardRoot">
+    <div class="app-top"><div><div class="meta">Member workspace</div><h1>Dashboard</h1></div><div class="actions"><a class="btn sm" id="backToAdmin" href="admin.html" style="display:none">← Back to admin</a><span class="pill gray" id="previewModePill">Live account</span><div class="avatar">F</div></div></div>
     <div class="dashboard-grid">
-      <div class="card metric"><div class="meta">Available cashback</div><div class="value">$0.00</div><div class="delta">No accruals yet</div></div>
-      <div class="card metric"><div class="meta">30D eligible fees</div><div class="value">$0.00</div><div class="delta">Awaiting API data</div></div>
-      <div class="card metric"><div class="meta">Lifetime cashback</div><div class="value">$0.00</div><div class="delta">No records yet</div></div>
-      <div class="card metric"><div class="meta">Paid out</div><div class="value">$0.00</div><div class="delta">No payouts yet</div></div>
+      <div class="card metric"><div class="meta">Available cashback</div><div class="value" id="metricAvailable">$0.00</div><div class="delta">Available for payout</div></div>
+      <div class="card metric"><div class="meta">Eligible fees</div><div class="value" id="metricFees">$0.00</div><div class="delta">Synced source records</div></div>
+      <div class="card metric"><div class="meta">Lifetime cashback</div><div class="value" id="metricCashback">$0.00</div><div class="delta">Accrued cashback</div></div>
+      <div class="card metric"><div class="meta">Paid out</div><div class="value" id="metricPaid">$0.00</div><div class="delta">Completed payouts</div></div>
 
       <section class="card span-3">
-        <div class="section-head"><div><h3>Cashback ledger</h3><div class="meta">Source-level records will sync from partner APIs.</div></div><button class="btn sm" data-open-payout>Request payout</button></div>
-        <div class="table-wrap"><table><thead><tr><th>Date</th><th>Exchange</th><th>UID</th><th>Eligible fee</th><th>Cashback</th><th>Status</th></tr></thead><tbody id="dashboardLedger"></tbody></table></div>
+        <div class="section-head"><div><h3>Cashback ledger</h3><div class="meta">Source-level records sync from exchange partner data.</div></div><button class="btn sm" data-open-payout>Request payout</button></div>
+        <div class="table-wrap"><table><thead><tr><th>Date</th><th>Exchange</th><th>Source record</th><th>Eligible fee</th><th>Cashback</th><th>Status</th></tr></thead><tbody id="dashboardLedger"></tbody></table></div>
       </section>
 
       <aside class="card">
-        <div class="section-head"><div><h3>UID connections</h3><div class="meta">4 exchange slots</div></div></div>
-        <div class="empty">No exchange UID is connected yet.</div>
+        <div class="section-head"><div><h3>UID connections</h3><div class="meta">Direct referral accounts only</div></div><button class="btn sm" data-open-uid>+ Add UID</button></div>
+        <div class="flow" id="uidList"></div>
       </aside>
 
-      <section class="card span-2"><div class="section-head"><div><h3>Tracked events</h3><div class="meta">Preview event feed</div></div><a class="btn sm" href="events.html">All events</a></div><div class="flow" id="dashboardEvents"></div></section>
-      <section class="card span-2"><h3>Payout policy</h3><p class="meta">V1 keeps settlement manual: a user requests cashback, the operator verifies the request, pays by supported method and records the transfer ID or TXID.</p><div class="notice" style="margin-top:16px">No customer trading funds are held in this preview.</div></section>
+      <section class="card span-2"><div class="section-head"><div><h3>Published events</h3><div class="meta">Verified event records</div></div><a class="btn sm" href="events.html">All events</a></div><div class="flow" id="dashboardEvents"></div></section>
+      <section class="card span-2"><div class="section-head"><div><h3>Payout history</h3><div class="meta">Requested, processing and completed settlements</div></div></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Status</th><th>Reference</th></tr></thead><tbody id="payoutHistory"></tbody></table></div></section>
     </div>
   </main>
 </div>
 
-<div class="modal" id="payoutModal"><form class="modal-card" id="payoutForm"><div class="modal-head"><div><div class="eyebrow">Payout</div><h3>Request cashback</h3></div><button class="close" id="closePayout" type="button">×</button></div><div class="stack"><div class="field"><label>Amount (USDT)</label><input id="payoutAmount" type="number" max="0" step=".01" value="" placeholder="0.00"></div><div class="field"><label>Method</label><select><option>Exchange UID transfer</option><option>Wallet transfer</option></select></div><div class="field"><label>Destination</label><input placeholder="UID or wallet address"></div><button class="btn primary" type="submit">Create demo request</button><div class="helper">Payout requests will be enabled after authentication, ledger and payout services are connected.</div></div></form></div>
-<div id="toast" class="toast"></div><script src="assets/app.js?v=7"></script></body></html>
+<div class="modal" id="uidModal"><form class="modal-card" id="uidForm"><div class="modal-head"><div><div class="eyebrow">Exchange account</div><h3>Connect a UID</h3></div><button class="close" id="closeUid" type="button">×</button></div><div class="stack"><div class="field"><label>Exchange</label><select id="uidExchange"></select></div><div class="field"><label>Exchange UID</label><input id="uidValue" maxlength="100" required placeholder="Enter your UID"></div><button class="btn primary" type="submit">Submit for verification</button><div class="helper">The UID will remain pending until FEELOOP can verify the direct referral relationship.</div></div></form></div>
+
+<div class="modal" id="payoutModal"><form class="modal-card" id="payoutForm"><div class="modal-head"><div><div class="eyebrow">Payout</div><h3>Request cashback</h3></div><button class="close" id="closePayout" type="button">×</button></div><div class="stack"><div class="notice">Available: <b id="payoutAvailable">$0.00</b></div><div class="field"><label>Amount (USDT)</label><input id="payoutAmount" type="number" min="0.01" step=".01" placeholder="0.00" required></div><div class="field"><label>Method</label><select id="payoutMethod"><option value="exchange_uid">Exchange UID transfer</option><option value="wallet">Wallet transfer</option></select></div><div class="field"><label>Destination</label><input id="payoutDestination" maxlength="250" required placeholder="UID or wallet address"></div><button class="btn primary" type="submit">Request payout</button><div class="helper">V1 payouts are reviewed and paid manually by the operator. A payment reference is recorded after settlement.</div></div></form></div>
+<div id="toast" class="toast"></div><script src="assets/app.js?v=8"></script></body></html>
