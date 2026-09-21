@@ -117,10 +117,13 @@ const FeeLoop = (() => {
       const isAdmin=email==="admin@feeloop.app" && password==="Admin123!";
       const isUser=email==="demo@feeloop.app" && password==="Demo123!";
       if(!isAdmin&&!isUser){$("#loginError").textContent="Use the demo credentials shown below.";return}
-      localStorage.setItem("feeloop_session",JSON.stringify({email,role:isAdmin?"admin":"user",created:Date.now()}));
-      location.href=isAdmin?"admin.html":"dashboard.html";
+      localStorage.removeItem("feeloop_session");
+      const nextSession={email,role:isAdmin?"admin":"user",created:Date.now(),version:5};
+      localStorage.setItem("feeloop_session",JSON.stringify(nextSession));
+      location.replace(isAdmin?"admin.html":"dashboard.html");
     });
-    $$("[data-fill-login]").forEach(btn=>btn.addEventListener("click",()=>{
+    $("[data-fill-login]").forEach(btn=>btn.addEventListener("click",()=>{
+      localStorage.removeItem("feeloop_session");
       const type=btn.dataset.fillLogin;
       $("#email").value=type==="admin"?"admin@feeloop.app":"demo@feeloop.app";
       $("#password").value=type==="admin"?"Admin123!":"Demo123!";
@@ -133,16 +136,23 @@ const FeeLoop = (() => {
     const required=document.body.dataset.authRole;
     const s=session();
     if(required==="user"){
-      if(!s){location.replace("login.html");return false}
-      if(s.role==="admin"){location.replace("admin.html");return false}
-      if(s.role!=="user"){localStorage.removeItem("feeloop_session");location.replace("login.html");return false}
+      const valid=s && s.role==="user" && s.email==="demo@feeloop.app";
+      if(!valid){
+        localStorage.removeItem("feeloop_session");
+        location.replace("login.html?switch=member");
+        return false;
+      }
     }
     if(required==="admin"){
-      if(!s){location.replace("login.html");return false}
-      if(s.role!=="admin"){location.replace("dashboard.html");return false}
-    }
-    if(document.body.dataset.authPage==="login" && s){
-      location.replace(s.role==="admin"?"admin.html":"dashboard.html");return false;
+      const valid=s && s.role==="admin" && s.email==="admin@feeloop.app";
+      if(!valid){
+        if(s && s.role==="user") location.replace("dashboard.html");
+        else {
+          localStorage.removeItem("feeloop_session");
+          location.replace("login.html?switch=admin");
+        }
+        return false;
+      }
     }
     return true;
   }
