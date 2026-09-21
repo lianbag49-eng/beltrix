@@ -321,7 +321,8 @@ const FeeLoop = (() => {
     await initEventDetail();
     await initExchangeDetail();
     await initAdmin();
-    initForgot();\n    await initAdminSetup();
+    initForgot();
+    await initAdminSetup();
     await renderEvents("[data-events]",3);
     $$("[data-logout]").forEach(x=>x.addEventListener("click",logout));
     const y=$("#year");if(y)y.textContent=new Date().getFullYear();
