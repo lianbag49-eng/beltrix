@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard — FEELOOP</title><link rel="stylesheet" href="assets/style.css?v=8"></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard — FEELOOP</title><link rel="stylesheet" href="assets/style.css?v=9"></head>
 <body>
 <div class="sidebar-layout">
   <aside class="sidebar">
@@ -34,4 +34,4 @@
 <div class="modal" id="uidModal"><form class="modal-card" id="uidForm"><div class="modal-head"><div><div class="eyebrow">Exchange account</div><h3>Connect a UID</h3></div><button class="close" id="closeUid" type="button">×</button></div><div class="stack"><div class="field"><label>Exchange</label><select id="uidExchange"></select></div><div class="field"><label>Exchange UID</label><input id="uidValue" maxlength="100" required placeholder="Enter your UID"></div><button class="btn primary" type="submit">Submit for verification</button><div class="helper">The UID will remain pending until FEELOOP can verify the direct referral relationship.</div></div></form></div>
 
 <div class="modal" id="payoutModal"><form class="modal-card" id="payoutForm"><div class="modal-head"><div><div class="eyebrow">Payout</div><h3>Request cashback</h3></div><button class="close" id="closePayout" type="button">×</button></div><div class="stack"><div class="notice">Available: <b id="payoutAvailable">$0.00</b></div><div class="field"><label>Amount (USDT)</label><input id="payoutAmount" type="number" min="0.01" step=".01" placeholder="0.00" required></div><div class="field"><label>Method</label><select id="payoutMethod"><option value="exchange_uid">Exchange UID transfer</option><option value="wallet">Wallet transfer</option></select></div><div class="field"><label>Destination</label><input id="payoutDestination" maxlength="250" required placeholder="UID or wallet address"></div><button class="btn primary" type="submit">Request payout</button><div class="helper">V1 payouts are reviewed and paid manually by the operator. A payment reference is recorded after settlement.</div></div></form></div>
-<div id="toast" class="toast"></div><script src="assets/app.js?v=8"></script></body></html>
+<div id="toast" class="toast"></div><script src="assets/app.js?v=9"></script></body></html>
