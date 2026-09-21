@@ -1,38 +1,38 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Operator Console — FEELOOP</title><link rel="stylesheet" href="assets/style.css?v=7"></head>
-<body data-auth-role="admin">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Operator Console — FEELOOP</title><link rel="stylesheet" href="assets/style.css?v=8"></head>
+<body>
 <div class="sidebar-layout">
   <aside class="sidebar">
     <div class="side-brand"><a class="brand" href="index.html"><span class="mark"></span><span>FEE<span class="word-grad">LOOP</span></span></a></div>
-    <nav class="side-nav"><a class="active" href="#overview">▦ <span>Overview</span></a><a href="#payouts">↗ <span>Payouts</span></a><a href="#exchanges">◇ <span>Exchanges</span></a><a href="#events">✦ <span>Event CMS</span></a><a href="dashboard.html?preview=1">◎ <span>User preview</span></a></nav>
+    <nav class="side-nav"><a class="active" href="#overview">▦ <span>Overview</span></a><a href="#payouts">↗ <span>Payouts</span></a><a href="#uids">◎ <span>UID review</span></a><a href="#exchanges">◇ <span>Exchanges</span></a><a href="#events">✦ <span>Event CMS</span></a><a href="#security">⌾ <span>Security</span></a><a href="dashboard.html?preview=1">◉ <span>User preview</span></a></nav>
     <div class="side-foot"><button class="btn sm" data-logout>Log out</button></div>
   </aside>
-  <main class="app-main">
-    <div class="app-top" id="overview"><div><div class="meta">Operator workspace</div><h1>FEELOOP Control</h1></div><div class="actions"><span class="pill warn">API not connected</span><div class="avatar">A</div></div></div>
+  <main class="app-main" id="adminRoot">
+    <div class="app-top" id="overview"><div><div class="meta">Operator workspace</div><h1>FEELOOP Control</h1></div><div class="actions"><span class="pill warn">Partner APIs pending</span><div class="avatar">A</div></div></div>
 
     <div class="admin-grid">
-      <div class="card metric"><div class="meta">Pending payouts</div><div class="value">0</div><div class="delta">No requests</div></div>
-      <div class="card metric"><div class="meta">Connected users</div><div class="value">0</div><div class="delta">No registered users</div></div>
-      <div class="card metric"><div class="meta">30D gross commission</div><div class="value">$0.00</div><div class="delta">No commission data</div></div>
-      <div class="card metric"><div class="meta">30D platform margin</div><div class="value">$0.00</div><div class="delta">No revenue data</div></div>
+      <div class="card metric"><div class="meta">Pending payouts</div><div class="value" id="adminPending">0</div><div class="delta" id="adminPendingAmount">$0.00</div></div>
+      <div class="card metric"><div class="meta">Registered members</div><div class="value" id="adminUsers">0</div><div class="delta">Live accounts</div></div>
+      <div class="card metric"><div class="meta">Gross commission</div><div class="value" id="adminCommission">$0.00</div><div class="delta">Imported fee records</div></div>
+      <div class="card metric"><div class="meta">Platform margin</div><div class="value" id="adminMargin">$0.00</div><div class="delta">Commission minus cashback</div></div>
     </div>
 
-    <section class="section" id="payouts">
-      <div class="section-head"><div><div class="eyebrow">Payout operations</div><h2>Manual queue</h2><p class="lead">Approve, mark paid or reject. Production records will require operator identity, timestamp and payment receipt.</p></div></div>
-      <div class="table-wrap"><table><thead><tr><th>Request</th><th>User</th><th>Exchange</th><th>Method</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody id="payoutQueue"></tbody></table></div>
-    </section>
+    <section class="section" id="payouts"><div class="section-head"><div><div class="eyebrow">Payout operations</div><h2>Manual queue</h2><p class="lead">Process requests, record the transfer ID or TXID, and keep a full audit trail.</p></div></div><div class="table-wrap"><table><thead><tr><th>Request</th><th>User ID</th><th>Method</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody id="payoutQueue"></tbody></table></div></section>
 
-    <section class="section" id="exchanges">
-      <div class="section-head"><div><div class="eyebrow">Exchange configuration</div><h2>Partner connectors</h2><p class="lead">Rates remain locked until verified partner credentials are available.</p></div></div>
-      <div class="grid-4" id="adminExchanges"></div>
-    </section>
+    <section class="section" id="uids"><div class="section-head"><div><div class="eyebrow">Referral verification</div><h2>UID review queue</h2><p class="lead">Until partner APIs are connected, operators can review submitted UIDs but should only verify after an official referral check.</p></div></div><div class="table-wrap"><table><thead><tr><th>User ID</th><th>Exchange</th><th>UID</th><th>Status</th><th>Action</th></tr></thead><tbody id="uidQueue"></tbody></table></div></section>
 
-    <section class="section" id="events">
-      <div class="section-head"><div><div class="eyebrow">Content operations</div><h2>Event CMS</h2><p class="lead">The next API phase can import official event feeds; operators can review, edit and publish verified records here.</p></div><button class="btn primary" onclick="FeeLoop.toast('Event editor comes in the API/CMS phase')">+ New event</button></div>
-      <div class="table-wrap"><table><thead><tr><th>Exchange</th><th>Event</th><th>Type</th><th>Status</th><th></th></tr></thead><tbody id="adminEvents"></tbody></table></div>
-    </section>
+    <section class="section" id="exchanges"><div class="section-head"><div><div class="eyebrow">Exchange configuration</div><h2>Fee & cashback settings</h2><p class="lead">Rates can be entered after partner terms are verified. Connector status remains separate from public fee settings.</p></div></div><div class="grid-4" id="adminExchanges"></div></section>
 
-    <section class="section"><div class="grid-2"><div class="card"><h3>Country policy</h3><p class="meta">Production layer: ALLOW / REVIEW / BLOCK with the Republic of Korea excluded from customer onboarding.</p><div class="notice" style="margin-top:14px">Operator access and customer eligibility are separate controls.</div></div><div class="card"><h3>Audit trail</h3><p class="meta">Production logs: API sync, rate changes, event publication, payout state changes and operator identity.</p><div class="feature-list"><div class="feature"><i></i> Immutable source IDs</div><div class="feature"><i></i> Role-based actions</div><div class="feature"><i></i> Receipt / TXID attachment</div></div></div></div></section>
+    <section class="section" id="events"><div class="section-head"><div><div class="eyebrow">Content operations</div><h2>Event CMS</h2><p class="lead">Create, publish and unpublish exchange events. API ingestion can populate this same model later.</p></div><button class="btn primary" id="newEvent">+ New event</button></div><div class="table-wrap"><table><thead><tr><th>Exchange</th><th>Event</th><th>Type</th><th>Status</th><th></th></tr></thead><tbody id="adminEvents"></tbody></table></div></section>
+
+    <section class="section"><div class="grid-2">
+      <div class="card" id="security"><div class="eyebrow">Security</div><h3 style="margin-top:8px">Administrator MFA</h3><p class="meta">TOTP-based MFA is supported by the backend. Enroll using any compatible authenticator app.</p><div style="margin-top:14px"><button class="btn" id="setupMfa">Set up MFA</button></div><div id="mfaSetup" style="display:none;margin-top:16px" class="stack"><div class="notice"><div class="meta">Secret</div><code id="mfaSecret" style="word-break:break-all"></code></div><div class="helper" id="mfaUri" style="word-break:break-all"></div><div class="field"><label>Authenticator code</label><input id="mfaEnableCode" inputmode="numeric" placeholder="123456"></div><button class="btn primary" id="enableMfa">Enable MFA</button></div></div>
+      <div class="card"><div class="eyebrow">Jurisdiction controls</div><h3 style="margin-top:8px">Country policy</h3><p class="meta">Customer registration is blocked for configured jurisdictions. Administrator access is handled separately from customer eligibility.</p><div class="notice" style="margin-top:14px">Republic of Korea: customer onboarding blocked.</div></div>
+    </div></section>
+
+    <section class="section"><div class="section-head"><div><div class="eyebrow">Audit</div><h2>Recent operator activity</h2></div></div><div class="flow" id="auditList"></div></section>
   </main>
 </div>
-<div id="toast" class="toast"></div><script src="assets/app.js?v=7"></script></body></html>
+
+<div class="modal" id="eventModal"><form class="modal-card" id="eventForm"><div class="modal-head"><div><div class="eyebrow">Event CMS</div><h3>Create event</h3></div><button class="close" id="closeEvent" type="button">×</button></div><div class="stack"><div class="field"><label>Exchange</label><select id="eventExchange" name="exchangeId"></select></div><div class="field"><label>Title</label><input name="title" required></div><div class="field"><label>Type</label><input name="type" value="Promotion"></div><div class="field"><label>Summary</label><textarea name="summary" rows="3"></textarea></div><div class="form-grid"><div class="field"><label>Start</label><input name="startAt" type="datetime-local"></div><div class="field"><label>End</label><input name="endAt" type="datetime-local"></div></div><div class="field"><label>Reward / benefit</label><input name="reward"></div><div class="field"><label>Region</label><input name="region" value="Eligible regions only"></div><div class="field"><label>Official source URL</label><input name="sourceUrl" type="url" placeholder="https://"></div><div class="field"><label>Status</label><select name="status"><option value="draft">Draft</option><option value="published">Published</option></select></div><button class="btn primary" type="submit">Save event</button></div></form></div>
+<div id="toast" class="toast"></div><script src="assets/app.js?v=8"></script></body></html>
