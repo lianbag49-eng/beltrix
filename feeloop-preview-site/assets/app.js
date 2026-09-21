@@ -311,6 +311,22 @@ const FeeLoop = (() => {
     $("#closeEvent")?.addEventListener("click",()=>$("#eventModal").classList.remove("open"));
     $("#eventForm")?.addEventListener("submit",async e=>{e.preventDefault();const fd=new FormData(e.currentTarget);const body=Object.fromEntries(fd.entries());try{await api("/api/admin/events",{method:"POST",body});$("#eventModal").classList.remove("open");toast("Event created");setTimeout(()=>location.reload(),400)}catch(err){toast(errorText(err))}});
 
+    async function loadCountryRules(){
+      try{
+        const d=await api("/api/admin/country-rules");
+        $("#countryRules").innerHTML=d.rules.length?d.rules.map(r=>`<tr><td><strong>${escapeHtml(r.country)}</strong></td><td>${statusPill(String(r.status).toLowerCase())}</td><td>${escapeHtml(r.reason||"")}</td></tr>`).join(""):'<tr><td colspan="3"><div class="empty">No country rules configured.</div></td></tr>';
+      }catch(err){$("#countryRules").innerHTML='<tr><td colspan="3"><div class="empty">Unable to load country rules.</div></td></tr>'}
+    }
+    await loadCountryRules();
+    $("#countryRuleForm")?.addEventListener("submit",async e=>{
+      e.preventDefault();
+      const code=$("#countryCode").value.trim().toUpperCase();
+      try{
+        await api("/api/admin/country-rules/"+encodeURIComponent(code),{method:"PUT",body:{status:$("#countryStatus").value,reason:$("#countryReason").value.trim()}});
+        toast("Country rule saved");$("#countryRuleForm").reset();await loadCountryRules();
+      }catch(err){toast(errorText(err))}
+    });
+
     $("#setupMfa")?.addEventListener("click",async()=>{try{const r=await api("/api/auth/mfa/setup",{method:"POST"});$("#mfaSecret").textContent=r.secret;$("#mfaUri").textContent=r.otpauthUri;$("#mfaSetup").style.display="block"}catch(err){toast(errorText(err))}});
     $("#enableMfa")?.addEventListener("click",async()=>{try{await api("/api/auth/mfa/enable",{method:"POST",body:{code:$("#mfaEnableCode").value.trim()}});toast("MFA enabled");$("#mfaSetup").style.display="none"}catch(err){toast(errorText(err))}});
   }
