@@ -68,7 +68,14 @@ function publicUser(u){
 function countryFromRequest(req){
   return cleanCountry(req.get("cf-ipcountry") || req.get("x-vercel-ip-country") || req.get("x-country-code") || "");
 }
-function isBlockedCountry(country){ return BLOCKED_COUNTRIES.has(cleanCountry(country)); }
+async function countryStatus(country){
+  const code=cleanCountry(country);
+  if(!code) return "ALLOW";
+  const r=await q("SELECT status FROM feeloop.country_rules WHERE country=$1 LIMIT 1",[code]);
+  if(r.rows[0]?.status) return r.rows[0].status;
+  return BLOCKED_COUNTRIES.has(code)?"BLOCK":"ALLOW";
+}
+async function isBlockedCountry(country){ return (await countryStatus(country))==="BLOCK"; }
 function moneyRound(v){ return Math.round(numeric(v)*1e8)/1e8; }
 
 async function q(text,params=[]){ return pool.query(text,params); }
@@ -277,7 +284,7 @@ app.post("/api/auth/register",async(req,res)=>{
   if(!/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({error:"INVALID_EMAIL"});
   if(password.length<10) return res.status(400).json({error:"PASSWORD_TOO_SHORT"});
   if(!country) return res.status(400).json({error:"COUNTRY_REQUIRED"});
-  if(isBlockedCountry(country)||isBlockedCountry(ipCountry)) return res.status(451).json({error:"COUNTRY_NOT_SUPPORTED"});
+  if((await isBlockedCountry(country))||(ipCountry&&(await isBlockedCountry(ipCountry)))) return res.status(451).json({error:"COUNTRY_NOT_SUPPORTED"});
   if(req.body.acceptTerms!==true) return res.status(400).json({error:"TERMS_REQUIRED"});
   const passwordHash=await bcrypt.hash(password,12);
   const userId=id("usr");
@@ -315,7 +322,7 @@ app.post("/api/auth/login",async(req,res)=>{
   const password=String(req.body.password||"");
   const user=await getUserByEmail(email);
   if(!user || !(await bcrypt.compare(password,user.password_hash))) return res.status(401).json({error:"INVALID_CREDENTIALS"});
-  if(user.role!=="admin" && isBlockedCountry(user.country)) return res.status(451).json({error:"COUNTRY_NOT_SUPPORTED"});
+  if(user.role!=="admin" && (await isBlockedCountry(user.country))) return res.status(451).json({error:"COUNTRY_NOT_SUPPORTED"});
   if(user.role!=="admin" && mailConfigured() && !user.email_verified) return res.status(403).json({error:"EMAIL_NOT_VERIFIED"});
   if(user.mfa_enabled){
     const mfaRaw=token();
@@ -840,6 +847,27 @@ app.get("/api/admin/audit",requireAdmin,async(req,res)=>{
   );
   res.json({audit:r.rows});
 });
+app.get("/api/admin/country-rules",requireAdmin,async(req,res)=>{
+  const r=await q("SELECT country,status,reason,updated_at AS \"updatedAt\" FROM feeloop.country_rules ORDER BY country");
+  res.json({rules:r.rows});
+});
+app.put("/api/admin/country-rules/:country",requireAdmin,async(req,res)=>{
+  const country=cleanCountry(req.params.country);
+  const status=String(req.body.status||"").toUpperCase();
+  const reason=String(req.body.reason||"").trim().slice(0,500);
+  if(!/^[A-Z]{2}$/.test(country)) return res.status(400).json({error:"INVALID_COUNTRY"});
+  if(!["ALLOW","REVIEW","BLOCK"].includes(status)) return res.status(400).json({error:"INVALID_STATUS"});
+  const r=await q(
+    `INSERT INTO feeloop.country_rules(country,status,reason,updated_at)
+     VALUES($1,$2,$3,NOW())
+     ON CONFLICT(country) DO UPDATE SET status=EXCLUDED.status,reason=EXCLUDED.reason,updated_at=NOW()
+     RETURNING country,status,reason,updated_at AS "updatedAt"`,
+    [country,status,reason]
+  );
+  await audit(req.user.id,"COUNTRY_RULE_UPDATED",country,{status,reason});
+  res.json({rule:r.rows[0]});
+});
+
 app.get("/api/admin/connectors",requireAdmin,async(req,res)=>{
   const r=await q("SELECT id,connector_status FROM feeloop.exchange_configs ORDER BY id");
   res.json({connectors:r.rows.map(x=>({
