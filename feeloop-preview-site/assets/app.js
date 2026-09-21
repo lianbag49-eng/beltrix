@@ -260,6 +260,16 @@ const FeeLoop = (() => {
     let data;try{data=await api("/api/admin/overview")}catch(err){toast(errorText(err));return}
     setText("#adminPending",String(data.metrics.pendingPayouts));setText("#adminPendingAmount",money(data.metrics.pendingAmount));setText("#adminUsers",String(data.metrics.users));setText("#adminCommission",money(data.metrics.grossCommission));setText("#adminMargin",money(data.metrics.platformMargin));
 
+    async function renderUsers(q=""){
+      try{
+        const d=await api("/api/admin/users"+(q?"?q="+encodeURIComponent(q):""));
+        $("#userTable").innerHTML=d.users.length?d.users.map(u=>`<tr><td><strong>${escapeHtml(u.email)}</strong></td><td>${escapeHtml(u.country||"—")}</td><td>${money(u.summary.totalFees)}</td><td>${money(u.summary.accrued)}</td><td>${money(u.summary.available)}</td><td>${escapeHtml(new Date(u.createdAt).toLocaleDateString())}</td></tr>`).join(""):'<tr><td colspan="6"><div class="empty">No members found.</div></td></tr>';
+      }catch(err){$("#userTable").innerHTML='<tr><td colspan="6"><div class="empty">Unable to load members.</div></td></tr>'}
+    }
+    await renderUsers();
+    let userSearchTimer;
+    $("#userSearch")?.addEventListener("input",e=>{clearTimeout(userSearchTimer);userSearchTimer=setTimeout(()=>renderUsers(e.target.value.trim()),250)});
+
     $("#payoutQueue").innerHTML=data.payouts.length?data.payouts.map(p=>`<tr><td><strong>${escapeHtml(p.id)}</strong><div class="meta">${escapeHtml(new Date(p.createdAt).toLocaleString())}</div></td><td>${escapeHtml(p.userId)}</td><td>${escapeHtml(p.method)}</td><td><strong>${money(p.amount)}</strong></td><td>${statusPill(p.status)}</td><td><div class="action-row">${p.status!=="paid"&&p.status!=="rejected"?`<button class="btn sm" data-payout="${p.id}" data-action="processing">Process</button><button class="btn sm primary" data-payout="${p.id}" data-action="paid">Mark paid</button><button class="btn sm danger" data-payout="${p.id}" data-action="rejected">Reject</button>`:""}</div></td></tr>`).join(""):'<tr><td colspan="6"><div class="empty">No payout requests yet.</div></td></tr>';
     $$("[data-payout]").forEach(btn=>btn.addEventListener("click",async()=>{
       const body={status:btn.dataset.action};if(body.status==="paid"){const ref=prompt("Transfer ID / TXID");if(!ref)return;body.paymentRef=ref}
