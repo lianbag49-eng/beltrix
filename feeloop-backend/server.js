@@ -8,6 +8,7 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const { authenticator } = require("otplib");
 const { Pool } = require("pg");
+const { configured: mailConfigured, sendEmail, verificationEmail, passwordResetEmail } = require("./mail");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -280,20 +281,33 @@ app.post("/api/auth/register",async(req,res)=>{
   if(req.body.acceptTerms!==true) return res.status(400).json({error:"TERMS_REQUIRED"});
   const passwordHash=await bcrypt.hash(password,12);
   const userId=id("usr");
+  const emailNeedsVerification=mailConfigured();
   try{
     await q(
       `INSERT INTO feeloop.users(id,email,password_hash,role,country,email_verified,mfa_enabled,created_at,updated_at)
-       VALUES($1,$2,$3,'user',$4,TRUE,FALSE,NOW(),NOW())`,
-      [userId,email,passwordHash,country]
+       VALUES($1,$2,$3,'user',$4,$5,FALSE,NOW(),NOW())`,
+      [userId,email,passwordHash,country,!emailNeedsVerification]
     );
   }catch(err){
     if(err.code==="23505") return res.status(409).json({error:"EMAIL_EXISTS"});
     throw err;
   }
-  const user=await getUserById(userId);
+  let user=await getUserById(userId);
   await audit(userId,"USER_REGISTERED",userId,{country,ipCountry:ipCountry||null});
-  await createSession(res,user,req);
-  res.status(201).json({user:publicUser(user),emailVerification:"pending-provider"});
+  if(emailNeedsVerification){
+    const raw=token();
+    await q(
+      `INSERT INTO feeloop.email_verification_tokens(id,user_id,token_hash,expires_at,used)
+       VALUES($1,$2,$3,NOW()+INTERVAL '24 hours',FALSE)`,
+      [id("emv"),userId,hashToken(raw)]
+    );
+    const msg=verificationEmail({origin:`${req.protocol}://${req.get("host")}`,token:raw});
+    await sendEmail({to:email,subject:msg.subject,html:msg.html});
+  }else{
+    await createSession(res,user,req);
+  }
+  user=await getUserById(userId);
+  res.status(201).json({user:publicUser(user),emailVerification:emailNeedsVerification?"required":"provider-not-configured"});
 });
 
 app.post("/api/auth/login",async(req,res)=>{
@@ -302,6 +316,7 @@ app.post("/api/auth/login",async(req,res)=>{
   const user=await getUserByEmail(email);
   if(!user || !(await bcrypt.compare(password,user.password_hash))) return res.status(401).json({error:"INVALID_CREDENTIALS"});
   if(user.role!=="admin" && isBlockedCountry(user.country)) return res.status(451).json({error:"COUNTRY_NOT_SUPPORTED"});
+  if(user.role!=="admin" && mailConfigured() && !user.email_verified) return res.status(403).json({error:"EMAIL_NOT_VERIFIED"});
   if(user.mfa_enabled){
     const mfaRaw=token();
     const mfaHash=hashToken(mfaRaw);
@@ -373,6 +388,41 @@ app.delete("/api/auth/sessions/:id",requireAuth,async(req,res)=>{
   res.json({ok:true});
 });
 
+app.post("/api/auth/verify-email",async(req,res)=>{
+  const h=hashToken(req.body.token||"");
+  const r=await q(
+    `SELECT * FROM feeloop.email_verification_tokens
+     WHERE token_hash=$1 AND used=FALSE AND expires_at>NOW() LIMIT 1`,[h]
+  );
+  const rec=r.rows[0];
+  if(!rec) return res.status(400).json({error:"INVALID_OR_EXPIRED_TOKEN"});
+  await tx(async c=>{
+    await c.query("UPDATE feeloop.users SET email_verified=TRUE,updated_at=NOW() WHERE id=$1",[rec.user_id]);
+    await c.query("UPDATE feeloop.email_verification_tokens SET used=TRUE WHERE id=$1",[rec.id]);
+  });
+  await audit(rec.user_id,"EMAIL_VERIFIED",rec.user_id,{});
+  const user=await getUserById(rec.user_id);
+  await createSession(res,user,req);
+  res.json({ok:true,user:publicUser(user)});
+});
+
+app.post("/api/auth/resend-verification",async(req,res)=>{
+  const email=cleanEmail(req.body.email);
+  const user=await getUserByEmail(email);
+  if(user && user.role==="user" && !user.email_verified && mailConfigured()){
+    const raw=token();
+    await q("DELETE FROM feeloop.email_verification_tokens WHERE user_id=$1",[user.id]);
+    await q(
+      `INSERT INTO feeloop.email_verification_tokens(id,user_id,token_hash,expires_at,used)
+       VALUES($1,$2,$3,NOW()+INTERVAL '24 hours',FALSE)`,
+      [id("emv"),user.id,hashToken(raw)]
+    );
+    const msg=verificationEmail({origin:`${req.protocol}://${req.get("host")}`,token:raw});
+    await sendEmail({to:user.email,subject:msg.subject,html:msg.html});
+  }
+  res.json({ok:true,emailProviderConfigured:mailConfigured()});
+});
+
 app.post("/api/auth/password-reset/request",async(req,res)=>{
   const email=cleanEmail(req.body.email);
   const user=await getUserByEmail(email);
@@ -384,9 +434,13 @@ app.post("/api/auth/password-reset/request",async(req,res)=>{
        VALUES($1,$2,$3,NOW()+INTERVAL '30 minutes',FALSE)`,
       [id("rst"),user.id,hashToken(raw)]
     );
-    await audit(user.id,"PASSWORD_RESET_REQUESTED",user.id,{emailProviderConfigured:false});
+    if(mailConfigured()){
+      const msg=passwordResetEmail({origin:`${req.protocol}://${req.get("host")}`,token:raw});
+      await sendEmail({to:email,subject:msg.subject,html:msg.html});
+    }
+    await audit(user.id,"PASSWORD_RESET_REQUESTED",user.id,{emailProviderConfigured:mailConfigured()});
   }
-  res.json({ok:true,emailProviderConfigured:false});
+  res.json({ok:true,emailProviderConfigured:mailConfigured()});
 });
 app.post("/api/auth/password-reset/confirm",async(req,res)=>{
   const h=hashToken(req.body.token||"");
