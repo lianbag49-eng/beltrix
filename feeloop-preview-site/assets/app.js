@@ -129,6 +129,23 @@ const FeeLoop = (() => {
   }
 
   function session(){try{return JSON.parse(localStorage.getItem("feeloop_session")||"null")}catch{return null}}
+  function enforceAuth(){
+    const required=document.body.dataset.authRole;
+    const s=session();
+    if(required==="user"){
+      if(!s){location.replace("login.html");return false}
+      if(s.role==="admin"){location.replace("admin.html");return false}
+      if(s.role!=="user"){localStorage.removeItem("feeloop_session");location.replace("login.html");return false}
+    }
+    if(required==="admin"){
+      if(!s){location.replace("login.html");return false}
+      if(s.role!=="admin"){location.replace("dashboard.html");return false}
+    }
+    if(document.body.dataset.authPage==="login" && s){
+      location.replace(s.role==="admin"?"admin.html":"dashboard.html");return false;
+    }
+    return true;
+  }
   function logout(){localStorage.removeItem("feeloop_session");location.href="index.html"}
 
   function initDashboard(){
@@ -251,6 +268,7 @@ const FeeLoop = (() => {
   }
 
   function bindGlobal(){
+    if(!enforceAuth()) return;
     renderCards();initFeeLab();initLogin();initDashboard();initEvents();initEventDetail();initExchangeDetail();initAdmin();
     $$("[data-logout]").forEach(x=>x.addEventListener("click",logout));
     const y=$("#year");if(y)y.textContent=new Date().getFullYear();
