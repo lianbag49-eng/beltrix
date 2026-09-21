@@ -1,178 +1,99 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>FEELOOP — Trade. Track. Get fees back.</title>
-  <meta name="description" content="FEELOOP is a global trading-fee cashback platform preview. Connect supported exchange UIDs, track eligible fees, and request cashback." />
-  <style>
-    :root{
-      --bg:#06080c;--panel:#0c1118;--panel2:#101821;--line:#1c2a37;--text:#f6f8fb;--muted:#93a1b3;
-      --lime:#b8ff6a;--cyan:#75d8ff;--ok:#8cf6ae;--warn:#ffd66b;
-    }
-    *{box-sizing:border-box} html{scroll-behavior:smooth}
-    body{margin:0;background:
-      radial-gradient(circle at 15% 15%,rgba(184,255,106,.08),transparent 30%),
-      radial-gradient(circle at 85% 20%,rgba(117,216,255,.09),transparent 28%),
-      var(--bg);color:var(--text);font:15px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-    a{color:inherit;text-decoration:none}
-    .wrap{width:min(1180px,calc(100% - 32px));margin:auto}
-    nav{position:sticky;top:0;z-index:20;background:rgba(6,8,12,.78);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.06)}
-    .navin{height:72px;display:flex;align-items:center;justify-content:space-between;gap:24px}
-    .brand{display:flex;align-items:center;gap:11px;font-weight:900;letter-spacing:.4px;font-size:18px}
-    .mark{width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,var(--lime),var(--cyan));display:grid;place-items:center;box-shadow:0 0 28px rgba(117,216,255,.18)}
-    .mark:before{content:"↻";font-size:22px;color:#07100b;font-weight:900;line-height:1}
-    .links{display:flex;gap:26px;color:#bbc5d2}
-    .actions{display:flex;gap:10px}.btn{padding:11px 16px;border-radius:12px;border:1px solid var(--line);background:#0b1118;color:white;font-weight:750;cursor:pointer}
-    .btn.primary{background:linear-gradient(135deg,var(--lime),var(--cyan));color:#051009;border:none}
-    .hero{padding:92px 0 48px;text-align:center}
-    .badge{display:inline-flex;align-items:center;gap:8px;border:1px solid #283545;background:#0b1118;padding:8px 11px;border-radius:999px;color:#b7c3d0;font-size:13px}
-    .dot{width:8px;height:8px;border-radius:50%;background:var(--lime);box-shadow:0 0 12px var(--lime)}
-    h1{font-size:clamp(44px,7vw,86px);line-height:.98;margin:22px auto 18px;letter-spacing:-4px;max-width:960px}
-    .grad{background:linear-gradient(90deg,var(--lime),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
-    .sub{max-width:700px;margin:0 auto;color:#9eacbd;font-size:19px}
-    .herocta{margin-top:30px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
-    .trust{margin-top:48px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-    .stat,.card{background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.015));border:1px solid rgba(255,255,255,.08);border-radius:18px}
-    .stat{padding:18px}.stat b{display:block;font-size:22px}.stat span{color:var(--muted);font-size:13px}
-    section{padding:56px 0}.eyebrow{color:var(--lime);font-weight:850;text-transform:uppercase;letter-spacing:1.6px;font-size:12px}
-    h2{font-size:38px;letter-spacing:-1.5px;margin:8px 0 8px}.lead{color:var(--muted);max-width:720px;margin:0}
-    .grid4{margin-top:24px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-    .card{padding:20px}.exlogo{width:44px;height:44px;border-radius:14px;background:#121b25;border:1px solid #243445;display:grid;place-items:center;font-weight:900;margin-bottom:16px}
-    .meta{color:var(--muted);font-size:13px}.pill{display:inline-flex;padding:5px 9px;border-radius:999px;background:#101c1d;color:#9ff7c2;font-size:12px;font-weight:800;border:1px solid #1f4133}
-    .disabled{color:#8390a0}.rate{font-size:28px;font-weight:900;margin:8px 0}
-    .split{display:grid;grid-template-columns:1.05fr .95fr;gap:18px;margin-top:24px}
-    .calculator{padding:24px}.fields{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:18px 0}
-    label{font-size:12px;color:#96a4b5;font-weight:700} input,select{margin-top:7px;width:100%;padding:13px 14px;border-radius:11px;border:1px solid #23303d;background:#080d13;color:#fff;outline:none}
-    .result{padding:22px;border-radius:15px;background:linear-gradient(135deg,rgba(184,255,106,.08),rgba(117,216,255,.08));border:1px solid rgba(184,255,106,.25)}
-    .result strong{font-size:34px}.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}.mini{background:#0a1118;border:1px solid #1a2936;border-radius:13px;padding:13px}
-    .mini b{display:block;margin-top:3px}.flow{display:grid;gap:10px}.step{padding:18px;border-radius:15px;border:1px solid #1b2935;background:#0a1017;display:flex;gap:14px}
-    .num{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--lime),var(--cyan));color:#051009;display:grid;place-items:center;font-weight:900;flex:0 0 auto}
-    .mock{margin-top:24px;padding:24px}.mocktop{display:flex;justify-content:space-between;gap:12px;align-items:center}.balance{font-size:34px;font-weight:900}
-    .table{margin-top:16px;border-top:1px solid #1c2935}.row{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:10px;padding:13px 0;border-bottom:1px solid #17232e;font-size:13px}.row.head{color:#748394}
-    .events{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px}.event{padding:20px}.event h3{margin:8px 0}.tag{font-size:11px;color:#88dcff;text-transform:uppercase;font-weight:850;letter-spacing:1px}
-    .notice{margin-top:30px;padding:18px;border-radius:14px;border:1px solid #3f3820;background:#171308;color:#dccb92}
-    footer{border-top:1px solid #17212a;padding:34px 0 54px;color:#7f8d9e}.foot{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap}
-    @media(max-width:900px){.links{display:none}.grid4,.events{grid-template-columns:repeat(2,1fr)}.split{grid-template-columns:1fr}.trust{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:600px){h1{letter-spacing:-2px}.grid4,.events,.fields,.kpis{grid-template-columns:1fr}.trust{grid-template-columns:1fr 1fr}.actions .ghost{display:none}.row{grid-template-columns:1fr 1fr}.row>*:nth-child(3),.row>*:nth-child(4){display:none}}
-  </style>
+  <meta name="description" content="FEELOOP is a global exchange cashback platform preview for eligible referral trading fees.">
+  <link rel="stylesheet" href="assets/style.css">
 </head>
-<body>
-<nav>
-  <div class="wrap navin">
-    <a class="brand" href="#"><span class="mark"></span><span>FEE<span class="grad">LOOP</span></span></a>
-    <div class="links"><a href="#exchanges">Exchanges</a><a href="#feelab">Fee Lab</a><a href="#events">Events</a><a href="#how">How it works</a></div>
-    <div class="actions"><a class="btn ghost" href="#dashboard">Dashboard preview</a><a class="btn primary" href="#exchanges">Explore</a></div>
-  </div>
-</nav>
-
-<header class="hero wrap">
-  <div class="badge"><span class="dot"></span> Product preview · Partner APIs not connected yet</div>
-  <h1>Every trade has a cost.<br><span class="grad">Loop some of it back.</span></h1>
-  <p class="sub">A global, one-level exchange cashback platform built to track eligible trading fees, calculate rebate amounts, and keep payouts auditable from UID to receipt.</p>
-  <div class="herocta"><a class="btn primary" href="#feelab">Try Fee Lab</a><a class="btn" href="#how">See how it works</a></div>
-  <div class="trust">
-    <div class="stat"><b>1-level</b><span>Direct referral model only</span></div>
-    <div class="stat"><b>Ledger-first</b><span>Source-level fee records</span></div>
-    <div class="stat"><b>Manual payout</b><span>Operator approval in V1</span></div>
-    <div class="stat"><b>Global</b><span>Country-rule engine ready</span></div>
+<body class="shell">
+<header class="topbar">
+  <div class="wrap nav">
+    <a class="brand" href="index.html"><span class="mark"></span><span>FEE<span class="word-grad">LOOP</span></span></a>
+    <nav class="navlinks"><a href="exchanges.html">Exchanges</a><a href="#feelab">Fee Lab</a><a href="events.html">Events</a><a href="#how">How it works</a></nav>
+    <div class="actions"><a class="btn ghost hide-sm" href="login.html">Log in</a><a class="btn primary" href="login.html">Get started</a></div>
   </div>
 </header>
 
-<section id="exchanges">
-  <div class="wrap">
-    <div class="eyebrow">Exchange Hub</div><h2>Compare before you connect.</h2>
-    <p class="lead">Rates below are intentionally not published until partner terms are verified. FEELOOP will rank exchanges by effective fee after eligible cashback, not by headline rebate alone.</p>
-    <div class="grid4">
-      <div class="card"><div class="exlogo">BX</div><span class="pill">Connector planned</span><h3>BingX</h3><div class="rate">Rate pending</div><div class="meta">UID verification · fee sync · cashback ledger</div></div>
-      <div class="card"><div class="exlogo">TB</div><span class="pill">Connector planned</span><h3>Toobit</h3><div class="rate">Rate pending</div><div class="meta">Affiliate API adapter reserved</div></div>
-      <div class="card"><div class="exlogo">BG</div><span class="pill">Connector planned</span><h3>Bitget</h3><div class="rate">Rate pending</div><div class="meta">Partner terms required before launch</div></div>
-      <div class="card"><div class="exlogo">CW</div><span class="pill">Connector planned</span><h3>CoinW</h3><div class="rate">Rate pending</div><div class="meta">Commission ingestion module ready</div></div>
+<main>
+  <section class="hero wrap">
+    <div class="badge"><span class="dot"></span> Product preview · Partner APIs connect next</div>
+    <h1>Trading fees, tracked.<br><span class="word-grad">Cashback, made visible.</span></h1>
+    <p class="lead">FEELOOP turns direct referral fee data into a transparent cashback ledger — with clear exchange status, source records, payout history and event discovery in one place.</p>
+    <div class="hero-actions"><a class="btn primary" href="login.html">Open demo dashboard</a><a class="btn" href="exchanges.html">Explore exchanges</a></div>
+    <div class="trust-strip">
+      <div class="stat"><b>1-level only</b><span class="meta">Direct referral model</span></div>
+      <div class="stat"><b>Ledger-first</b><span class="meta">Source-level records</span></div>
+      <div class="stat"><b>Operator payout</b><span class="meta">Manual approval in V1</span></div>
+      <div class="stat"><b>Global-ready</b><span class="meta">Country policy layer</span></div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section id="feelab">
-  <div class="wrap">
-    <div class="eyebrow">Fee Lab</div><h2>Model the cashback before launch.</h2>
-    <div class="split">
-      <div class="card calculator">
-        <div class="fields">
-          <div><label>30-day trading volume (USDT)<input id="vol" type="number" value="1000000"></label></div>
-          <div><label>Taker fee (%)<input id="fee" type="number" step=".001" value="0.05"></label></div>
-          <div><label>Eligible cashback (%)<input id="rebate" type="number" step=".1" value="60"></label></div>
-          <div><label>Eligible volume (%)<input id="eligible" type="number" step=".1" value="100"></label></div>
-        </div>
-        <button class="btn primary" onclick="calc()">Calculate estimate</button>
-        <p class="meta">Illustrative calculator only. Actual eligibility, fee rate and rebate rate depend on each exchange's verified partner program.</p>
-      </div>
-      <div class="result">
-        <div class="meta">Estimated cashback</div><strong id="cash">$300.00</strong>
-        <div class="kpis">
-          <div class="mini"><span class="meta">Eligible fees</span><b id="fees">$500.00</b></div>
-          <div class="mini"><span class="meta">Effective cost</span><b id="cost">$200.00</b></div>
-          <div class="mini"><span class="meta">Fee saved</span><b id="saved">60.00%</b></div>
-        </div>
-      </div>
+  <section class="section" id="exchanges">
+    <div class="wrap">
+      <div class="section-head"><div><div class="eyebrow">Exchange Hub</div><h2>Compare the real fee path.</h2><p class="lead">The public rate stays blank until official partner terms are verified. FEELOOP is designed to compare effective cost after eligible cashback, not just headline percentages.</p></div><a class="btn" href="exchanges.html">View all exchanges →</a></div>
+      <div class="grid-4" data-exchanges></div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section id="how">
-  <div class="wrap">
-    <div class="eyebrow">How FEELOOP works</div><h2>Simple for users. Traceable for operators.</h2>
-    <div class="split">
-      <div class="flow">
-        <div class="step"><div class="num">1</div><div><b>Join through a supported partner link</b><div class="meta">The user remains a customer of the exchange.</div></div></div>
-        <div class="step"><div class="num">2</div><div><b>Connect and verify the exchange UID</b><div class="meta">Only direct, eligible referral relationships are accepted.</div></div></div>
-        <div class="step"><div class="num">3</div><div><b>FEELOOP syncs eligible fee records</b><div class="meta">Commission records are deduplicated and written to an auditable ledger.</div></div></div>
-        <div class="step"><div class="num">4</div><div><b>User requests payout</b><div class="meta">V1 uses manual operator approval and records transfer ID / TXID after payment.</div></div></div>
-      </div>
-      <div class="card mock" id="dashboard">
-        <div class="mocktop"><div><div class="meta">Available cashback</div><div class="balance">$729.32</div></div><span class="pill">Preview</span></div>
-        <div class="kpis"><div class="mini"><span class="meta">30D fees</span><b>$1,984.20</b></div><div class="mini"><span class="meta">Cashback</span><b>$1,190.52</b></div><div class="mini"><span class="meta">Paid</span><b>$461.20</b></div></div>
-        <div class="table">
-          <div class="row head"><div>Exchange</div><div>UID</div><div>Status</div><div>Amount</div></div>
-          <div class="row"><div>BingX</div><div>18•••55</div><div>Eligible</div><div>$312.20</div></div>
-          <div class="row"><div>Toobit</div><div>66•••31</div><div>Pending</div><div>$217.80</div></div>
-          <div class="row"><div>Bitget</div><div>99•••70</div><div>Paid</div><div>$461.20</div></div>
+  <section class="section" id="feelab">
+    <div class="wrap">
+      <div class="section-head"><div><div class="eyebrow">Fee Lab</div><h2>Model your fee savings.</h2><p class="lead">Use your own assumptions now. Verified exchange rates will replace manual inputs after partner APIs are connected.</p></div></div>
+      <div class="split">
+        <form class="card" id="feeLab">
+          <div class="form-grid">
+            <div class="field"><label>30-day trading volume (USDT)</label><input id="vol" type="number" value="1000000"></div>
+            <div class="field"><label>Taker fee (%)</label><input id="fee" type="number" step=".001" value="0.05"></div>
+            <div class="field"><label>Eligible cashback (%)</label><input id="rebate" type="number" step=".1" value="60"></div>
+            <div class="field"><label>Eligible volume (%)</label><input id="eligible" type="number" step=".1" value="100"></div>
+          </div>
+          <div style="margin-top:16px"><button class="btn primary" type="submit">Update estimate</button></div>
+          <p class="meta" style="margin-top:14px">Illustrative only. Actual fee eligibility and cashback depend on verified exchange partner terms.</p>
+        </form>
+        <div class="card result">
+          <div class="meta">Estimated cashback</div><strong id="cash">$300.00</strong>
+          <div class="kpi-grid">
+            <div class="kpi"><span class="meta">Eligible fees</span><b id="fees">$500.00</b></div>
+            <div class="kpi"><span class="meta">Effective cost</span><b id="cost">$200.00</b></div>
+            <div class="kpi"><span class="meta">Fee saved</span><b id="saved">60.00%</b></div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section id="events">
-  <div class="wrap">
-    <div class="eyebrow">Event Center</div><h2>Exchange campaigns, in one feed.</h2>
-    <p class="lead">The final version can ingest verified event data from official partner feeds, exchange APIs, or operator-approved CMS entries.</p>
-    <div class="events">
-      <div class="card event"><div class="tag">Feed placeholder</div><h3>Trading competition</h3><p class="meta">Official campaign details will appear here after source verification.</p></div>
-      <div class="card event"><div class="tag">Feed placeholder</div><h3>Deposit promotion</h3><p class="meta">Eligibility and regional restrictions will be stored per event.</p></div>
-      <div class="card event"><div class="tag">Feed placeholder</div><h3>VIP campaign</h3><p class="meta">No promotional claim is published until partner terms are confirmed.</p></div>
+  <section class="section" id="how">
+    <div class="wrap">
+      <div class="section-head"><div><div class="eyebrow">How it works</div><h2>Four steps. One visible ledger.</h2></div></div>
+      <div class="split">
+        <div class="flow">
+          <div class="step"><div class="step-no">1</div><div><b>Join through a supported referral route</b><div class="meta">Your trading account stays with the exchange.</div></div></div>
+          <div class="step"><div class="step-no">2</div><div><b>Connect your exchange UID</b><div class="meta">FEELOOP verifies the direct referral relationship.</div></div></div>
+          <div class="step"><div class="step-no">3</div><div><b>Eligible fees become ledger entries</b><div class="meta">Source IDs prevent duplicate accrual.</div></div></div>
+          <div class="step"><div class="step-no">4</div><div><b>Request payout</b><div class="meta">V1 uses operator review and payment receipt logging.</div></div></div>
+        </div>
+        <div class="card">
+          <div class="section-head" style="margin-bottom:12px"><div><div class="meta">Available cashback</div><div class="big-number">$437.13</div></div><span class="pill">Demo</span></div>
+          <div class="kpi-grid"><div class="kpi"><span class="meta">30D fees</span><b>$1,189.75</b></div><div class="kpi"><span class="meta">Cashback</span><b>$713.85</b></div><div class="kpi"><span class="meta">Paid</span><b>$276.72</b></div></div>
+          <div class="notice" style="margin-top:16px">The live dashboard adds UID status, source-level ledger records, payout history and event tracking.</div>
+          <div style="margin-top:16px"><a class="btn primary" href="login.html">Open dashboard demo</a></div>
+        </div>
+      </div>
     </div>
-    <div class="notice"><b>Preview environment.</b> No exchange account is connected, no cashback is being accrued, and no payouts are live. Production launch should enforce country eligibility and exclude residents of the Republic of Korea.</div>
-  </div>
-</section>
+  </section>
 
-<footer>
-  <div class="wrap foot"><div><div class="brand"><span class="mark"></span>FEELOOP</div><div class="meta" style="margin-top:8px">Trade. Track. Get fees back.</div></div><div class="meta">© 2026 FEELOOP · Product preview</div></div>
-</footer>
+  <section class="section">
+    <div class="wrap">
+      <div class="section-head"><div><div class="eyebrow">Event Center</div><h2>Campaign discovery without the clutter.</h2><p class="lead">Official exchange campaigns can later be ingested from verified feeds or approved manually in the operator CMS.</p></div><a class="btn" href="events.html">Browse event center →</a></div>
+      <div class="grid-3" data-events data-limit="3"></div>
+    </div>
+  </section>
 
-<script>
-function money(v){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(v)}
-function calc(){
-  const vol=Math.max(0,+document.getElementById('vol').value||0);
-  const fee=Math.max(0,+document.getElementById('fee').value||0)/100;
-  const rebate=Math.min(100,Math.max(0,+document.getElementById('rebate').value||0))/100;
-  const eligible=Math.min(100,Math.max(0,+document.getElementById('eligible').value||0))/100;
-  const fees=vol*eligible*fee, cash=fees*rebate, cost=fees-cash;
-  document.getElementById('fees').textContent=money(fees);
-  document.getElementById('cash').textContent=money(cash);
-  document.getElementById('cost').textContent=money(cost);
-  document.getElementById('saved').textContent=(rebate*100).toFixed(2)+'%';
-}
-calc();
-</script>
-</body>
-</html>
+  <section class="section">
+    <div class="wrap"><div class="notice"><b>Preview environment.</b> No exchange API is connected, no cashback is currently accruing and no payout is live. Production launch will enforce jurisdiction eligibility and source verification.</div></div>
+  </section>
+</main>
+
+<footer class="footer"><div class="wrap footer-row"><div><div class="brand"><span class="mark"></span><span>FEE<span class="word-grad">LOOP</span></span></div><div class="meta" style="margin-top:7px">Trade. Track. Get fees back.</div></div><div class="footer-links"><a href="exchanges.html">Exchanges</a><a href="events.html">Events</a><a href="login.html">Login</a><a href="admin.html">Operator preview</a></div><div class="meta">© <span id="year">2026</span> FEELOOP</div></div></footer>
+<script src="assets/app.js"></script>
+</body></html>
