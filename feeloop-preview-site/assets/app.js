@@ -11,42 +11,11 @@ const FeeLoop = (() => {
       description:"Connector slot prepared for commission ingestion, deduplication and manual payout workflow."}
   ];
 
-  const EVENTS = [
-    {id:"bingx-volume-sprint",exchange:"BingX",exchangeId:"bingx",type:"Trading competition",title:"Volume Sprint — UI Preview",
-      summary:"Preview of how a verified exchange trading event will be presented inside FEELOOP.",
-      period:"Dates pending verification",reward:"Reward details pending",region:"Eligible regions only",status:"Preview",tone:"blue",
-      steps:["Open the verified partner event page.","Review region, product and volume eligibility.","Join through the official flow.","Track progress after the data connector is live."],
-      terms:["This page is a product UI mock-up, not a live promotion.","Final dates, rewards and eligibility must come from an official exchange or partner source.","Restricted jurisdictions will be hidden or blocked at production launch."]},
-    {id:"toobit-deposit-boost",exchange:"Toobit",exchangeId:"toobit",type:"Deposit promotion",title:"Deposit Boost — UI Preview",
-      summary:"Example detail layout for a deposit-based partner campaign.",
-      period:"Dates pending verification",reward:"Reward details pending",region:"Eligible regions only",status:"Preview",tone:"blue",
-      steps:["Verify the official campaign source.","Register through the supported route.","Complete the published deposit conditions.","Claim or receive rewards according to the exchange terms."],
-      terms:["Example content only.","FEELOOP does not publish a reward amount until official terms are verified.","Eligibility can differ by country and account status."]},
-    {id:"bitget-vip-match",exchange:"Bitget",exchangeId:"bitget",type:"VIP campaign",title:"VIP Match — UI Preview",
-      summary:"Example event page for a VIP or fee-tier campaign with source verification controls.",
-      period:"Dates pending verification",reward:"Tier details pending",region:"Eligible regions only",status:"Preview",tone:"blue",
-      steps:["Review the verified VIP requirements.","Connect the eligible UID.","Submit required proof if the exchange requires it.","Track status in the FEELOOP event center."],
-      terms:["Example content only.","All tier and fee benefits remain pending until a verified source is connected.","Exchange terms take precedence over FEELOOP summaries."]},
-    {id:"coinw-fee-week",exchange:"CoinW",exchangeId:"coinw",type:"Fee promotion",title:"Fee Week — UI Preview",
-      summary:"Example event detail for a fee-rebate or trading-fee campaign.",
-      period:"Dates pending verification",reward:"Fee benefit pending",region:"Eligible regions only",status:"Preview",tone:"blue",
-      steps:["Open the official event terms.","Confirm the qualifying market and order types.","Trade only after enrollment is confirmed.","Check eligible fee records after connector sync."],
-      terms:["Example content only.","No cashback or fee claim is active from this preview page.","Published values will be source-stamped in production."]}
-  ];
+  const EVENTS = [];
 
-  const DEMO_LEDGER = [
-    {date:"2026-09-20",exchange:"BingX",uid:"18•••55",fee:312.20,cashback:187.32,status:"Eligible"},
-    {date:"2026-09-18",exchange:"Toobit",uid:"66•••31",fee:217.80,cashback:130.68,status:"Pending"},
-    {date:"2026-09-15",exchange:"Bitget",uid:"99•••70",fee:461.20,cashback:276.72,status:"Paid"},
-    {date:"2026-09-11",exchange:"CoinW",uid:"42•••91",fee:198.55,cashback:119.13,status:"Eligible"}
-  ];
+  const DEMO_LEDGER = [];
 
-  const PAYOUTS = [
-    {id:"PO-1048",user:"demo@feeloop.app",exchange:"BingX",method:"Exchange UID",amount:187.32,status:"pending",created:"2026-09-21"},
-    {id:"PO-1047",user:"alexa@example.com",exchange:"Bitget",method:"Exchange UID",amount:442.10,status:"processing",created:"2026-09-21"},
-    {id:"PO-1046",user:"marco@example.com",exchange:"Toobit",method:"Wallet",amount:231.45,status:"paid",created:"2026-09-20"},
-    {id:"PO-1045",user:"demo@feeloop.app",exchange:"Bitget",method:"Exchange UID",amount:276.72,status:"paid",created:"2026-09-19"}
-  ];
+  const PAYOUTS = [];
 
   const fmtMoney = v => new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(Number(v)||0);
   const $ = (q,root=document) => root.querySelector(q);
@@ -164,8 +133,12 @@ const FeeLoop = (() => {
 
   function initDashboard(){
     const root=$("#dashboardLedger"); if(!root) return;
-    root.innerHTML=DEMO_LEDGER.map(r=>`<tr><td>${r.date}</td><td><strong>${r.exchange}</strong></td><td>${r.uid}</td><td>${fmtMoney(r.fee)}</td><td>${fmtMoney(r.cashback)}</td><td><span class="status ${r.status==="Paid"?"paid":r.status==="Pending"?"processing":"pending"}">${r.status}</span></td></tr>`).join("");
-    const eventEl=$("#dashboardEvents");if(eventEl) eventEl.innerHTML=EVENTS.slice(0,3).map(e=>`<a href="event.html?id=${e.id}" class="step"><div class="step-no">↗</div><div><b>${e.exchange}</b><div class="meta">${e.title}</div></div></a>`).join("");
+    root.innerHTML=DEMO_LEDGER.length
+      ? DEMO_LEDGER.map(r=>`<tr><td>${r.date}</td><td><strong>${r.exchange}</strong></td><td>${r.uid}</td><td>${fmtMoney(r.fee)}</td><td>${fmtMoney(r.cashback)}</td><td><span class="status ${r.status==="Paid"?"paid":r.status==="Pending"?"processing":"pending"}">${r.status}</span></td></tr>`).join("")
+      : '<tr><td colspan="6"><div class="empty">No fee records yet. Data will appear after an exchange UID is connected and verified.</div></td></tr>';
+    const eventEl=$("#dashboardEvents");if(eventEl) eventEl.innerHTML=EVENTS.length
+      ? EVENTS.slice(0,3).map(e=>`<a href="event.html?id=${e.id}" class="step"><div class="step-no">↗</div><div><b>${e.exchange}</b><div class="meta">${e.title}</div></div></a>`).join("")
+      : '<div class="empty">No verified exchange events yet.</div>';
     const modal=$("#payoutModal"), open=$("#requestPayout"), close=$("#closePayout"), form=$("#payoutForm");
     open?.addEventListener("click",()=>modal.classList.add("open"));
     close?.addEventListener("click",()=>modal.classList.remove("open"));
@@ -174,13 +147,13 @@ const FeeLoop = (() => {
       e.preventDefault();
       const amount=Number($("#payoutAmount").value||0);
       if(amount<=0||amount>437.13){toast("Enter an amount up to $437.13");return}
-      modal.classList.remove("open");toast("Demo payout request created");
+      modal.classList.remove("open");toast("Payout backend is not connected yet");
     });
   }
 
   function initEvents(){
     const grid=$("#eventGrid"); if(!grid) return;
-    const render=()=>{grid.innerHTML=EVENTS.map(eventCard).join("")};
+    const render=()=>{grid.innerHTML=EVENTS.length?EVENTS.map(eventCard).join(""):'<div class="panel empty" style="grid-column:1/-1">No verified exchange events are published yet.</div>'};
     render();
     $$(".chip[data-filter]").forEach(btn=>btn.addEventListener("click",()=>{
       $$(".chip[data-filter]").forEach(x=>x.classList.remove("active"));btn.classList.add("active");
@@ -195,7 +168,12 @@ const FeeLoop = (() => {
 
   function initEventDetail(){
     const root=$("#eventDetail"); if(!root) return;
-    const e=EVENTS.find(x=>x.id===query("id"))||EVENTS[0];
+    const e=EVENTS.find(x=>x.id===query("id"));
+    if(!e){
+      document.title='Event — FEELOOP';
+      root.innerHTML='<div class="page-hero"><div class="eyebrow">Event Center</div><h1>No event selected.</h1><p class="lead">Verified exchange campaigns will appear here after an official source is connected.</p><div style="margin-top:22px"><a class="btn" href="events.html">← Back to event center</a></div></div>';
+      return;
+    }
     document.title=`${e.title} — FEELOOP`;
     root.innerHTML=`
       <div class="page-hero">
@@ -271,14 +249,18 @@ const FeeLoop = (() => {
     const tbody=$("#payoutQueue");if(!tbody)return;
     const draw=()=>{
       const rows=payoutState();
-      tbody.innerHTML=rows.map(p=>`<tr><td><strong>${p.id}</strong><div class="meta">${p.created}</div></td><td>${p.user}</td><td>${p.exchange}</td><td>${p.method}</td><td><strong>${fmtMoney(p.amount)}</strong></td><td><span class="status ${p.status}">${p.status}</span></td><td><div class="action-row">${p.status!=="paid"?`<button class="btn sm" data-payout="${p.id}" data-action="processing">Process</button><button class="btn sm primary" data-payout="${p.id}" data-action="paid">Mark paid</button>`:""}${p.status==="pending"?`<button class="btn sm danger" data-payout="${p.id}" data-action="rejected">Reject</button>`:""}</div></td></tr>`).join("");
+      tbody.innerHTML=rows.length
+        ? rows.map(p=>`<tr><td><strong>${p.id}</strong><div class="meta">${p.created}</div></td><td>${p.user}</td><td>${p.exchange}</td><td>${p.method}</td><td><strong>${fmtMoney(p.amount)}</strong></td><td><span class="status ${p.status}">${p.status}</span></td><td><div class="action-row">${p.status!=="paid"?`<button class="btn sm" data-payout="${p.id}" data-action="processing">Process</button><button class="btn sm primary" data-payout="${p.id}" data-action="paid">Mark paid</button>`:""}${p.status==="pending"?`<button class="btn sm danger" data-payout="${p.id}" data-action="rejected">Reject</button>`:""}</div></td></tr>`).join("")
+        : '<tr><td colspan="7"><div class="empty">No payout requests yet.</div></td></tr>';
       $$("[data-payout]").forEach(btn=>btn.addEventListener("click",()=>{
         const list=payoutState();const row=list.find(x=>x.id===btn.dataset.payout);if(row){row.status=btn.dataset.action;savePayouts(list);draw();toast(`${row.id} updated to ${row.status}`)}
       }));
     };draw();
 
     const ex=$("#adminExchanges");if(ex) ex.innerHTML=EXCHANGES.map(e=>`<div class="card"><div class="ex-head"><div class="exlogo">${e.short}</div><span class="pill blue">API pending</span></div><h3 style="margin-top:14px">${e.name}</h3><div class="form-grid" style="margin-top:12px"><div class="field"><label>Cashback %<input placeholder="Pending" disabled></label></div><div class="field"><label>Partner commission %<input placeholder="Pending" disabled></label></div></div><div class="meta" style="margin-top:12px">Unlock after verified partner credentials are available.</div></div>`).join("");
-    const cms=$("#adminEvents");if(cms) cms.innerHTML=EVENTS.map(e=>`<tr><td><strong>${e.exchange}</strong></td><td>${e.title}</td><td>${e.type}</td><td><span class="status processing">preview</span></td><td><a class="btn sm" href="event.html?id=${e.id}">View</a></td></tr>`).join("");
+    const cms=$("#adminEvents");if(cms) cms.innerHTML=EVENTS.length
+      ? EVENTS.map(e=>`<tr><td><strong>${e.exchange}</strong></td><td>${e.title}</td><td>${e.type}</td><td><span class="status processing">draft</span></td><td><a class="btn sm" href="event.html?id=${e.id}">View</a></td></tr>`).join("")
+      : '<tr><td colspan="5"><div class="empty">No event records yet.</div></td></tr>';
   }
 
   function initOperatorPreview(){
