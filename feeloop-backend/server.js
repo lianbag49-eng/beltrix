@@ -50,6 +50,7 @@ const initialState = () => ({
 let state = initialState();
 let pgPool = null;
 let writeChain = Promise.resolve();
+let adminBootstrapInProgress = false;
 
 function now(){ return new Date().toISOString(); }
 function id(prefix){ return prefix + "_" + crypto.randomBytes(9).toString("hex"); }
@@ -214,19 +215,25 @@ app.get("/api/auth/bootstrap-status",(req,res)=>{
 });
 
 app.post("/api/auth/bootstrap-admin",async(req,res)=>{
-  if(state.users.some(u=>u.role==="admin")) return res.status(410).json({error:"ADMIN_ALREADY_CONFIGURED"});
+  if(state.users.some(u=>u.role==="admin") || adminBootstrapInProgress) return res.status(410).json({error:"ADMIN_ALREADY_CONFIGURED"});
+  adminBootstrapInProgress = true;
   const phraseHash=crypto.createHash("sha256").update(String(req.body.bootstrapPhrase||"")).digest("hex");
   const a=Buffer.from(phraseHash), b=Buffer.from(ADMIN_BOOTSTRAP_HASH);
-  if(a.length!==b.length || !crypto.timingSafeEqual(a,b)) return res.status(403).json({error:"INVALID_BOOTSTRAP_PHRASE"});
+  if(a.length!==b.length || !crypto.timingSafeEqual(a,b)){ adminBootstrapInProgress=false; return res.status(403).json({error:"INVALID_BOOTSTRAP_PHRASE"}); }
   const email=cleanEmail(req.body.email);
   const password=String(req.body.password||"");
-  if(!email || !/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({error:"INVALID_EMAIL"});
-  if(password.length<12) return res.status(400).json({error:"PASSWORD_TOO_SHORT"});
+  if(!email || !/^\S+@\S+\.\S+$/.test(email)){ adminBootstrapInProgress=false; return res.status(400).json({error:"INVALID_EMAIL"}); }
+  if(password.length<12){ adminBootstrapInProgress=false; return res.status(400).json({error:"PASSWORD_TOO_SHORT"}); }
+  if(state.users.some(u=>u.email===email)){ adminBootstrapInProgress=false; return res.status(409).json({error:"EMAIL_EXISTS"}); }
   const passwordHash=await bcrypt.hash(password,12);
   const user={id:id("usr"),email,passwordHash,role:"admin",country:"",emailVerified:true,mfaEnabled:false,mfaSecret:null,createdAt:now(),updatedAt:now()};
-  await mutate(async()=>{state.users.push(user);audit(user,"ADMIN_BOOTSTRAPPED",user.id,{email});});
-  setAuthCookie(res,user);
-  res.status(201).json({user:publicUser(user)});
+  try{
+    await mutate(async()=>{state.users.push(user);audit(user,"ADMIN_BOOTSTRAPPED",user.id,{email});});
+    setAuthCookie(res,user);
+    res.status(201).json({user:publicUser(user)});
+  } finally {
+    adminBootstrapInProgress=false;
+  }
 });
 
 app.post("/api/auth/register",async(req,res)=>{
