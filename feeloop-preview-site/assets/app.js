@@ -98,7 +98,7 @@ const FeeLoop = (() => {
       const vol=Math.max(0,Number($("#vol")?.value||0));
       const fee=Math.max(0,Number($("#fee")?.value||0))/100;
       const rebate=Math.min(100,Math.max(0,Number($("#rebate")?.value||0)))/100;
-      const eligible=Math.min(100,Math.max(0,Number($("#eligible")?.value||0))/100);
+      const eligible=Math.min(100,Math.max(0,Number($("#eligible")?.value||0)))/100;
       const fees=vol*fee*eligible, cash=fees*rebate, cost=fees-cash;
       if($("#cash")) $("#cash").textContent=fmtMoney(cash);
       if($("#fees")) $("#fees").textContent=fmtMoney(fees);
