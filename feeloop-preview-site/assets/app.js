@@ -44,6 +44,7 @@ const FeeLoop = (() => {
       INSUFFICIENT_AVAILABLE_BALANCE:"The requested amount exceeds your available cashback.",
       PAYMENT_REFERENCE_REQUIRED:"A transfer ID or TXID is required before marking a payout paid.",
       INVALID_MFA_CODE:"The authentication code is invalid.",
+      MFA_ALREADY_ENABLED:"MFA is already enabled for this administrator.",
       MFA_SESSION_EXPIRED:"The MFA login session expired. Please log in again."
     };
     return map[err.message]||err.message.replaceAll("_"," ").toLowerCase().replace(/^./,c=>c.toUpperCase());
@@ -264,6 +265,16 @@ const FeeLoop = (() => {
     if(!$("#adminRoot"))return;
     const me=await guard("admin");if(!me)return;
     let data;try{data=await api("/api/admin/overview")}catch(err){toast(errorText(err));return}
+    if($("#mfaStatus")){
+      if(me.mfaEnabled){
+        $("#mfaStatus").innerHTML='<div class="pill">✓ MFA enabled</div><div class="meta" style="margin-top:8px">Authenticator verification is required at administrator login.</div>';
+        if($("#mfaSetupAction")) $("#mfaSetupAction").style.display="none";
+        if($("#mfaSetup")) $("#mfaSetup").style.display="none";
+      }else{
+        $("#mfaStatus").innerHTML='<div class="pill warn">MFA not enabled</div>';
+        if($("#mfaSetupAction")) $("#mfaSetupAction").style.display="block";
+      }
+    }
     setText("#adminPending",String(data.metrics.pendingPayouts));setText("#adminPendingAmount",money(data.metrics.pendingAmount));setText("#adminUsers",String(data.metrics.users));setText("#adminCommission",money(data.metrics.grossCommission));setText("#adminMargin",money(data.metrics.platformMargin));
 
     async function renderUsers(q=""){
