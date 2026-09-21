@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Account — FEELOOP</title><link rel="stylesheet" href="assets/style.css?v=12"></head>
+<body>
+<div class="sidebar-layout">
+  <aside class="sidebar">
+    <div class="side-brand"><a class="brand" href="index.html"><span class="mark"></span><span>FEE<span class="word-grad">LOOP</span></span></a></div>
+    <nav class="side-nav"><a href="dashboard.html">⌂ <span>Overview</span></a><a href="exchanges.html">◇ <span>Exchanges</span></a><a href="events.html">✦ <span>Events</span></a><a class="active" href="account.html">⚙ <span>Account</span></a></nav>
+    <div class="side-foot"><button class="btn sm" data-logout>Log out</button></div>
+  </aside>
+  <main class="app-main" id="accountRoot">
+    <div class="app-top"><div><div class="meta">Member workspace</div><h1>Account & Security</h1></div><div class="avatar">F</div></div>
+    <div class="grid-2">
+      <section class="card">
+        <div class="eyebrow">Profile</div><h3 style="margin-top:8px">Account details</h3>
+        <div class="feature-list">
+          <div class="feature"><i></i><span>Email: <b id="accountEmail">—</b></span></div>
+          <div class="feature"><i></i><span>Country: <b id="accountCountry">—</b></span></div>
+          <div class="feature"><i></i><span>Email status: <b id="accountVerified">—</b></span></div>
+          <div class="feature"><i></i><span>MFA: <b id="accountMfa">—</b></span></div>
+        </div>
+      </section>
+      <section class="card">
+        <div class="eyebrow">Security</div><h3 style="margin-top:8px">Session controls</h3>
+        <p class="meta">Review active sessions and revoke anything you do not recognize.</p>
+        <div style="margin-top:16px"><button class="btn danger" id="logoutAll">Log out all sessions</button></div>
+      </section>
+    </div>
+
+    <section class="section">
+      <div class="section-head"><div><div class="eyebrow">Sessions</div><h2>Active sign-ins</h2><p class="lead">Server-side sessions remain valid across deploys until revoked or expired.</p></div></div>
+      <div class="table-wrap"><table><thead><tr><th>Created</th><th>Last seen</th><th>IP</th><th>Action</th></tr></thead><tbody id="sessionTable"></tbody></table></div>
+    </section>
+  </main>
+</div>
+<div id="toast" class="toast"></div><script src="assets/app.js?v=12"></script></body></html>
