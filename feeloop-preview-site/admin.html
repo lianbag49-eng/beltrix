@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Operator Console — FEELOOP</title><link rel="stylesheet" href="assets/style.css?v=12"></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Operator Console — FEELOOP</title><link rel="stylesheet" href="assets/style.css?v=13"></head>
 <body>
 <div class="sidebar-layout">
   <aside class="sidebar">
     <div class="side-brand"><a class="brand" href="index.html"><span class="mark"></span><span>FEE<span class="word-grad">LOOP</span></span></a></div>
-    <nav class="side-nav"><a class="active" href="#overview">▦ <span>Overview</span></a><a href="#users">♙ <span>Members</span></a><a href="#payouts">↗ <span>Payouts</span></a><a href="#uids">◎ <span>UID review</span></a><a href="#exchanges">◇ <span>Exchanges</span></a><a href="#events">✦ <span>Event CMS</span></a><a href="#security">⌾ <span>Security</span></a><a href="dashboard.html?preview=1">◉ <span>User preview</span></a></nav>
+    <nav class="side-nav"><a class="active" href="#overview">▦ <span>Overview</span></a><a href="#users">♙ <span>Members</span></a><a href="#payouts">↗ <span>Payouts</span></a><a href="#uids">◎ <span>UID review</span></a><a href="#exchanges">◇ <span>Exchanges</span></a><a href="#events">✦ <span>Event CMS</span></a><a href="#countries">◎ <span>Countries</span></a><a href="#security">⌾ <span>Security</span></a><a href="dashboard.html?preview=1">◉ <span>User preview</span></a></nav>
     <div class="side-foot"><button class="btn sm" data-logout>Log out</button></div>
   </aside>
   <main class="app-main" id="adminRoot">
@@ -27,6 +27,19 @@
 
     <section class="section" id="events"><div class="section-head"><div><div class="eyebrow">Content operations</div><h2>Event CMS</h2><p class="lead">Create, publish and unpublish exchange events. API ingestion can populate this same model later.</p></div><button class="btn primary" id="newEvent">+ New event</button></div><div class="table-wrap"><table><thead><tr><th>Exchange</th><th>Event</th><th>Type</th><th>Status</th><th></th></tr></thead><tbody id="adminEvents"></tbody></table></div></section>
 
+    <section class="section" id="countries">
+      <div class="section-head"><div><div class="eyebrow">Jurisdiction controls</div><h2>Country rules</h2><p class="lead">Control customer onboarding by residence/IP country. Operator access is handled separately.</p></div></div>
+      <div class="grid-2">
+        <form class="card stack" id="countryRuleForm">
+          <h3>Add or update a rule</h3>
+          <div class="form-grid"><div class="field"><label>Country code</label><input id="countryCode" maxlength="2" placeholder="KR" required></div><div class="field"><label>Status</label><select id="countryStatus"><option>ALLOW</option><option>REVIEW</option><option>BLOCK</option></select></div></div>
+          <div class="field"><label>Reason</label><input id="countryReason" maxlength="500" placeholder="Policy reason"></div>
+          <button class="btn primary" type="submit">Save rule</button>
+        </form>
+        <div class="card"><h3>Configured rules</h3><div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Country</th><th>Status</th><th>Reason</th></tr></thead><tbody id="countryRules"></tbody></table></div></div>
+      </div>
+    </section>
+
     <section class="section"><div class="grid-2">
       <div class="card" id="security"><div class="eyebrow">Security</div><h3 style="margin-top:8px">Administrator MFA</h3><p class="meta">TOTP-based MFA protects administrator sign-in.</p><div id="mfaStatus" style="margin-top:14px"></div><div id="mfaSetupAction" style="margin-top:14px"><button class="btn" id="setupMfa">Set up MFA</button></div><div id="mfaSetup" style="display:none;margin-top:16px" class="stack"><div class="notice"><div class="meta">Secret</div><code id="mfaSecret" style="word-break:break-all"></code></div><div class="helper" id="mfaUri" style="word-break:break-all"></div><div class="field"><label>Authenticator code</label><input id="mfaEnableCode" inputmode="numeric" placeholder="123456"></div><button class="btn primary" id="enableMfa">Enable MFA</button></div></div>
       <div class="card"><div class="eyebrow">Jurisdiction controls</div><h3 style="margin-top:8px">Country policy</h3><p class="meta">Customer registration is blocked for configured jurisdictions. Administrator access is handled separately from customer eligibility.</p><div class="notice" style="margin-top:14px">Republic of Korea: customer onboarding blocked.</div></div>
@@ -37,4 +50,4 @@
 </div>
 
 <div class="modal" id="eventModal"><form class="modal-card" id="eventForm"><div class="modal-head"><div><div class="eyebrow">Event CMS</div><h3>Create event</h3></div><button class="close" id="closeEvent" type="button">×</button></div><div class="stack"><div class="field"><label>Exchange</label><select id="eventExchange" name="exchangeId"></select></div><div class="field"><label>Title</label><input name="title" required></div><div class="field"><label>Type</label><input name="type" value="Promotion"></div><div class="field"><label>Summary</label><textarea name="summary" rows="3"></textarea></div><div class="form-grid"><div class="field"><label>Start</label><input name="startAt" type="datetime-local"></div><div class="field"><label>End</label><input name="endAt" type="datetime-local"></div></div><div class="field"><label>Reward / benefit</label><input name="reward"></div><div class="field"><label>Region</label><input name="region" value="Eligible regions only"></div><div class="field"><label>Official source URL</label><input name="sourceUrl" type="url" placeholder="https://"></div><div class="field"><label>Status</label><select name="status"><option value="draft">Draft</option><option value="published">Published</option></select></div><button class="btn primary" type="submit">Save event</button></div></form></div>
-<div id="toast" class="toast"></div><script src="assets/app.js?v=12"></script></body></html>
+<div id="toast" class="toast"></div><script src="assets/app.js?v=13"></script></body></html>
