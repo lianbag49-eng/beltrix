@@ -220,7 +220,7 @@ app.post("/api/auth/bootstrap-admin",async(req,res)=>{
   if(a.length!==b.length || !crypto.timingSafeEqual(a,b)) return res.status(403).json({error:"INVALID_BOOTSTRAP_PHRASE"});
   const email=cleanEmail(req.body.email);
   const password=String(req.body.password||"");
-  if(!email || !/^\\S+@\\S+\\.\\S+$/.test(email)) return res.status(400).json({error:"INVALID_EMAIL"});
+  if(!email || !/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({error:"INVALID_EMAIL"});
   if(password.length<12) return res.status(400).json({error:"PASSWORD_TOO_SHORT"});
   const passwordHash=await bcrypt.hash(password,12);
   const user={id:id("usr"),email,passwordHash,role:"admin",country:"",emailVerified:true,mfaEnabled:false,mfaSecret:null,createdAt:now(),updatedAt:now()};
