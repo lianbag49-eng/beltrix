@@ -55,7 +55,8 @@ function now(){ return new Date().toISOString(); }
 function id(prefix){ return prefix + "_" + crypto.randomBytes(9).toString("hex"); }
 function cleanEmail(v){ return String(v||"").trim().toLowerCase(); }
 function cleanCountry(v){ return String(v||"").trim().toUpperCase().slice(0,2); }
-function numeric(v){ const n=Number(v); return Number.isFinite(n)?n:0; }\nfunction safeHttpUrl(v){ const raw=String(v||"").trim(); if(!raw) return ""; try{ const u=new URL(raw); return ["http:","https:"].includes(u.protocol)?u.toString():""; }catch{return "";} }
+function numeric(v){ const n=Number(v); return Number.isFinite(n)?n:0; }
+function safeHttpUrl(v){ const raw=String(v||"").trim(); if(!raw) return ""; try{ const u=new URL(raw); return ["http:","https:"].includes(u.protocol)?u.toString():""; }catch{return "";} }
 function publicUser(u){ return u ? {id:u.id,email:u.email,role:u.role,country:u.country,emailVerified:!!u.emailVerified,mfaEnabled:!!u.mfaEnabled,createdAt:u.createdAt} : null; }
 
 function normalizeState(raw){
