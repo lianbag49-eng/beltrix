@@ -55,7 +55,7 @@ function now(){ return new Date().toISOString(); }
 function id(prefix){ return prefix + "_" + crypto.randomBytes(9).toString("hex"); }
 function cleanEmail(v){ return String(v||"").trim().toLowerCase(); }
 function cleanCountry(v){ return String(v||"").trim().toUpperCase().slice(0,2); }
-function numeric(v){ const n=Number(v); return Number.isFinite(n)?n:0; }
+function numeric(v){ const n=Number(v); return Number.isFinite(n)?n:0; }\nfunction safeHttpUrl(v){ const raw=String(v||"").trim(); if(!raw) return ""; try{ const u=new URL(raw); return ["http:","https:"].includes(u.protocol)?u.toString():""; }catch{return "";} }
 function publicUser(u){ return u ? {id:u.id,email:u.email,role:u.role,country:u.country,emailVerified:!!u.emailVerified,mfaEnabled:!!u.mfaEnabled,createdAt:u.createdAt} : null; }
 
 function normalizeState(raw){
@@ -460,7 +460,7 @@ app.post("/api/admin/events",requireAdmin,async(req,res)=>{
   const title=String(req.body.title||"").trim();
   const exchangeId=String(req.body.exchangeId||"").trim();
   if(!title || !state.exchangeConfigs.some(x=>x.id===exchangeId)) return res.status(400).json({error:"INVALID_EVENT"});
-  const event={id:id("evt"),exchangeId,title,type:String(req.body.type||"Promotion").trim().slice(0,80),summary:String(req.body.summary||"").trim().slice(0,1000),startAt:req.body.startAt||null,endAt:req.body.endAt||null,reward:String(req.body.reward||"").trim().slice(0,300),region:String(req.body.region||"Eligible regions only").trim().slice(0,300),sourceUrl:String(req.body.sourceUrl||"").trim().slice(0,1000),status:["draft","published","archived"].includes(req.body.status)?req.body.status:"draft",createdAt:now(),updatedAt:now()};
+  const event={id:id("evt"),exchangeId,title,type:String(req.body.type||"Promotion").trim().slice(0,80),summary:String(req.body.summary||"").trim().slice(0,1000),startAt:req.body.startAt||null,endAt:req.body.endAt||null,reward:String(req.body.reward||"").trim().slice(0,300),region:String(req.body.region||"Eligible regions only").trim().slice(0,300),sourceUrl:safeHttpUrl(req.body.sourceUrl).slice(0,1000),status:["draft","published","archived"].includes(req.body.status)?req.body.status:"draft",createdAt:now(),updatedAt:now()};
   await mutate(async()=>{state.events.push(event);audit(req.user,"EVENT_CREATED",event.id,{exchangeId,title,status:event.status});});
   res.status(201).json({event});
 });
@@ -468,7 +468,7 @@ app.patch("/api/admin/events/:id",requireAdmin,async(req,res)=>{
   const event=state.events.find(e=>e.id===req.params.id);
   if(!event) return res.status(404).json({error:"NOT_FOUND"});
   for(const key of ["title","type","summary","startAt","endAt","reward","region","sourceUrl","status"]){
-    if(req.body[key]!==undefined) event[key]=req.body[key];
+    if(req.body[key]!==undefined) event[key]=key==="sourceUrl"?safeHttpUrl(req.body[key]).slice(0,1000):req.body[key];
   }
   if(!["draft","published","archived"].includes(event.status)) event.status="draft";
   event.updatedAt=now();
