@@ -291,6 +291,25 @@ const FeeLoop = (() => {
     form.addEventListener("submit",async e=>{e.preventDefault();try{await api("/api/auth/password-reset/request",{method:"POST",body:{email:$("#email").value.trim()}});$("#forgotResult").textContent="If the account exists, a reset message will be sent when the email provider is connected."}catch(err){$("#forgotResult").textContent=errorText(err)}})
   }
 
+  async function initAdminSetup(){
+    const form=$("#adminSetupForm");if(!form)return;
+    try{
+      const status=await api("/api/auth/bootstrap-status");
+      if(status.adminExists){$("#adminSetupState").innerHTML='<div class="notice">Administrator setup is already complete. <a href="login.html" style="text-decoration:underline">Log in instead.</a></div>';form.style.display="none";return}
+    }catch{}
+    form.addEventListener("submit",async e=>{
+      e.preventDefault();$("#adminSetupError").textContent="";
+      try{
+        const data=await api("/api/auth/bootstrap-admin",{method:"POST",body:{
+          bootstrapPhrase:$("#bootstrapPhrase").value,
+          email:$("#adminEmail").value.trim(),
+          password:$("#adminPassword").value
+        }});
+        location.replace(data.user.role==="admin"?"admin.html":"login.html");
+      }catch(err){$("#adminSetupError").textContent=errorText(err)}
+    });
+  }
+
   async function bind(){
     await loadPublicConfig();
     renderExchangeCards();
@@ -302,7 +321,7 @@ const FeeLoop = (() => {
     await initEventDetail();
     await initExchangeDetail();
     await initAdmin();
-    initForgot();
+    initForgot();\n    await initAdminSetup();
     await renderEvents("[data-events]",3);
     $$("[data-logout]").forEach(x=>x.addEventListener("click",logout));
     const y=$("#year");if(y)y.textContent=new Date().getFullYear();
