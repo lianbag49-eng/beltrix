@@ -45,7 +45,9 @@ const FeeLoop = (() => {
       PAYMENT_REFERENCE_REQUIRED:"A transfer ID or TXID is required before marking a payout paid.",
       INVALID_MFA_CODE:"The authentication code is invalid.",
       MFA_ALREADY_ENABLED:"MFA is already enabled for this administrator.",
-      MFA_SESSION_EXPIRED:"The MFA login session expired. Please log in again."
+      MFA_SESSION_EXPIRED:"The MFA login session expired. Please log in again.",
+      EMAIL_NOT_VERIFIED:"Verify your email before logging in.",
+      INVALID_OR_EXPIRED_TOKEN:"This link is invalid or has expired."
     };
     return map[err.message]||err.message.replaceAll("_"," ").toLowerCase().replace(/^./,c=>c.toUpperCase());
   }
@@ -318,6 +320,45 @@ const FeeLoop = (() => {
     form.addEventListener("submit",async e=>{e.preventDefault();try{await api("/api/auth/password-reset/request",{method:"POST",body:{email:$("#email").value.trim()}});$("#forgotResult").textContent="If the account exists, a reset message will be sent when the email provider is connected."}catch(err){$("#forgotResult").textContent=errorText(err)}})
   }
 
+  async function initVerifyEmail(){
+    const root=$("#verifyEmailRoot");if(!root)return;
+    const raw=query("token");
+    if(!raw){root.innerHTML='<div class="notice">Verification token is missing.</div>';return}
+    try{
+      await api("/api/auth/verify-email",{method:"POST",body:{token:raw}});
+      root.innerHTML='<div class="pill">✓ Email verified</div><p class="meta" style="margin-top:12px">Your FEELOOP account is ready.</p><div style="margin-top:18px"><a class="btn primary" href="dashboard.html">Open dashboard</a></div>';
+    }catch(err){root.innerHTML='<div class="notice">'+escapeHtml(errorText(err))+'</div><div style="margin-top:18px"><a class="btn" href="login.html">Back to login</a></div>'}
+  }
+
+  async function initResetPassword(){
+    const form=$("#resetPasswordForm");if(!form)return;
+    const raw=query("token");
+    if(!raw){$("#resetPasswordError").textContent="Reset token is missing.";form.querySelector("button").disabled=true;return}
+    form.addEventListener("submit",async e=>{
+      e.preventDefault();$("#resetPasswordError").textContent="";
+      try{
+        await api("/api/auth/password-reset/confirm",{method:"POST",body:{token:raw,password:$("#newPassword").value}});
+        $("#resetPasswordResult").innerHTML='<div class="pill">✓ Password updated</div><div style="margin-top:16px"><a class="btn primary" href="login.html">Log in</a></div>';
+        form.style.display="none";
+      }catch(err){$("#resetPasswordError").textContent=errorText(err)}
+    });
+  }
+
+  async function initAccount(){
+    if(!$("#accountRoot"))return;
+    const me=await guard("user",{allowAdminPreview:false});if(!me)return;
+    $("#accountEmail").textContent=me.email;
+    $("#accountCountry").textContent=me.country||"—";
+    $("#accountVerified").textContent=me.emailVerified?"Verified":"Pending";
+    $("#accountMfa").textContent=me.mfaEnabled?"Enabled":"Not enabled";
+    try{
+      const data=await api("/api/auth/sessions");
+      $("#sessionTable").innerHTML=data.sessions.length?data.sessions.map(s=>`<tr><td>${escapeHtml(new Date(s.created_at).toLocaleString())}</td><td>${escapeHtml(new Date(s.last_seen_at).toLocaleString())}</td><td>${escapeHtml(s.ip||"—")}</td><td>${s.current?'<span class="pill">Current</span>':'<button class="btn sm danger" data-revoke-session="'+escapeHtml(s.id)+'">Revoke</button>'}</td></tr>`).join(""):'<tr><td colspan="4"><div class="empty">No active sessions.</div></td></tr>';
+      $("[data-revoke-session]").forEach(btn=>btn.addEventListener("click",async()=>{try{await api("/api/auth/sessions/"+btn.dataset.revokeSession,{method:"DELETE"});toast("Session revoked");setTimeout(()=>location.reload(),300)}catch(err){toast(errorText(err))}}));
+    }catch(err){toast(errorText(err))}
+    $("#logoutAll")?.addEventListener("click",async()=>{if(!confirm("Log out all sessions?"))return;try{await api("/api/auth/logout-all",{method:"POST"});location.replace("login.html")}catch(err){toast(errorText(err))}});
+  }
+
   async function initAdminSetup(){
     const form=$("#adminSetupForm");if(!form)return;
     try{
@@ -349,6 +390,9 @@ const FeeLoop = (() => {
     await initExchangeDetail();
     await initAdmin();
     initForgot();
+    await initVerifyEmail();
+    await initResetPassword();
+    await initAccount();
     await initAdminSetup();
     await renderEvents("[data-events]",3);
     $$("[data-logout]").forEach(x=>x.addEventListener("click",logout));
