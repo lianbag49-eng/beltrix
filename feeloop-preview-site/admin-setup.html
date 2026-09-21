@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Administrator setup — FEELOOP</title><link rel="stylesheet" href="assets/style.css?v=9"></head>
+<body>
+<div class="auth-wrap">
+  <section class="auth-visual"><a class="brand" href="index.html"><span class="mark"></span><span>FEE<span class="word-grad">LOOP</span></span></a><div class="auth-copy"><div class="eyebrow">One-time setup</div><h1>Initialize the<br><span class="word-grad">operator account.</span></h1><p class="lead">This route stops working as soon as the first administrator is created.</p></div><div class="meta">Keep the bootstrap phrase private and enable MFA immediately after setup.</div></section>
+  <section class="auth-panel">
+    <div class="card auth-card stack">
+      <div id="adminSetupState"></div>
+      <form class="stack" id="adminSetupForm">
+        <div><div class="eyebrow">Administrator</div><h2>Create the first operator</h2><p class="meta">Use a dedicated admin email and a unique password of at least 12 characters.</p></div>
+        <div class="field"><label>Bootstrap phrase</label><input id="bootstrapPhrase" type="password" autocomplete="off" required></div>
+        <div class="field"><label>Admin email</label><input id="adminEmail" type="email" autocomplete="email" required></div>
+        <div class="field"><label>Admin password</label><input id="adminPassword" type="password" minlength="12" autocomplete="new-password" required></div>
+        <div id="adminSetupError" style="min-height:18px;color:var(--danger);font-size:12px"></div>
+        <button class="btn primary" type="submit">Initialize administrator</button>
+        <a class="btn ghost" href="index.html">← Back to site</a>
+      </form>
+    </div>
+  </section>
+</div>
+<script src="assets/app.js?v=9"></script></body></html>
