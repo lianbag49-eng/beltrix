@@ -2,14 +2,15 @@ import {fundingView,finite} from './terminal-core.js';
 import {createMarketChart} from './chart-ui.js';
 import './terminal-clean.js';
 import {validCandle,normalizeCandles} from './chart-core.js';
-import {hyperliquidNetwork,normalizeHyperliquidMarkets} from './hyperliquid-venue.js';
+import {hyperliquidNetwork} from './hyperliquid-venue.js';
+import {loadVenueMarkets,marketSnapshot,venueNetworks,venueIsTradable} from './market-venue-service.js';
 const $=id=>document.getElementById(id);
 const intervals={'1m':60000,'5m':300000,'15m':900000,'1h':3600000,'4h':14400000,'1d':86400000};
 let generation=0,controller,socket,retry,heartbeat,lastUpdate=0,candles=[],book=null,trades=[],lastTradeTime=0,streamReceived=0,dirty=false;
-let marketMeta=[],assetContext=null,contextReceived=0,contextTimer,candleFeed='snapshot';
+let marketMeta=[],assetContext=null,contextReceived=0,contextTimer,candleFeed='snapshot',activeVenue='hyperliquid';
 function endpoint(){return hyperliquidNetwork($('marketNetwork').value).http}
 function selection(){return marketMeta.find(x=>x.value===$('marketSymbol').value)}
-function emit(){window.dispatchEvent(new CustomEvent('beltrix:market',{detail:{network:$('marketNetwork').value,market:selection(),book,received:streamReceived,context:assetContext,contextReceived}}))}
+function emit(){window.dispatchEvent(new CustomEvent('beltrix:market',{detail:{venue:activeVenue,tradable:venueIsTradable(activeVenue),network:$('marketNetwork').value,market:selection(),book,received:streamReceived,context:assetContext,contextReceived}}))}
 function paintBook(){
  for(const [id,levels] of [['marketBids',book?.levels?.[0]],['marketAsks',book?.levels?.[1]]]){
   const box=$(id);box.replaceChildren();let total=0;const rows=(levels||[]).slice(0,$('bookDepth').value==='fast'?5:20).map(x=>({...x,total:total+=Number(x.sz)}));
@@ -21,6 +22,68 @@ function paintBook(){
  const bid=Number(book?.levels?.[0]?.[0]?.px),ask=Number(book?.levels?.[1]?.[0]?.px);$('marketSpread').textContent=bid>0&&ask>=bid?`Spread ${(ask-bid).toPrecision(4)} · ${((ask-bid)/((ask+bid)/2)*100).toFixed(3)}%`:'Spread —';
  const box=$('marketTrades');box.replaceChildren();for(const t of trades.slice(-10).reverse()){const row=document.createElement('div');row.className='row space pair '+(t.side==='B'?'green':'red');row.textContent=`${new Date(t.time).toLocaleTimeString('en-US')}  ${t.side==='B'?'Buy':'Sell'}  ${t.px} · ${t.sz}`;box.append(row)}
 }
+function setVenueUi(){
+ activeVenue=$('marketVenue')?.value||'hyperliquid';
+ const select=$('marketNetwork'),previous=select.value;
+ select.replaceChildren();
+ for(const item of venueNetworks(activeVenue))select.add(new Option(item.label,item.id));
+ if([...select.options].some(o=>o.value===previous))select.value=previous;
+ const hyper=activeVenue==='hyperliquid';
+ $('marketType').disabled=!hyper;
+ if(!hyper)$('marketType').value='perp';
+ $('bookDepth').disabled=!hyper;
+ const note=$('marketVenueNote');
+ const labels={hyperliquid:'Hyperliquid · live market data and funded trading.',orderly:'Orderly · read-only market catalog POC. Funded orders stay disabled.',gmx:'GMX · read-only market catalog POC. Funded orders stay disabled.',paradex:'Paradex · read-only market catalog POC. Funded orders stay disabled.'};
+ if(note)note.textContent=labels[activeVenue]||activeVenue;
+ const link=$('marketSourceLink');
+ const sources={
+  hyperliquid:['https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api','Market data by Hyperliquid'],
+  orderly:['https://orderly.network/docs/build-on-omnichain/evm-api/restful-api/public','Market data by Orderly'],
+  gmx:['https://docs.gmx.io/docs/api/overview/','Market data by GMX'],
+  paradex:['https://docs.paradex.trade/api/prod/markets/get-markets','Market data by Paradex']
+ };
+ if(link&&sources[activeVenue]){link.href=sources[activeVenue][0];link.textContent=sources[activeVenue][1]}
+ const services=$('terminalVenueServices');if(services)services.hidden=!hyper;
+}
+
+function legacyMarket(m){
+ return {
+  value:m.symbol,
+  label:(m.base||m.symbol)+' / '+(m.quote||'USDC')+(m.marketType==='perp'?' PERP':''),
+  asset:m.nativeId,
+  szDecimals:m.raw?.szDecimals,
+  spot:m.marketType==='spot',
+  maxLeverage:m.maxLeverage,
+  onlyIsolated:m.raw?.onlyIsolated,
+  delisted:m.raw?.isDelisted,
+  raw:m.raw,
+  normalized:m
+ };
+}
+
+function snapshotContext(market){
+ const s=marketSnapshot(market?.normalized||{raw:market?.raw});
+ return {
+  markPx:s.mark,
+  oraclePx:s.oracle,
+  dayNtlVlm:s.volume24h,
+  openInterest:s.openInterest,
+  funding:s.funding
+ };
+}
+
+function selectReadOnlyMarket(){
+ ++generation;cleanup();candles=[];candleFeed='snapshot';book=null;trades=[];streamReceived=0;lastTradeTime=0;lastUpdate=0;
+ const selected=selection();assetContext=snapshotContext(selected);contextReceived=Date.now();paintContext();emit();paintBook();
+ const mark=Number(assetContext?.markPx);
+ $('marketPrice').textContent=Number.isFinite(mark)?mark.toLocaleString('en-US',{maximumFractionDigits:8}):'—';
+ $('marketOHLC').textContent='';
+ draw();
+ status((marketVenueLabel())+' · read-only market catalog');
+}
+
+function marketVenueLabel(){return ({hyperliquid:'Hyperliquid',orderly:'Orderly',gmx:'GMX',paradex:'Paradex'})[activeVenue]||activeVenue}
+
 function paintContext(){
  const spot=selection()?.spot,ctx=assetContext,stale=!contextReceived||Date.now()-contextReceived>90000;
  const display=(id,v,suffix='')=>{$(id).textContent=!stale&&finite(v)?Number(v).toLocaleString('en-US',{maximumFractionDigits:8})+suffix:'—'};
@@ -46,6 +109,7 @@ function draw(){
 }
 function cleanup(){clearTimeout(retry);clearInterval(heartbeat);clearInterval(contextTimer);controller?.abort();if(socket){socket.onclose=null;socket.close();socket=null}}
 async function selectMarket(){
+ if(activeVenue!=='hyperliquid'){selectReadOnlyMarket();return}
  const token=++generation;cleanup();controller=new AbortController();candles=[];candleFeed='snapshot';book=null;assetContext=null;contextReceived=0;paintContext();trades=[];lastTradeTime=0;streamReceived=0;emit();paintBook();lastUpdate=0;$('marketPrice').textContent='—';$('marketOHLC').textContent='';draw();status('Connecting');
  const coin=$('marketSymbol').value,interval=$('marketInterval').value;if(!coin){status('No markets available');return}
  refreshContext(token,coin);contextTimer=setInterval(()=>{if(!document.hidden)refreshContext(token,coin)},30000);
@@ -69,13 +133,20 @@ async function selectMarket(){
 }
 async function loadSymbols(){
  ++generation;cleanup();marketMeta=[];book=null;assetContext=null;contextReceived=0;paintContext();streamReceived=0;trades=[];lastTradeTime=0;lastUpdate=0;candleFeed='snapshot';$('marketPrice').textContent='—';$('marketSymbol').replaceChildren();emit();paintBook();candles=[];draw();status('Loading markets');
+ setVenueUi();
  const mode=$('marketType').value,token=generation;const abort=new AbortController(),timeout=setTimeout(()=>abort.abort(),15000);
- try{const meta=await info({type:mode==='spot'?'spotMeta':'meta'},abort.signal);if(token!==generation)return;
- const rows=normalizeHyperliquidMarkets(meta,mode).map(m=>({value:m.symbol,label:mode==='spot'?`${m.base}/${m.quote}`:`${m.symbol} / ${m.quote} PERP`,asset:m.nativeId,szDecimals:m.raw?.szDecimals,spot:m.marketType==='spot',maxLeverage:m.maxLeverage,onlyIsolated:m.raw?.onlyIsolated,delisted:m.raw?.isDelisted}));
- marketMeta=rows;rows.forEach(r=>$('marketSymbol').add(new Option(r.label,r.value)));if(mode!=='spot'&&rows.some(x=>x.value==='ETH'))$('marketSymbol').value='ETH';await selectMarket();
- }catch{if(token===generation)status('Market list failed · Refresh to retry')}finally{clearTimeout(timeout)}
+ try{
+  const normalized=await loadVenueMarkets({venueId:activeVenue,network:$('marketNetwork').value,marketType:mode,signal:abort.signal});
+  if(token!==generation)return;
+  marketMeta=normalized.map(legacyMarket);
+  for(const row of marketMeta)$('marketSymbol').add(new Option(row.label,row.value));
+  const preferred=marketMeta.find(x=>['BTC','ETH','BTC-USD-PERP','ETH-USD-PERP','PERP_BTC_USDC','PERP_ETH_USDC'].includes(x.value))||marketMeta[0];
+  if(preferred)$('marketSymbol').value=preferred.value;
+  await selectMarket();
+ }catch(e){if(token===generation)status(marketVenueLabel()+' market list failed · '+String(e?.message||'Refresh to retry').slice(0,120))}
+ finally{clearTimeout(timeout)}
 }
-$('bookDepth').onchange=selectMarket;$('marketNetwork').onchange=loadSymbols;$('marketType').onchange=loadSymbols;$('marketSymbol').onchange=selectMarket;$('marketInterval').onchange=selectMarket;$('marketRefresh').onclick=()=> $('marketSymbol').options.length?selectMarket():loadSymbols();
+$('bookDepth').onchange=selectMarket;$('marketVenue').onchange=()=>{setVenueUi();loadSymbols()};$('marketNetwork').onchange=loadSymbols;$('marketType').onchange=loadSymbols;$('marketSymbol').onchange=selectMarket;$('marketInterval').onchange=selectMarket;$('marketRefresh').onclick=()=> $('marketSymbol').options.length?selectMarket():loadSymbols();
 new ResizeObserver(()=>chart.resize()).observe(canvas);
 setInterval(()=>{
  if(dirty){draw();paintBook();dirty=false;const t=trades.at(-1);if(t){lastTradeTime=t.time;$('marketPrice').textContent=Number(t.px).toLocaleString(undefined,{maximumFractionDigits:8})}}
@@ -86,4 +157,4 @@ setInterval(()=>{
  else if(streamReceived)status('Stale order book · Orders locked');
  if(streamReceived)emit();
 },1000);
-window.addEventListener('pagehide',()=>{++generation;cleanup()});window.addEventListener('pageshow',e=>{if(e.persisted)loadSymbols()});loadSymbols();
+window.addEventListener('pagehide',()=>{++generation;cleanup()});window.addEventListener('pageshow',e=>{if(e.persisted)loadSymbols()});setVenueUi();loadSymbols();
