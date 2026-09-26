@@ -30,14 +30,15 @@ test('one visible navigation; secondary routes remain accessible',async({page})=
  await page.locator('#cleanMore').click();await expect(page.locator('#cleanMoreDialog')).toBeVisible();await page.locator('[data-clean-route=settings]').click();await expect(page.locator('body')).toHaveAttribute('data-page','settings');
  await page.locator('.bottom-nav [data-page=markets]').click();await expect(page.locator('body')).toHaveAttribute('data-page','markets');expect(errors).toEqual([]);
 });
-test('folding really draws candles and saved indicator choices restore',async({page})=>{
- await setup(page);await page.setViewportSize({width:390,height:844});await expect(page.locator('#marketCanvas')).toBeHidden();
- await page.locator('#futuresChart > summary').click();await expect(page.locator('#marketCanvas')).toBeVisible();await expect(page.locator('#marketCanvas')).toHaveAttribute('data-visible-bars','60');
+test('inline chart draws candles and saved indicator choices restore',async({page})=>{
+ await setup(page);await page.setViewportSize({width:390,height:844});await expect(page.locator('#marketCanvas')).toBeVisible();await expect(page.locator('#futuresChart')).toBeHidden();
+ await expect(page.locator('#marketCanvas')).toHaveAttribute('data-visible-bars','60');
  expect(Number(await page.locator('#marketCanvas').getAttribute('data-rsi'))).toBeGreaterThan(0);
  for(const id of ['macd','ma','ema','boll'])await page.locator(`[data-chart-indicator=${id}]`).click();
  await page.locator('#chartMuteIndicators').click();await expect(page.locator('#marketCanvas')).toHaveAttribute('data-chart-indicators','');await page.locator('#chartMuteIndicators').click();
  await expect(page.locator('#marketCanvas')).toHaveAttribute('data-chart-indicators','VOL,RSI,MACD,MA,EMA,BOLL');
- await page.locator('#futuresChart > summary').click();await page.locator('#futuresChart > summary').click();await expect(page.locator('[data-chart-indicator=macd]')).toHaveAttribute('aria-pressed','true');
+ await page.locator('#cleanOpenChart').click();await expect(page.locator('#chartFullscreen')).toBeVisible();await page.locator('#chartExpand').click();
+ await expect(page.locator('#marketCanvas')).toBeVisible();await expect(page.locator('[data-chart-indicator=macd]')).toHaveAttribute('aria-pressed','true');
  await page.reload();await expect(page.locator('#marketCanvas')).toBeVisible();await expect(page.locator('[data-chart-indicator=boll]')).toHaveAttribute('aria-pressed','true');
 });
 test('timeframe, zoom, history and cursor act on real loaded candles',async({page})=>{
