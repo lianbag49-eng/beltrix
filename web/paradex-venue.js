@@ -1,7 +1,7 @@
 import {defineVenueAdapter,normalizeVenueMarket,VENUE_CAPABILITIES} from './venue-adapter.js';
 
 export const PARADEX_NETWORKS=Object.freeze({
- mainnet:Object.freeze({http:'https://api.prod.paradex.trade/v1',ws:'wss://ws.api.prod.paradex.trade/v1'})
+ mainnet:Object.freeze({label:'Mainnet',http:'https://api.prod.paradex.trade/v1',ws:'wss://ws.api.prod.paradex.trade/v1'})
 });
 
 function rows(payload){
@@ -12,9 +12,9 @@ function rows(payload){
 }
 
 export function normalizeParadexMarkets(payload){
- return rows(payload).filter(x=>String(x?.symbol||'').includes('-PERP')).map(x=>{
-  const symbol=String(x.symbol);
-  const base=symbol.split('-')[0]||x.base_currency;
+ return rows(payload).filter(x=>String(x?.asset_kind||'').toUpperCase()==='PERP'||String(x?.symbol||'').includes('-PERP')).map(x=>{
+  const symbol=String(x.symbol||'');
+  const base=String(x?.base_currency||symbol.split('-')[0]||'');
   return normalizeVenueMarket({
    venue:'paradex',
    symbol,
@@ -27,7 +27,7 @@ export function normalizeParadexMarkets(payload){
    nativeId:symbol,
    raw:x
   });
- });
+ }).filter(x=>x.symbol&&x.base);
 }
 
 export function paradexOnboardingAttribution(input={}){
