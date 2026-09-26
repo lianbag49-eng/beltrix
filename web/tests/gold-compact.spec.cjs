@@ -20,20 +20,22 @@ test('approved Black Gold layout has one primary action and preserves the origin
    const ticket=await page.locator('.order-ticket').boundingBox(),book=await page.locator('.depth').boundingBox();
    expect(book.x).toBeGreaterThan(ticket.x+ticket.width-1);
    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-   await expect(page.locator('#marketCanvas')).toBeHidden();
+   await expect(page.locator('#marketCanvas')).toBeVisible();
   }
  }
  expect(await page.evaluate(()=>goldInput===document.getElementById('tradeSize'))).toBe(true);expect(posted).toHaveLength(0);
  expect(await page.evaluate(()=>window.calls.filter(x=>/sign|send/i.test(x.method)))).toEqual([]);
 });
-test('Black Gold chart returns to its folded home on desktop and mobile',async({page})=>{
+test('Black Gold chart returns inline after expanded view on desktop and mobile',async({page})=>{
  await compact(page);
  for(const width of [390,1280]){
   await page.setViewportSize({width,height:844});await page.locator('#tradeSize').fill('0.75');
+  await expect(page.locator('#marketCanvas')).toBeVisible();
   await page.locator('#cleanOpenChart').click();await expect(page.locator('#marketCanvas')).toBeVisible();
-  await page.locator('#chartExpand').click();await expect(page.locator('#marketCanvas')).toBeHidden();
+  await page.locator('#chartExpand').click();await expect(page.locator('#marketCanvas')).toBeVisible();
   await expect(page.locator('#tradeSize')).toHaveValue('0.75');
-  expect(await page.locator('#marketCanvas').evaluate(c=>!!c.closest('#futuresChart'))).toBe(true);
+  expect(await page.locator('#marketCanvas').evaluate(c=>!!c.closest('.trade-layout'))).toBe(true);
+  await expect(page.locator('#futuresChart')).toBeHidden();
  }
 });
 test('capture implemented Black Gold Spot, Futures and chart with labeled test data',async({page,browserName})=>{
