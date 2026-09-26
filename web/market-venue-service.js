@@ -52,12 +52,10 @@ export async function loadVenueMarkets({venueId='hyperliquid',network='mainnet',
   return venue.normalizeMarkets(payload);
  }
  if(venueId==='gmx'){
-  const hosts={
-   arbitrum:'https://arbitrum-api.gmxinfra.io',
-   avalanche:'https://avalanche-api.gmxinfra.io'
-  };
-  const base=hosts[network];
-  if(!base)throw Error('Unsupported GMX network: '+network);
+  const cfg=venue.networks[network];
+  if(!cfg)throw Error('Unsupported GMX network: '+network);
+  const base=cfg.oracle||cfg.api;
+  if(!base)throw Error('GMX market API is unavailable for '+network);
   const payload=await json(base+'/markets',{signal},fetchImpl);
   return venue.normalizeMarkets(payload);
  }
