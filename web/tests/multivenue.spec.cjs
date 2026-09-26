@@ -20,6 +20,9 @@ test('multi-venue selector loads Orderly catalog and keeps funded trading locked
    {symbol:'PERP_ETH_USDC',quote_tick:0.01,base_min:0.01,max_leverage:20,index_price:2500}
   ]}
  }}));
+ await page.route(/https:\/\/api\.orderly\.org\/v1\/tv\/history.*/,route=>route.fulfill({json:{
+  s:'ok',t:[1000,1900],o:[70000,70100],h:[70200,70300],l:[69900,70000],c:[70100,70200],v:[10,12]
+ }}));
  await page.goto('/web/');
  await page.getByRole('button',{name:'Trade',exact:true}).click();
  await expect(page.locator('#marketVenue')).toBeVisible();
@@ -27,6 +30,8 @@ test('multi-venue selector loads Orderly catalog and keeps funded trading locked
  await page.locator('#marketVenue').selectOption('orderly');
  await expect(page.locator('#marketSymbol')).toHaveValue(/PERP_/);
  await expect(page.locator('#marketVenueNote')).toContainText('read-only');
+ await expect(page.locator('#marketOHLC')).toContainText('O 70100');
+ await expect(page.locator('#marketStatus')).toContainText('OHLCV');
  await expect(page.locator('#tradeConnect')).toBeDisabled();
  await expect(page.locator('#tradeReview')).toBeDisabled();
  await expect(page.locator('.testnet')).toContainText('READ ONLY');
