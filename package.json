@@ -4,7 +4,7 @@
   "scripts": {
     "build": "node web/build.mjs",
     "test": "playwright test --config=web/playwright.config.cjs",
-    "test:unit": "node --test web/tests/wallet-core.test.mjs web/tests/terminal-core.test.mjs web/tests/paper-core.test.mjs web/tests/signing-guard.test.mjs web/tests/wallet-ux.test.mjs web/tests/futures-sizing.test.mjs web/tests/funding-core.test.mjs web/tests/funding-service.test.mjs web/tests/usdt-core.test.mjs web/tests/usdt-service.test.mjs web/tests/chart-core.test.mjs web/tests/venue-adapter.test.mjs web/tests/hyperliquid-venue.test.mjs web/tests/orderly-venue.test.mjs web/tests/attribution-core.test.mjs"
+    "test:unit": "node --test web/tests/wallet-core.test.mjs web/tests/terminal-core.test.mjs web/tests/paper-core.test.mjs web/tests/signing-guard.test.mjs web/tests/wallet-ux.test.mjs web/tests/futures-sizing.test.mjs web/tests/funding-core.test.mjs web/tests/funding-service.test.mjs web/tests/usdt-core.test.mjs web/tests/usdt-service.test.mjs web/tests/chart-core.test.mjs web/tests/venue-adapter.test.mjs web/tests/hyperliquid-venue.test.mjs web/tests/orderly-venue.test.mjs web/tests/attribution-core.test.mjs web/tests/attribution-client.test.mjs"
   },
   "dependencies": {
     "@nktkas/hyperliquid": "0.33.3",
