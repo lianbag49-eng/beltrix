@@ -48,17 +48,22 @@ async function refreshBuilderApproval(){
 const errorText=e=>{for(let x=e;x;x=x.cause)if(x.code===4001)return 'Wallet request rejected. Nothing was submitted.';return String(e?.shortMessage||e?.message||'Request failed').slice(0,400)};
 const fmt=(v,d=4)=>finite(v)?Number(v).toLocaleString('en-US',{maximumFractionDigits:d}):'—';
 const key=(user=account,net=connectedNetwork||market?.network)=>`${net}:${user?.toLowerCase()}`;
-const netLabel=()=>networks[market?.network||'mainnet'].label;
+const netLabel=()=>market?.venue&&market.venue!=='hyperliquid'?String(market.venue).toUpperCase():(networks[market?.network||'mainnet']?.label||'Hyperliquid');
 function unresolved(){return journal[key()]||(connectedNetwork==='testnet'?journal[account?.toLowerCase()]:null)||null}
 function saveLock(value,user=account,net=connectedNetwork){const k=key(user,net);if(net==='testnet')delete journal[user.toLowerCase()];if(value)journal[k]=value;else delete journal[k];localStorage.setItem(JOURNAL,JSON.stringify(journal));}
 function availability(){
- const locked=!!unresolved();$('tradeReview').disabled=busy||!client||!freshMarket(market)||locked;$('tradeConnect').disabled=busy;$('walletProvider').disabled=busy;$('tradeSubmit').disabled=busy||(pending?.network==='mainnet'&&!$('tradeLiveAck').checked);
- $('tradeLeverageReview').disabled=busy||!client||!freshMarket(market)||market?.market?.spot||!Number.isInteger(market?.market?.maxLeverage)||locked;
+ const locked=!!unresolved(),venueTradable=market?.venue==='hyperliquid'&&market?.tradable!==false;$('tradeReview').disabled=busy||!venueTradable||!client||!freshMarket(market)||locked;$('tradeConnect').disabled=busy||(!venueTradable&&!client);$('walletProvider').disabled=busy||!venueTradable;$('tradeSubmit').disabled=busy||(pending?.network==='mainnet'&&!$('tradeLiveAck').checked);
+ $('tradeLeverageReview').disabled=busy||!venueTradable||!client||!freshMarket(market)||market?.market?.spot||!Number.isInteger(market?.market?.maxLeverage)||locked;
  $('tradeReconcile').hidden=!locked;$('tradeReconcile').disabled=busy;renderBuilder();
- for(const id of ['tradeType','tradeSide','tradeSize','tradePrice','tradeTrigger','tradeSlippage','tradeLeverage','tradeMarginMode','tradeTwapMinutes','tradeTwapRandom','marketNetwork','marketType','marketSymbol'])$(id).disabled=busy;
+ for(const id of ['tradeType','tradeSide','tradeSize','tradePrice','tradeTrigger','tradeSlippage','tradeLeverage','tradeMarginMode','tradeTwapMinutes','tradeTwapRandom','marketNetwork','marketType','marketSymbol','marketVenue'])$(id).disabled=busy;
+ if(!venueTradable)$('marketType').disabled=true;
  $('tradeReduce').disabled=busy||market?.market?.spot||['Stop','TakeProfit'].includes($('tradeType').value);
- $('tradeModeNote').textContent=market?.network==='testnet'?'Testnet orders use test funds.':'Mainnet orders use real Hyperliquid account funds. Your EVM wallet balance is separate.';
- $('tradeNetworkBadge').textContent=netLabel().toUpperCase();document.querySelector('.testnet').textContent=netLabel().toUpperCase()+' TRADING';
+ if(!venueTradable){
+  $('tradeModeNote').textContent=netLabel()+' is read-only in this BELTRIX build. Funded order routing remains Hyperliquid-only.';
+ }else{
+  $('tradeModeNote').textContent=market?.network==='testnet'?'Testnet orders use test funds.':'Mainnet orders use real Hyperliquid account funds. Your EVM wallet balance is separate.';
+ }
+ $('tradeNetworkBadge').textContent=netLabel().toUpperCase();document.querySelector('.testnet').textContent=venueTradable?netLabel().toUpperCase()+' TRADING':netLabel().toUpperCase()+' READ ONLY';
 }
 function clearPending(){pending=null;$('tradeDialog').close()}
 function clearAccount(){active=null;activeAt=0;positions=[];for(const id of ['tradeBalances','tradeOrders','tradePositions','tradeFills','tradeFundingHistory','tradeTwaps'])$(id).textContent='No account data loaded';$('tradeAccountStatus').textContent='Connect your trading wallet to load your account.';updateTicket()}
@@ -85,15 +90,19 @@ function updateTicket(reset=false){
  availability();
 }
 window.addEventListener('beltrix:market',e=>{
- const networkChanged=market?.network!==e.detail.network;const changed=market?.market?.value!==e.detail.market?.value||networkChanged;market=e.detail;info=infos[market.network];if(networkChanged&&connectedNetwork&&connectedNetwork!==market.network){disconnect();status('Network changed. Reconnect your wallet for '+netLabel()+'.');}
+ const previousVenue=market?.venue||'hyperliquid';const networkChanged=market?.network!==e.detail.network;const venueChanged=previousVenue!==(e.detail.venue||'hyperliquid');const changed=market?.market?.value!==e.detail.market?.value||networkChanged||venueChanged;market=e.detail;
+ if(market.venue==='hyperliquid'&&infos[market.network])info=infos[market.network];
+ if(market.venue!=='hyperliquid'&&client){disconnect();status(netLabel()+' is read-only. Hyperliquid wallet session disconnected.');}
+ else if(networkChanged&&connectedNetwork&&connectedNetwork!==market.network){disconnect();status('Network changed. Reconnect your wallet for '+netLabel()+'.');}
  if(changed){clearPending();active=null;activeAt=0;positions=[];updateTicket(true);if(account)refresh().catch(e=>status(errorText(e)))}else updateTicket();
 });
 window.addEventListener('beltrix:book-price',e=>{if(busy||e.detail.coin!==market?.market?.value||e.detail.network!==market?.network)return;clearPending();$('tradeType').value='Gtc';$('tradePrice').value=e.detail.price;updateTicket();});
 async function guard(requireFresh=true){
+ if(market?.venue&&market.venue!=='hyperliquid')throw Error('Funded order routing is enabled only for Hyperliquid');
  if(!client||!account||!connectedNetwork||market?.network!==connectedNetwork||$('marketNetwork').value!==connectedNetwork||(requireFresh&&!freshMarket(market)))throw Error('Check the selected network, wallet connection and fresh order book');
  const user=account,version=epoch,p=provider,net=connectedNetwork;const accounts=await p.request({method:'eth_accounts'});const chain=await p.request({method:'eth_chainId'});if(version!==epoch||p!==provider||user!==account||net!==connectedNetwork||market.network!==net||accounts[0]?.toLowerCase()!==user.toLowerCase()||Number(chain)!==networks[net].chain.id)throw Error('Wallet account or network changed');
 }
-$('tradeConnect').onclick=async()=>{if(busy)return;window.openPage?.('markets');if(client){disconnect();status('Wallet disconnected');return}busy=true;availability();try{
+$('tradeConnect').onclick=async()=>{if(busy)return;window.openPage?.('markets');if(client){disconnect();status('Wallet disconnected');return}if(market?.venue&&market.venue!=='hyperliquid'){status(netLabel()+' is read-only in this BELTRIX build.');availability();return}busy=true;availability();try{
  const net=$('marketNetwork').value,config=networks[net];if(!config)throw Error('Unknown network');
  const chosen=$('walletProvider').value==='okx'?window.okxwallet:(window.beltrixWallet?.provider||window.ethereum);
  if(!chosen?.request)throw Error($('walletProvider').value==='okx'?'Open this page in the OKX Wallet browser or install the OKX Wallet extension.':'Open this page in a compatible wallet browser.');

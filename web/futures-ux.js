@@ -28,7 +28,7 @@ const funding=element('div','futures-funding','<small>Funding / 1h · indicative
 const imbalance=element('div','futures-imbalance',`<div><span id="futuresBidShare">Bids —</span><span id="futuresAskShare">Asks —</span></div><div class="futures-ratio-track"><i id="futuresRatioFill"></i></div><small>Displayed depth, not trader long/short ratio</small>`);$('marketBids').after(imbalance);
 const accountPanel=document.querySelector('.terminal-account'),chart=document.querySelector('.chart-panel'),layout=document.querySelector('.trade-layout');
 const chartDrawer=element('details','futures-chart','<summary>Chart <span>Expand / collapse</span></summary>');chartDrawer.id='futuresChart';accountPanel.after(chartDrawer);
-const mq=matchMedia('(max-width:680px)');function arrange(){leverageDrawer.open=!mq.matches;extra.open=!mq.matches;if(mq.matches){chartDrawer.append(chart);chartDrawer.hidden=false;}else{layout.prepend(chart);chartDrawer.hidden=true;}window.dispatchEvent(new Event('resize'));}mq.addEventListener('change',arrange);arrange();
+const mq=matchMedia('(max-width:680px)');function arrange(){leverageDrawer.open=!mq.matches;extra.open=!mq.matches;if(chart.parentNode!==layout)layout.prepend(chart);chartDrawer.hidden=true;chartDrawer.open=false;window.dispatchEvent(new Event('resize'));}mq.addEventListener('change',arrange);arrange();
 function setText(id,text){if($(id).textContent!==text)$(id).textContent=text;}
 function emitInput(el){internalInput=true;try{el.dispatchEvent(new Event('input',{bubbles:true}));}finally{internalInput=false;}}
 function editable(){return !$('tradeSize').disabled&&!$('tradeType').disabled&&!$('tradeDialog').open;}

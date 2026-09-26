@@ -14,8 +14,9 @@ try{
   assert.equal(await page.locator('#futuresLong').isDisabled(),true);assert.equal(await page.locator('#futuresShort').isDisabled(),true);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`Overflow at ${width}`);
   const a=await page.locator('.order-ticket').boundingBox(),b=await page.locator('.depth').boundingBox();
-  if(width<=680){assert.ok(a.x+a.width<=b.x);await page.locator('#futuresChart summary').click();assert.ok(await page.locator('#marketCanvas').isVisible());await page.locator('#futuresChart summary').click();}
-  evidence.viewports.push({width,layout:'passed',disconnectedOrderLock:'passed'});
+  assert.ok(await page.locator('#marketCanvas').isVisible(),'Trading chart should be visible by default');
+  if(width<=680){const chart=await page.locator('.chart-panel').boundingBox();assert.ok(a.x+a.width<=b.x);assert.ok(chart.y+chart.height<=Math.min(a.y,b.y)+2,'Chart should appear above ticket and book');}
+  evidence.viewports.push({width,layout:'passed',chartVisible:'passed',disconnectedOrderLock:'passed'});
   if(width===390){
    await page.evaluate(()=>{
     window.liveScrollProbe={routes:[],scrolls:[]};
