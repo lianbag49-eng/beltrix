@@ -58,12 +58,11 @@ function mount() {
       if (simple) { if (!$('futuresExtra').contains(el)) $('futuresExtra').append(el); }
       else if (el.previousSibling !== homes.get(el)) homes.get(el).after(el);
     }
-    // Both products start with a ticket + book, not a permanently expanded chart.
+    // The chart is a primary trading surface: keep it visible inline on desktop and mobile.
     if (!panel.closest('dialog[open]')) {
-      const folded = simple || matchMedia('(max-width:680px)').matches;
-      drawer.hidden = !folded;
-      if (folded && panel.parentNode !== drawer) drawer.append(panel);
-      else if (!folded && panel.parentNode !== layout) layout.prepend(panel);
+      drawer.hidden = true;
+      drawer.open = false;
+      if (panel.parentNode !== layout) layout.prepend(panel);
     }
     const stats = $('simpleMarketDetails');
     for (const funding of root.querySelectorAll('.market-card > .funding-bar')) {
