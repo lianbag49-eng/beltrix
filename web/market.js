@@ -3,7 +3,7 @@ import {createMarketChart} from './chart-ui.js';
 import './terminal-clean.js';
 import {validCandle,normalizeCandles} from './chart-core.js';
 import {hyperliquidNetwork} from './hyperliquid-venue.js';
-import {loadVenueMarkets,marketSnapshot,venueNetworks,venueIsTradable} from './market-venue-service.js';
+import {loadVenueMarkets,loadVenueCandles,marketSnapshot,venueNetworks,venueIsTradable} from './market-venue-service.js';
 const $=id=>document.getElementById(id);
 const intervals={'1m':60000,'5m':300000,'15m':900000,'1h':3600000,'4h':14400000,'1d':86400000};
 let generation=0,controller,socket,retry,heartbeat,lastUpdate=0,candles=[],book=null,trades=[],lastTradeTime=0,streamReceived=0,dirty=false;
@@ -72,14 +72,43 @@ function snapshotContext(market){
  };
 }
 
-function selectReadOnlyMarket(){
- ++generation;cleanup();candles=[];candleFeed='snapshot';book=null;trades=[];streamReceived=0;lastTradeTime=0;lastUpdate=0;
+async function selectReadOnlyMarket(){
+ const token=++generation;cleanup();controller=new AbortController();candles=[];candleFeed='snapshot';book=null;trades=[];streamReceived=0;lastTradeTime=0;lastUpdate=0;
  const selected=selection();assetContext=snapshotContext(selected);contextReceived=Date.now();paintContext();emit();paintBook();
- const mark=Number(assetContext?.markPx);
- $('marketPrice').textContent=Number.isFinite(mark)?mark.toLocaleString('en-US',{maximumFractionDigits:8}):'—';
- $('marketOHLC').textContent='';
- draw();
- status((marketVenueLabel())+' · read-only market catalog');
+ $('marketPrice').textContent='—';$('marketOHLC').textContent='';draw();
+ if(!selected){status(marketVenueLabel()+' · No market selected');return}
+ status(marketVenueLabel()+' · Loading candles');
+ const load=async()=>{
+  const rows=await loadVenueCandles({
+   venueId:activeVenue,
+   network:$('marketNetwork').value,
+   market:selected.normalized,
+   interval:$('marketInterval').value,
+   limit:600,
+   signal:controller?.signal
+  });
+  if(token!==generation)return;
+  candles=normalizeCandles(rows);
+  lastUpdate=Date.now();
+  candleFeed='polling';
+  draw();
+  const last=candles.at(-1);
+  if(last){
+   assetContext={...(assetContext||{}),markPx:last.c,oraclePx:assetContext?.oraclePx??last.c};
+   contextReceived=Date.now();
+   paintContext();emit();
+  }
+  status(candles.length?marketVenueLabel()+' · Read-only OHLCV · '+candles.length+' candles':marketVenueLabel()+' · No candle data returned');
+ };
+ try{
+  await load();
+  contextTimer=setInterval(()=>{
+   if(document.hidden||token!==generation)return;
+   load().catch(()=>status(marketVenueLabel()+' · Candle refresh failed'));
+  },30000);
+ }catch(e){
+  if(token===generation)status(marketVenueLabel()+' chart failed · '+String(e?.message||'Refresh to retry').slice(0,120));
+ }
 }
 
 function marketVenueLabel(){return ({hyperliquid:'Hyperliquid',orderly:'Orderly',gmx:'GMX',paradex:'Paradex'})[activeVenue]||activeVenue}
@@ -109,7 +138,7 @@ function draw(){
 }
 function cleanup(){clearTimeout(retry);clearInterval(heartbeat);clearInterval(contextTimer);controller?.abort();if(socket){socket.onclose=null;socket.close();socket=null}}
 async function selectMarket(){
- if(activeVenue!=='hyperliquid'){selectReadOnlyMarket();return}
+ if(activeVenue!=='hyperliquid'){await selectReadOnlyMarket();return}
  const token=++generation;cleanup();controller=new AbortController();candles=[];candleFeed='snapshot';book=null;assetContext=null;contextReceived=0;paintContext();trades=[];lastTradeTime=0;streamReceived=0;emit();paintBook();lastUpdate=0;$('marketPrice').textContent='—';$('marketOHLC').textContent='';draw();status('Connecting');
  const coin=$('marketSymbol').value,interval=$('marketInterval').value;if(!coin){status('No markets available');return}
  refreshContext(token,coin);contextTimer=setInterval(()=>{if(!document.hidden)refreshContext(token,coin)},30000);
