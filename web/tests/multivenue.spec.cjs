@@ -21,6 +21,8 @@ test('multi-venue selector loads Orderly catalog and keeps funded trading locked
   ]}
  }}));
  await page.goto('/web/');
+ await page.getByRole('button',{name:'Trade',exact:true}).click();
+ await expect(page.locator('#marketVenue')).toBeVisible();
  await expect(page.locator('#marketVenue')).toHaveValue('hyperliquid');
  await page.locator('#marketVenue').selectOption('orderly');
  await expect(page.locator('#marketSymbol')).toHaveValue(/PERP_/);
