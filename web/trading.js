@@ -56,6 +56,7 @@ function availability(){
  $('tradeLeverageReview').disabled=busy||!venueTradable||!client||!freshMarket(market)||market?.market?.spot||!Number.isInteger(market?.market?.maxLeverage)||locked;
  $('tradeReconcile').hidden=!locked;$('tradeReconcile').disabled=busy;renderBuilder();
  for(const id of ['tradeType','tradeSide','tradeSize','tradePrice','tradeTrigger','tradeSlippage','tradeLeverage','tradeMarginMode','tradeTwapMinutes','tradeTwapRandom','marketNetwork','marketType','marketSymbol','marketVenue'])$(id).disabled=busy;
+ if(!venueTradable)$('marketType').disabled=true;
  $('tradeReduce').disabled=busy||market?.market?.spot||['Stop','TakeProfit'].includes($('tradeType').value);
  if(!venueTradable){
   $('tradeModeNote').textContent=netLabel()+' is read-only in this BELTRIX build. Funded order routing remains Hyperliquid-only.';
