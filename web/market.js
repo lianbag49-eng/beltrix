@@ -2,11 +2,12 @@ import {fundingView,finite} from './terminal-core.js';
 import {createMarketChart} from './chart-ui.js';
 import './terminal-clean.js';
 import {validCandle,normalizeCandles} from './chart-core.js';
+import {hyperliquidNetwork,normalizeHyperliquidMarkets} from './hyperliquid-venue.js';
 const $=id=>document.getElementById(id);
 const intervals={'1m':60000,'5m':300000,'15m':900000,'1h':3600000,'4h':14400000,'1d':86400000};
 let generation=0,controller,socket,retry,heartbeat,lastUpdate=0,candles=[],book=null,trades=[],lastTradeTime=0,streamReceived=0,dirty=false;
 let marketMeta=[],assetContext=null,contextReceived=0,contextTimer,candleFeed='snapshot';
-function endpoint(){return $('marketNetwork').value==='testnet'?'https://api.hyperliquid-testnet.xyz':'https://api.hyperliquid.xyz'}
+function endpoint(){return hyperliquidNetwork($('marketNetwork').value).http}
 function selection(){return marketMeta.find(x=>x.value===$('marketSymbol').value)}
 function emit(){window.dispatchEvent(new CustomEvent('beltrix:market',{detail:{network:$('marketNetwork').value,market:selection(),book,received:streamReceived,context:assetContext,contextReceived}}))}
 function paintBook(){
@@ -53,7 +54,7 @@ async function selectMarket(){
  const endTime=Date.now();const rows=await info({type:'candleSnapshot',req:{coin,interval,startTime:endTime-intervals[interval]*600,endTime}},controller.signal);
  if(token!==generation)return;
  candles=normalizeCandles(rows);lastUpdate=Date.now();draw();status(candles.length?'Snapshot received · Connecting live feed':'No candles for this market');
- socket=new WebSocket(endpoint().replace('https:','wss:')+'/ws');
+ socket=new WebSocket(hyperliquidNetwork($('marketNetwork').value).ws);
  socket.onopen=()=>{if(token!==generation)return;for(const subscription of [{type:'candle',coin,interval},{type:'l2Book',coin,fast:$('bookDepth').value==='fast'},{type:'trades',coin},{type:'activeAssetCtx',coin}])socket.send(JSON.stringify({method:'subscribe',subscription}));heartbeat=setInterval(()=>{if(socket?.readyState===1)socket.send(JSON.stringify({method:'ping'}))},25000)};
  socket.onmessage=e=>{if(token!==generation)return;try{
  const msg=JSON.parse(e.data);
@@ -70,7 +71,7 @@ async function loadSymbols(){
  ++generation;cleanup();marketMeta=[];book=null;assetContext=null;contextReceived=0;paintContext();streamReceived=0;trades=[];lastTradeTime=0;lastUpdate=0;candleFeed='snapshot';$('marketPrice').textContent='—';$('marketSymbol').replaceChildren();emit();paintBook();candles=[];draw();status('Loading markets');
  const mode=$('marketType').value,token=generation;const abort=new AbortController(),timeout=setTimeout(()=>abort.abort(),15000);
  try{const meta=await info({type:mode==='spot'?'spotMeta':'meta'},abort.signal);if(token!==generation)return;
- const rows=mode==='spot'?meta.universe.map(p=>({value:p.name,label:p.tokens.map(i=>meta.tokens.find(t=>t.index===i)?.name||'?').join('/'),asset:10000+p.index,szDecimals:meta.tokens.find(t=>t.index===p.tokens[0])?.szDecimals,spot:true})):meta.universe.map((x,i)=>({value:x.name,label:x.name+' / USDC PERP',asset:i,szDecimals:x.szDecimals,spot:false,maxLeverage:x.maxLeverage,onlyIsolated:x.onlyIsolated,delisted:x.isDelisted})).filter(x=>!x.delisted);
+ const rows=normalizeHyperliquidMarkets(meta,mode).map(m=>({value:m.symbol,label:mode==='spot'?`${m.base}/${m.quote}`:`${m.symbol} / ${m.quote} PERP`,asset:m.nativeId,szDecimals:m.raw?.szDecimals,spot:m.marketType==='spot',maxLeverage:m.maxLeverage,onlyIsolated:m.raw?.onlyIsolated,delisted:m.raw?.isDelisted}));
  marketMeta=rows;rows.forEach(r=>$('marketSymbol').add(new Option(r.label,r.value)));if(mode!=='spot'&&rows.some(x=>x.value==='ETH'))$('marketSymbol').value='ETH';await selectMarket();
  }catch{if(token===generation)status('Market list failed · Refresh to retry')}finally{clearTimeout(timeout)}
 }
