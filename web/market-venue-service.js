@@ -141,8 +141,11 @@ function normalizeParadexCandles(payload){
    const ts=Number(row[0]);
    return candle(ts<10_000_000_000?ts*1000:ts,row[1],row[2],row[3],row[4],row[5]??0);
   }
-  const ts=Number(row?.start_at??row?.start_timestamp??row?.timestamp??row?.time??row?.t);
-  return candle(ts<10_000_000_000?ts*1000:ts,row?.open??row?.o,row?.high??row?.h,row?.low??row?.l,row?.close??row?.c,row?.volume??row?.v??0);
+  const explicitMs=row?.start_at??row?.start_timestamp;
+  const rawTs=explicitMs??row?.timestamp??row?.time??row?.t;
+  const ts=Number(rawTs);
+  const normalizedTs=explicitMs!==undefined&&explicitMs!==null?ts:(ts<10_000_000_000?ts*1000:ts);
+  return candle(normalizedTs,row?.open??row?.o,row?.high??row?.h,row?.low??row?.l,row?.close??row?.c,row?.volume??row?.v??0);
  }).filter(Boolean).sort((a,b)=>a.t-b.t);
 }
 
