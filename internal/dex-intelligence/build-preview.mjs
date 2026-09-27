@@ -7,6 +7,8 @@ await mkdir(join(out,'admin'),{recursive:true});
 
 for(const file of [
  'venue-registry.js',
+ 'market-normalizer.js',
+ 'market-snapshot.js',
  'liquidity.js',
  'bd-matrix.js',
  'bd-pipeline.js',
