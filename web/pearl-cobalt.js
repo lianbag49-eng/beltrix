@@ -79,7 +79,11 @@ function mountHeader(){
   ['Portfolio',()=>scrollToElement(document.querySelector('.terminal-account'))]
  ];
  for(const [label,action] of items){
-  const b=node('button','pc-header-link',label);b.type='button';b.onclick=action;nav.append(b);
+  const b=node('button','pc-header-link',label);
+  b.type='button';
+  b.setAttribute('aria-label','Open '+label+' section');
+  b.onclick=action;
+  nav.append(b);
  }
  brand.after(nav);
 
@@ -276,23 +280,55 @@ function decorateCore(){
  document.querySelector('.simple-trade-toolbar')?.classList.add('pc-product-toolbar');
 }
 
-function syncAll(){
- renderWatchlist($('pcSidebar'));
- renderMarketStrip();
+function syncActiveMarketViews(){
+ const active=currentMarketValue();
+ const mark=safeText('marketMark','Live market');
+ const change=safeText('marketChange','Live');
+ const changeClass=$('marketChange')?.className||'';
+
+ for(const card of document.querySelectorAll('#pcMarketStrip .pc-ticker-card[data-market-value]')){
+  const selected=card.dataset.marketValue===active;
+  card.setAttribute('aria-current',String(selected));
+  const small=card.querySelector('.pc-ticker-copy small');
+  const delta=card.querySelector('.pc-ticker-change');
+  if(small)small.textContent=selected?mark:'Open market';
+  if(delta){
+   delta.textContent=selected?change:'↗';
+   delta.className='pc-ticker-change '+(selected?changeClass:'');
+  }
+ }
+ for(const row of document.querySelectorAll('#pcSidebar .pc-market-row[data-market-value]')){
+  const selected=row.dataset.marketValue===active;
+  row.setAttribute('aria-current',String(selected));
+  const small=row.querySelector('small');
+  if(small)small.textContent=selected?mark:'Perpetual market';
+ }
  syncIntelligence();
 }
+
+function rebuildMarketViews(){
+ renderWatchlist($('pcSidebar'));
+ renderMarketStrip();
+ syncActiveMarketViews();
+}
+
 function mount(){
- mountHeader();mountSidebar();mountRightRail();mountMarketStrip();mountIntelligenceBar();decorateCore();syncAll();
+ mountHeader();mountSidebar();mountRightRail();mountMarketStrip();mountIntelligenceBar();decorateCore();
+ rebuildMarketViews();
 
  const select=$('marketSymbol');
  if(select){
-  select.addEventListener('change',()=>queueMicrotask(syncAll));
-  new MutationObserver(syncAll).observe(select,{childList:true,subtree:true});
+  select.addEventListener('change',()=>queueMicrotask(rebuildMarketViews));
+  new MutationObserver(rebuildMarketViews).observe(select,{childList:true,subtree:true});
  }
- for(const id of ['marketMark','marketOracle','marketOI','marketVolume','marketFunding','marketChange','marketPickerSymbol']){
-  const el=$(id);if(el)new MutationObserver(syncAll).observe(el,{childList:true,subtree:true,characterData:true});
+ for(const id of ['marketMark','marketOracle','marketOI','marketVolume','marketFunding','marketChange']){
+  const el=$(id);
+  if(el)new MutationObserver(syncActiveMarketViews).observe(el,{childList:true,subtree:true,characterData:true});
  }
- window.addEventListener('beltrix:market',syncAll);
+ const symbol=$('marketPickerSymbol');
+ if(symbol)new MutationObserver(syncActiveMarketViews).observe(symbol,{childList:true,subtree:true,characterData:true});
+
+ window.addEventListener('beltrix:market',()=>queueMicrotask(rebuildMarketViews));
  window.addEventListener('beltrix:page',e=>{
   const trading=e.detail==='markets';
   $('pcSidebar')?.classList.toggle('pc-hidden',!trading);
