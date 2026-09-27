@@ -423,3 +423,72 @@ html[data-beltrix-ui="pearl-cobalt"][data-theme="dark"] #markets .order-ticket{
  html[data-beltrix-ui="pearl-cobalt"] .pc-strip-grid{grid-template-columns:1fr 1fr}
  html[data-beltrix-ui="pearl-cobalt"] .pc-strip-grid article:last-child{grid-column:1/-1}
 }
+
+
+/* Pearl Cobalt v2.1 — regression-safe responsive corrections */
+html[data-beltrix-ui="pearl-cobalt"] body,
+html[data-beltrix-ui="pearl-cobalt"] .app,
+html[data-beltrix-ui="pearl-cobalt"] #markets,
+html[data-beltrix-ui="pearl-cobalt"] #markets .market-card,
+html[data-beltrix-ui="pearl-cobalt"] #markets .trade-layout{
+ max-width:100%;
+ min-width:0;
+}
+html[data-beltrix-ui="pearl-cobalt"] .page{overflow-anchor:none}
+html[data-beltrix-ui="pearl-cobalt"] #futuresChart,
+html[data-beltrix-ui="pearl-cobalt"] #futuresLeverageDrawer,
+html[data-beltrix-ui="pearl-cobalt"] #futuresExtra{overflow-anchor:none}
+html[data-beltrix-ui="pearl-cobalt"] #marketRefresh{display:inline-flex!important;align-items:center;justify-content:center}
+
+@media(max-width:1320px){
+ html[data-beltrix-ui="pearl-cobalt"] .app{display:block;padding:10px 12px 100px;overflow-x:clip}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-sidebar,
+ html[data-beltrix-ui="pearl-cobalt"] .pc-right-rail{display:none!important}
+ html[data-beltrix-ui="pearl-cobalt"] .top{position:sticky;top:6px;margin-bottom:10px}
+ html[data-beltrix-ui="pearl-cobalt"] #markets.page.active,
+ html[data-beltrix-ui="pearl-cobalt"] #swap.page.active,
+ html[data-beltrix-ui="pearl-cobalt"] #settings.page.active{width:100%;max-width:100%;min-width:0}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-market-ribbon{grid-template-columns:repeat(3,minmax(0,1fr)) minmax(140px,.65fr)}
+ html[data-beltrix-ui="pearl-cobalt"] #markets .trade-layout{
+  grid-template-columns:minmax(0,1fr) minmax(255px,300px);
+  grid-template-areas:"chart ticket" "depth ticket";
+  width:100%;
+ }
+ html[data-beltrix-ui="pearl-cobalt"] #markets .depth{max-height:390px;overflow:auto}
+}
+@media(max-width:1120px){
+ html[data-beltrix-ui="pearl-cobalt"] #markets #marketRefresh{display:inline-flex!important}
+}
+@media(max-width:900px){
+ html[data-beltrix-ui="pearl-cobalt"] .pc-market-ribbon{grid-template-columns:minmax(0,1fr) minmax(140px,.55fr)}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-ribbon-market:nth-child(n+2):not(:last-child){display:none}
+ html[data-beltrix-ui="pearl-cobalt"] #markets .trade-layout{
+  grid-template-columns:minmax(0,1fr);
+  grid-template-areas:"chart" "ticket" "depth";
+ }
+}
+@media(max-width:680px){
+ html[data-beltrix-ui="pearl-cobalt"] body{overflow-x:hidden}
+ html[data-beltrix-ui="pearl-cobalt"] .app{overflow-x:hidden;padding-inline:9px}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-market-ribbon{grid-template-columns:minmax(0,1fr);gap:6px}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-ribbon-add{display:none}
+ html[data-beltrix-ui="pearl-cobalt"] #markets .trade-layout{
+  grid-template-columns:minmax(0,58fr) minmax(0,42fr);
+  grid-template-areas:"ticket depth";
+  gap:8px;
+  align-items:start;
+ }
+ html[data-beltrix-ui="pearl-cobalt"] #markets .chart-panel{grid-area:auto}
+ html[data-beltrix-ui="pearl-cobalt"] #markets .order-ticket{grid-area:ticket}
+ html[data-beltrix-ui="pearl-cobalt"] #markets .depth{grid-area:depth;max-height:none;overflow:visible}
+ html[data-beltrix-ui="pearl-cobalt"] #markets .order-ticket,
+ html[data-beltrix-ui="pearl-cobalt"] #markets .depth{padding:7px}
+ html[data-beltrix-ui="pearl-cobalt"] #markets .market-controls{grid-template-columns:minmax(0,1fr) 78px 62px}
+ html[data-beltrix-ui="pearl-cobalt"] #markets #marketNetwork{display:block}
+ html[data-beltrix-ui="pearl-cobalt"] #markets #marketRefresh{display:inline-flex!important;min-width:0;padding:6px 4px;font-size:8px}
+ html[data-beltrix-ui="pearl-cobalt"] #markets #marketType,
+ html[data-beltrix-ui="pearl-cobalt"] #markets #marketInterval{display:none}
+ html[data-beltrix-ui="pearl-cobalt"] #markets .market-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-intelligence-strip{padding:8px}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-strip-grid{grid-template-columns:1fr 1fr}
+}
