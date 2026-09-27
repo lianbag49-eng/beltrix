@@ -50,8 +50,14 @@ test('root route opens the Pearl Cobalt trading dashboard, not Wallet',async({pa
  await expect(page.locator('body')).toHaveAttribute('data-page','markets');
  await expect(page.locator('#markets')).toHaveClass(/active/);
  await expect(page.locator('#wallet')).not.toHaveClass(/active/);
- await expect(page.locator('#pcSidebar')).toBeVisible();
- await expect(page.locator('.bottom-nav')).toBeHidden();
+ const mobile=(page.viewportSize()?.width||1280)<=900;
+ if(mobile){
+  await expect(page.locator('#pcSidebar')).toBeHidden();
+  await expect(page.locator('.bottom-nav')).toBeVisible();
+ }else{
+  await expect(page.locator('#pcSidebar')).toBeVisible();
+  await expect(page.locator('.bottom-nav')).toBeHidden();
+ }
  await expect(page.locator('.order-ticket')).toBeVisible();
 });
 
