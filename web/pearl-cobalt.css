@@ -385,3 +385,28 @@ html[data-beltrix-ui="pearl-cobalt"] .usdt-modal .w-link{color:var(--pc-accent)}
  html[data-beltrix-ui="pearl-cobalt"] .wallet-home,
  html[data-beltrix-ui="pearl-cobalt"] .wallet-subpage{max-width:none}
 }
+
+
+/* Non-trading routes own the full shell: prevent trading rails/sticky header from covering wallet controls. */
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="wallet"] .pc-sidebar,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="explore"] .pc-sidebar,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] .pc-sidebar,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] .pc-sidebar,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="wallet"] .pc-right-rail,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="explore"] .pc-right-rail,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] .pc-right-rail,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] .pc-right-rail{display:none!important}
+
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="wallet"] .top,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="explore"] .top,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] .top,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] .top{
+ position:relative;top:auto;
+}
+
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="wallet"] .pc-market-search,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="explore"] .pc-market-search,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] .pc-market-search,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] .pc-market-search{
+ display:none!important;
+}
