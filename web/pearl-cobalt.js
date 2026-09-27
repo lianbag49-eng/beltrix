@@ -7,11 +7,13 @@ if(!app)throw Error('BELTRIX app root unavailable');
 
 root.dataset.beltrixUi='pearl-cobalt';
 
-const css=document.createElement('link');
-css.rel='stylesheet';
-css.href=new URL('./pearl-cobalt.css',import.meta.url).href;
-css.id='pearlCobaltStyles';
-document.head.append(css);
+if(!document.getElementById('pearlCobaltStyles')){
+ const css=document.createElement('link');
+ css.rel='stylesheet';
+ css.href=new URL('./pearl-cobalt.css',import.meta.url).href;
+ css.id='pearlCobaltStyles';
+ document.head.append(css);
+}
 
 function readTheme(){
  try{return normalizeTheme(localStorage.getItem(THEME_STORAGE_KEY))}catch{return 'light'}
