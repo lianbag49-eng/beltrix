@@ -1,0 +1,29 @@
+name: Validate Pearl Cobalt wallet surfaces
+on:
+  push:
+    branches:
+      - fix/pearl-cobalt-wallet-surfaces-2026-09-27
+  pull_request:
+    paths:
+      - 'web/pearl-cobalt.*'
+      - 'web/wallet*'
+      - 'web/usdt*'
+      - 'web/tests/pearl-cobalt.spec.cjs'
+      - '.github/workflows/wallet-surface-validation.yml'
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm run test:unit
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npx playwright test web/tests/pearl-cobalt.spec.cjs web/tests/wallet.spec.cjs --config=web/playwright.config.cjs
+      - run: npx playwright test web/tests/pearl-cobalt.spec.cjs --config=web/playwright.ios.config.cjs
