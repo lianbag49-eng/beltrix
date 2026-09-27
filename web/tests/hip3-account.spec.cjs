@@ -50,8 +50,12 @@ test('HIP-3 selection scopes account orders, positions and sizing to its perp DE
  await page.locator('#marketNetwork').selectOption('testnet');
  await expect(page.locator('#marketPickerSymbol')).toHaveText('ETH');
  await page.locator('#marketPickerButton').click();
- await page.locator('#marketPickerList [data-market="xyz:NVDA"]').click();
- await expect(page.locator('#marketPickerSymbol')).toHaveText('NVDA');
+ await expect(page.locator('#marketPickerCount')).toHaveText('2 / 2 markets');
+ const nvda=page.locator('#marketPickerList [data-market="xyz:NVDA"]');
+ await expect(nvda).toBeVisible();
+ await nvda.click();
+ await expect(page.locator('#marketSymbol')).toHaveValue('xyz:NVDA');
+ await expect(page.locator('#marketPickerSymbol')).toHaveText('NVDA',{timeout:10000});
  await expect(page.locator('#marketCanvas')).toHaveAttribute('data-chart-bars','2');
 
  await page.locator('#tradeConnect').click();

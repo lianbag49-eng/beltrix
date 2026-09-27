@@ -1,0 +1,37 @@
+name: Market Intelligence Snapshot
+on:
+  pull_request:
+    paths:
+      - 'internal/market-intelligence/**'
+      - '.github/workflows/market-intelligence.yml'
+      - 'package.json'
+  workflow_dispatch:
+  schedule:
+    - cron: '17 0 * * *'
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - name: Validate internal intelligence modules
+        run: node --test internal/market-intelligence/tests/*.test.mjs
+      - name: Collect timestamped public venue telemetry
+        run: node internal/market-intelligence/collect-live.mjs
+      - name: Summarize collector confidence
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const x=JSON.parse(fs.readFileSync('internal/market-intelligence/snapshot.json','utf8'));
+          for(const r of x.rows) console.log(r.id, r.confidence, r.volume24h ?? 'N/A', r.openInterestUsd ?? 'N/A', r.error ?? '');
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: beltrix-market-intelligence-snapshot
+          path: internal/market-intelligence/snapshot.json
+          retention-days: 14
