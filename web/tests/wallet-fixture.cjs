@@ -47,6 +47,6 @@ async function fixture(page,options={}){
   return route.abort();
  });
 }
-async function connect(page){await page.goto('/web/');await page.locator('#wAssets [data-action="connect"]').click();await page.locator('[data-connect="0"]').click();await require('@playwright/test').expect(page.locator('#wTotal')).toHaveText('$5,100.00');}
+async function connect(page){await page.goto('/web/#wallet');await page.locator('#wAssets [data-action="connect"]').click();await page.locator('[data-connect="0"]').click();await require('@playwright/test').expect(page.locator('#wTotal')).toHaveText('$5,100.00');}
 async function review(page,{token='native',quantity='0.1',to=B}={}){await page.locator('.w-actions [data-action="send"]').click();await page.locator('#wSendAsset').selectOption(token);await page.locator('#wSendTo').fill(to);await page.locator('#wSendAmount').fill(quantity);await page.locator('#wSendReview').click();await require('@playwright/test').expect(page.locator('#wReviewAck')).toBeVisible();}
 module.exports={fixture,connect,review,A,B,T,HASH};
