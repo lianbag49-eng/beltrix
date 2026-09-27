@@ -9,6 +9,8 @@ test('market selection loads spot metadata, candles, and shows failures',async({
  };});
  await page.route('https://api.hyperliquid.xyz/info',async route=>{const body=route.request().postDataJSON();requests.push(body);let data;
  if(body.type==='meta')data={universe:[{name:'ETH'},{name:'BTC'}]};
+ else if(body.type==='perpDexs')data=[null];
+ else if(body.type==='allPerpMetas')data=[{universe:[{name:'ETH'},{name:'BTC'}]}];
  else if(body.type==='spotMeta')data={tokens:[{name:'USDC',index:0},{name:'HYPE',index:150}],universe:[{name:'@107',tokens:[150,0]}]};
  else if(['metaAndAssetCtxs','spotMetaAndAssetCtxs'].includes(body.type))data=[{universe:[]},[]];
  else data=[{t:Date.now()-60000,o:'20',h:'22',l:'19',c:'21',v:'100',s:body.req.coin,i:body.req.interval}];
