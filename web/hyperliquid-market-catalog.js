@@ -81,5 +81,6 @@ export function normalizeAllPerpMetas(payload){
 
 export function enrichHyperliquidRow(row){
  const symbol=row?.value||row?.symbol||row?.base||'';
- return Object.freeze({...row,logo:hyperliquidLogoUrl(symbol),name:hyperliquidAssetName(symbol),base:row?.base||cleanBase(symbol)});
+ const displaySymbol=String(symbol).startsWith('@')?(row?.base||symbol):(row?.base||symbol);
+ return Object.freeze({...row,logo:hyperliquidLogoUrl(displaySymbol),name:hyperliquidAssetName(displaySymbol),base:row?.base||cleanBase(symbol)});
 }
