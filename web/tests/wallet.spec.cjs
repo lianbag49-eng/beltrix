@@ -4,7 +4,7 @@ const {fixture,connect,review,A,B,T,HASH}=require('./wallet-fixture.cjs');
 test.beforeEach(async({page})=>fixture(page));
 
 test('wallet home uses real empty state and all five navigation destinations work on mobile',async({page})=>{
- await page.setViewportSize({width:390,height:844});await page.goto('/web/');await expect(page.locator('#wTotal')).toHaveText('—');await expect(page.locator('#wAssets')).toContainText('Connect wallet');
+ await page.setViewportSize({width:390,height:844});await page.goto('/web/#wallet');await expect(page.locator('#wTotal')).toHaveText('—');await expect(page.locator('#wAssets')).toContainText('Connect wallet');
  for(const dest of ['explore','defi','boost','markets','wallet']){await page.locator(`.bottom-nav [data-page="${dest}"]`).click();await expect(page.locator('body')).toHaveAttribute('data-page',dest);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
  expect(await page.locator('body').innerText()).not.toMatch(/[가-힣]/);await page.screenshot({path:'test-results/wallet-empty-mobile.jpg',type:'jpeg',quality:72,fullPage:true});
 });
