@@ -30,3 +30,10 @@ The public BELTRIX trading product remains **Hyperliquid-only**. Nothing under
 - An unsupported venue metric is `null`, not zero.
 - GMX is not represented as a fake CLOB; its liquidity model is compared separately.
 - This internal module never submits orders or signs transactions.
+
+
+## Phase order
+
+The internal comparison layer is intentionally sequenced after the public
+Hyperliquid all-market terminal. Competitor integrations remain read-only until
+their data normalization and operational review are complete.
