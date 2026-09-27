@@ -34,10 +34,28 @@ test('asset snapshot isolates collector failures',async()=>{
  assert.match(orderly.error,/down/);
 });
 
-test('GMX state stays pool-model metadata rather than fake CLOB depth',async()=>{
- const gmx=await collectGmxState('BTC',{fetchImpl:async()=>ok([{name:'BTC/USD'},{name:'ETH/USD'}])});
+test('GMX state keeps pool model and attaches per-side JIT-aware capacity',async()=>{
+ const fetchImpl=async url=>{
+  if(url.includes('gmxinfra.io/markets/info'))return ok([{name:'BTC/USD [BTC-USDC]'},{name:'ETH/USD [WETH-USDC]'}]);
+  if(url.includes('/markets/trading-capacity')){
+   const isLong=url.includes('direction=long');
+   return ok({
+    availableLiquidity:isLong?'5000000000000000000000000000000000':'4000000000000000000000000000000000',
+    baseAvailableLiquidity:'3000000000000000000000000000000000',
+    jitAvailableLiquidity:isLong?'2000000000000000000000000000000000':'1000000000000000000000000000000000',
+    limitingFactor:'reserve',
+    jitDataStatus:'available',
+    marketDataStatus:'available'
+   });
+  }
+  throw Error('unexpected '+url);
+ };
+ const gmx=await collectGmxState('BTC',{fetchImpl});
  assert.equal(gmx.ok,true);
  assert.equal(gmx.marketCount,2);
  assert.equal(gmx.matchingMarkets,1);
- assert.match(gmx.note,/not fabricated/i);
+ assert.equal(gmx.matchedSymbol,'BTC/USD [BTC-USDC]');
+ assert.equal(gmx.capacity.long.availableLiquidityUsd,5000);
+ assert.equal(gmx.capacity.short.availableLiquidityUsd,4000);
+ assert.match(gmx.note,/not a CLOB depth substitute/i);
 });

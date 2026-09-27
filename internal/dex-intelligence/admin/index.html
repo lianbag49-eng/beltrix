@@ -13,6 +13,7 @@
 <nav>
  <button data-tab="overview" aria-pressed="true">Overview</button>
  <button data-tab="liquidity">Liquidity / Cost</button>
+ <button data-tab="intelligence">Market Intelligence</button>
  <button data-tab="bd">BD / White-label</button>
  <button data-tab="fees">Fees / Revenue</button>
  <button data-tab="execution">Execution gates</button>
@@ -41,15 +42,29 @@
   <div id="liquidityTable"></div>
   <div id="gmxState" class="pool-state"></div>
  </section>
+ <section id="intelligence" data-panel hidden>
+  <h2>Market Intelligence</h2>
+  <p class="note">Operational telemetry is descriptive only. This view does not rank or auto-select venues.</p>
+  <div id="miSummary" class="summary-cards"></div>
+  <div id="miTable"></div>
+ </section>
  <section id="bd" data-panel hidden>
   <h2>BD / White-label pipeline</h2>
   <p class="note">Stages reflect BELTRIX internal research state. They do not imply outreach or a commercial partnership unless explicitly recorded.</p>
   <div id="bdPipeline"></div>
+  <h2>Orderly white-label research</h2>
+  <div id="whiteLabelResearch"></div>
   <h2>Venue capability matrix</h2>
   <div id="bdTable"></div>
  </section>
  <section id="fees" data-panel hidden><h2>Fees / Revenue</h2><p class="note">Commercial models are separated from live liquidity so account-specific fees can be applied explicitly.</p><div id="feesTable"></div></section>
- <section id="execution" data-panel hidden><h2>Execution venue qualification</h2><p class="note">No competitor venue is enabled for execution until every gate has evidence. Public BELTRIX execution remains isolated.</p><div id="executionTable"></div></section>
+ <section id="execution" data-panel hidden>
+  <h2>Execution venue qualification</h2>
+  <p class="note">Documented external capabilities and BELTRIX execution qualification are separate. No competitor venue is enabled until every internal gate is evidenced.</p>
+  <div id="executionTable"></div>
+  <h2>External execution research evidence</h2>
+  <div id="researchTable"></div>
+ </section>
  <section id="integration" data-panel hidden><h2>Integration inventory</h2><div id="integrationTable"></div></section>
 </main>
 <script type="module" src="./app.js"></script>
