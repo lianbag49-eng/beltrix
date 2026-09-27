@@ -142,7 +142,7 @@ html[data-beltrix-ui="pearl-cobalt"] .terminal-table td,html[data-beltrix-ui="pe
 html[data-beltrix-ui="pearl-cobalt"] .account-tabs [aria-selected="true"]{color:var(--pc-accent);border-bottom-color:var(--pc-accent)}
 html[data-beltrix-ui="pearl-cobalt"] .terminal-venue a{color:var(--pc-accent)}
 
-@media(max-width:1280px){
+@media(max-width:1140px){
  html[data-beltrix-ui="pearl-cobalt"] .app{grid-template-columns:176px minmax(0,1fr)}
  html[data-beltrix-ui="pearl-cobalt"] .pc-right-rail{display:none}
  html[data-beltrix-ui="pearl-cobalt"] #swap.page.active,html[data-beltrix-ui="pearl-cobalt"] #settings.page.active{grid-column:2}
@@ -158,13 +158,17 @@ html[data-beltrix-ui="pearl-cobalt"] .terminal-venue a{color:var(--pc-accent)}
  html[data-beltrix-ui="pearl-cobalt"] #walletProvider{max-width:100px}
 }
 @media(max-width:680px){
- html[data-beltrix-ui="pearl-cobalt"] .app{padding:6px 9px 110px}
- html[data-beltrix-ui="pearl-cobalt"] .top{min-height:50px;padding:5px 6px;gap:5px}
+ html[data-beltrix-ui="pearl-cobalt"] .app{padding:6px 9px 110px;max-width:100%;overflow-x:clip}
+ html[data-beltrix-ui="pearl-cobalt"] .top{min-height:50px;padding:5px 6px;gap:5px;max-width:100%;overflow:hidden;flex-wrap:nowrap}
+ html[data-beltrix-ui="pearl-cobalt"] .brand{min-width:0;flex:0 1 auto}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-market-search{display:none}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-theme-toggle{margin-left:auto;flex:0 0 36px}
+
  html[data-beltrix-ui="pearl-cobalt"] .brand small,html[data-beltrix-ui="pearl-cobalt"] .testnet,html[data-beltrix-ui="pearl-cobalt"] .pc-theme-toggle span:last-child{display:none}
  html[data-beltrix-ui="pearl-cobalt"] .pc-theme-toggle{min-width:36px;padding:6px;justify-content:center}
  html[data-beltrix-ui="pearl-cobalt"] .brand b{font-size:13px;letter-spacing:2.2px}
  html[data-beltrix-ui="pearl-cobalt"] .logo{width:31px;height:31px}
- html[data-beltrix-ui="pearl-cobalt"] #tradeConnect{font-size:9px;padding:6px 7px}
+ html[data-beltrix-ui="pearl-cobalt"] #tradeConnect{font-size:9px;padding:6px 7px;max-width:96px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 96px}
  html[data-beltrix-ui="pearl-cobalt"] #walletProvider{display:none}
  html[data-beltrix-ui="pearl-cobalt"] #markets .market-card{padding:9px;border-radius:12px}
 }
