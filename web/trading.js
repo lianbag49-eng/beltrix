@@ -52,13 +52,14 @@ const netLabel=()=>networks[market?.network||'mainnet'].label;
 function unresolved(){return journal[key()]||(connectedNetwork==='testnet'?journal[account?.toLowerCase()]:null)||null}
 function saveLock(value,user=account,net=connectedNetwork){const k=key(user,net);if(net==='testnet')delete journal[user.toLowerCase()];if(value)journal[k]=value;else delete journal[k];localStorage.setItem(JOURNAL,JSON.stringify(journal));}
 function availability(){
- const locked=!!unresolved();$('tradeReview').disabled=busy||!client||!freshMarket(market)||locked;$('tradeConnect').disabled=busy;$('walletProvider').disabled=busy;$('tradeSubmit').disabled=busy||(pending?.network==='mainnet'&&!$('tradeLiveAck').checked);
- $('tradeLeverageReview').disabled=busy||!client||!freshMarket(market)||market?.market?.spot||!Number.isInteger(market?.market?.maxLeverage)||locked;
+ const locked=!!unresolved(),tradeSupported=market?.market?.tradeSupported!==false;
+ $('tradeReview').disabled=busy||!tradeSupported||!client||!freshMarket(market)||locked;$('tradeConnect').disabled=busy;$('walletProvider').disabled=busy;$('tradeSubmit').disabled=busy||(pending?.network==='mainnet'&&!$('tradeLiveAck').checked);
+ $('tradeLeverageReview').disabled=busy||!tradeSupported||!client||!freshMarket(market)||market?.market?.spot||!Number.isInteger(market?.market?.maxLeverage)||locked;
  $('tradeReconcile').hidden=!locked;$('tradeReconcile').disabled=busy;renderBuilder();
  for(const id of ['tradeType','tradeSide','tradeSize','tradePrice','tradeTrigger','tradeSlippage','tradeLeverage','tradeMarginMode','tradeTwapMinutes','tradeTwapRandom','marketNetwork','marketType','marketSymbol'])$(id).disabled=busy;
- $('tradeReduce').disabled=busy||market?.market?.spot||['Stop','TakeProfit'].includes($('tradeType').value);
- $('tradeModeNote').textContent=market?.network==='testnet'?'Testnet orders use test funds.':'Mainnet orders use real Hyperliquid account funds. Your EVM wallet balance is separate.';
- $('tradeNetworkBadge').textContent=netLabel().toUpperCase();document.querySelector('.testnet').textContent=netLabel().toUpperCase()+' TRADING';
+ $('tradeReduce').disabled=busy||!tradeSupported||market?.market?.spot||['Stop','TakeProfit'].includes($('tradeType').value);
+ $('tradeModeNote').textContent=!tradeSupported?'HIP-3 market · chart and market data are enabled. Funded execution is locked until HIP-3 account reconciliation is enabled.':market?.network==='testnet'?'Testnet orders use test funds.':'Mainnet orders use real Hyperliquid account funds. Your EVM wallet balance is separate.';
+ $('tradeNetworkBadge').textContent=tradeSupported?netLabel().toUpperCase():'HIP-3 VIEW';document.querySelector('.testnet').textContent=tradeSupported?netLabel().toUpperCase()+' TRADING':'HIP-3 MARKET DATA';
 }
 function clearPending(){pending=null;$('tradeDialog').close()}
 function clearAccount(){active=null;activeAt=0;positions=[];for(const id of ['tradeBalances','tradeOrders','tradePositions','tradeFills','tradeFundingHistory','tradeTwaps'])$(id).textContent='No account data loaded';$('tradeAccountStatus').textContent='Connect your trading wallet to load your account.';updateTicket()}
@@ -90,6 +91,7 @@ window.addEventListener('beltrix:market',e=>{
 });
 window.addEventListener('beltrix:book-price',e=>{if(busy||e.detail.coin!==market?.market?.value||e.detail.network!==market?.network)return;clearPending();$('tradeType').value='Gtc';$('tradePrice').value=e.detail.price;updateTicket();});
 async function guard(requireFresh=true){
+ if(market?.market?.tradeSupported===false)throw Error('HIP-3 funded execution is not enabled in this BELTRIX build');
  if(!client||!account||!connectedNetwork||market?.network!==connectedNetwork||$('marketNetwork').value!==connectedNetwork||(requireFresh&&!freshMarket(market)))throw Error('Check the selected network, wallet connection and fresh order book');
  const user=account,version=epoch,p=provider,net=connectedNetwork;const accounts=await p.request({method:'eth_accounts'});const chain=await p.request({method:'eth_chainId'});if(version!==epoch||p!==provider||user!==account||net!==connectedNetwork||market.network!==net||accounts[0]?.toLowerCase()!==user.toLowerCase()||Number(chain)!==networks[net].chain.id)throw Error('Wallet account or network changed');
 }
