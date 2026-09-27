@@ -10,3 +10,26 @@
 /* Empty account tabs reserve equal space, avoiding document-bottom scroll clamps.
    flow-root contains note margins; populated tables still grow without clipping. */
 .terminal-account > [role="tabpanel"]{min-height:144px;display:flow-root;}
+
+/* Hyperliquid market picker: user-facing venue remains Hyperliquid-only. */
+.hl-native-market-select{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
+.hl-market-picker{position:relative;min-width:250px;max-width:360px;flex:1 1 300px}
+.hl-market-picker-button{width:100%;min-height:44px;display:flex;align-items:center;gap:10px;padding:7px 11px;border:1px solid var(--line);border-radius:8px;background:var(--card2);color:var(--text);text-align:left}
+.hl-market-picker-button:hover{border-color:var(--gold)}
+.hl-market-logo-wrap,.hl-market-row-logo{width:28px;height:28px;flex:0 0 28px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:#24201a;border:1px solid #4a4030;color:var(--gold);font-size:10px;font-weight:700}
+.hl-market-logo-wrap img,.hl-market-row-logo img{width:100%;height:100%;object-fit:contain}
+.hl-market-picker-copy,.hl-market-row-copy{display:flex;flex-direction:column;min-width:0;flex:1}
+.hl-market-picker-copy strong,.hl-market-row-copy strong{font-size:12px}
+.hl-market-picker-copy small,.hl-market-row-copy small{font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hl-market-picker-chevron{color:var(--gold);font-size:14px}
+.hl-market-picker-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;width:min(460px,92vw);max-height:520px;overflow:hidden;border:1px solid #3a3327;border-radius:10px;background:#101317;box-shadow:0 18px 60px #000a}
+.hl-market-picker-search{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:10px;background:#101317;border-bottom:1px solid var(--line)}
+.hl-market-picker-search input{flex:1;min-width:0;background:#090c10;color:var(--text);border:1px solid var(--line);border-radius:7px;padding:9px 10px}
+#marketCount{font-size:9px;color:var(--muted);white-space:nowrap}
+.hl-market-picker-list{max-height:455px;overflow:auto;padding:6px}
+.hl-market-row{width:100%;display:flex;align-items:center;gap:10px;border:0;border-radius:7px;background:transparent;color:var(--text);padding:8px;text-align:left}
+.hl-market-row:hover,.hl-market-row[aria-current=true]{background:#1a1d20}
+.hl-market-row[aria-current=true]{outline:1px solid #6d5935}
+.hl-market-row-badge{font-size:8px;color:var(--gold);border:1px solid #5b4d34;border-radius:4px;padding:2px 5px}
+.hl-market-empty{padding:18px;color:var(--muted);font-size:11px}
+@media(max-width:680px){.hl-market-picker{min-width:100%;max-width:none;flex-basis:100%}.hl-market-picker-panel{position:fixed;left:10px;right:10px;top:100px;width:auto;max-height:70vh}.hl-market-picker-list{max-height:calc(70vh - 58px)}}
