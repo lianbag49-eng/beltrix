@@ -17,9 +17,9 @@ test('spread and freshness are normalized',()=>{
 
 test('depth inside 25 bps is additive USD depth',()=>{
  const d=depthUsdWithinBps(book,25);
- assert.equal(d.bid,999);
- assert.equal(d.ask,1001);
- assert.equal(d.total,2000);
+ assert.equal(d.bid,2995);
+ assert.equal(d.ask,3005);
+ assert.equal(d.total,6000);
 });
 
 test('market impact reports partial fills rather than invented liquidity',()=>{
