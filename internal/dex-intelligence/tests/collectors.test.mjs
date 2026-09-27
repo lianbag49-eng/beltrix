@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {hyperliquidBook,orderlyBook,paradexBook,dydxBook,gmxMarketsInfo} from '../public-data.js';
+import {hyperliquidBook,orderlyBook,paradexBook,dydxBook,gmxMarketsInfo,gmxTradingCapacity,usd30ToNumber} from '../public-data.js';
 
 test('Hyperliquid book collector maps l2Book levels',async()=>{
  let body;
@@ -13,7 +13,7 @@ test('Hyperliquid book collector maps l2Book levels',async()=>{
 
 test('Orderly collector unwraps public orderbook data',async()=>{
  let url='';
- const out=await orderlyBook('PERP_BTC_USDC',{maxLevel:25,fetchImpl:async(u)=>{
+ const out=await orderlyBook('PERP_BTC_USDC',{maxLevel:25,fetchImpl:async u=>{
   url=u;
   return {ok:true,json:async()=>({success:true,data:{timestamp:456,bids:[['10','2']],asks:[['11','3']]}})};
  }});
@@ -35,7 +35,7 @@ test('dYdX collector maps indexer orderbook',async()=>{
  assert.equal(out.venue,'dydx');assert.equal(out.bids[0].price,'10');
 });
 
-test('GMX collector restricts oracle networks and reads market info',async()=>{
+test('GMX oracle collector restricts active oracle networks',async()=>{
  let url='';
  const out=await gmxMarketsInfo({chain:'arbitrum',fetchImpl:async u=>{
   url=u;
@@ -44,4 +44,31 @@ test('GMX collector restricts oracle networks and reads market info',async()=>{
  assert.match(url,/arbitrum-api\.gmxinfra\.io\/markets\/info/);
  assert.equal(out.length,1);
  await assert.rejects(()=>gmxMarketsInfo({chain:'megaeth',fetchImpl:async()=>({ok:true,json:async()=>[]})}),/Unsupported GMX oracle network/);
+});
+
+test('GMX JIT trading capacity converts 30-decimal USD and fails over peer',async()=>{
+ const urls=[];
+ const out=await gmxTradingCapacity('BTC/USD [BTC-USDC]',{
+  direction:'long',
+  fetchImpl:async url=>{
+   urls.push(url);
+   if(url.includes('.gmxapi.io/'))return {ok:false,status:503,json:async()=>({})};
+   return {ok:true,json:async()=>({
+    availableLiquidity:'123456000000000000000000000000000',
+    baseAvailableLiquidity:'100000000000000000000000000000000',
+    jitAvailableLiquidity:'23456000000000000000000000000000',
+    limitingFactor:'reserve',
+    jitDataStatus:'available',
+    marketDataStatus:'available'
+   })};
+  }
+ });
+ assert.equal(urls.length,2);
+ assert.match(urls[0],/arbitrum\.gmxapi\.io\/v1\/markets\/trading-capacity/);
+ assert.match(urls[1],/arbitrum\.gmxapi\.ai\/v1\/markets\/trading-capacity/);
+ assert.equal(out.availableLiquidityUsd,123.456);
+ assert.equal(out.baseAvailableLiquidityUsd,100);
+ assert.equal(out.jitAvailableLiquidityUsd,23.456);
+ assert.equal(out.jitDataStatus,'available');
+ assert.equal(usd30ToNumber('1000000000000000000000000000000'),1);
 });
