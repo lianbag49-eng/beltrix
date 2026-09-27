@@ -1,9 +1,9 @@
 const PAGES = Object.freeze(['wallet', 'markets', 'swap', 'settings', 'explore', 'defi', 'boost']);
 
-export function resolveWalletRoute(hash, fallback = 'wallet') {
+export function resolveWalletRoute(hash, fallback = 'markets') {
   const route = typeof hash === 'string' ? hash.replace(/^#/, '') : '';
   const alias = route === 'assets' ? 'wallet' : route === 'discover' ? 'explore' : route;
-  return PAGES.includes(alias) ? alias : PAGES.includes(fallback) ? fallback : 'wallet';
+  return PAGES.includes(alias) ? alias : PAGES.includes(fallback) ? fallback : 'markets';
 }
 
 export function walletAssetMatches(query, symbol, contract) {
