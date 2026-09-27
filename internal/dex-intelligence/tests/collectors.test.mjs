@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {hyperliquidBook,paradexBook,dydxBook} from '../public-data.js';
+import {hyperliquidBook,orderlyBook,paradexBook,dydxBook,gmxMarketsInfo} from '../public-data.js';
 
 test('Hyperliquid book collector maps l2Book levels',async()=>{
  let body;
@@ -11,12 +11,37 @@ test('Hyperliquid book collector maps l2Book levels',async()=>{
  assert.equal(out.bids[0].px,'10');
 });
 
-test('Paradex collector preserves public orderbook sides',async()=>{
- const out=await paradexBook('BTC-USD-PERP',{fetchImpl:async()=>({ok:true,json:async()=>({bids:[['10','2']],asks:[['11','3']]})})});
- assert.equal(out.venue,'paradex');assert.equal(out.asks.length,1);
+test('Orderly collector unwraps public orderbook data',async()=>{
+ let url='';
+ const out=await orderlyBook('PERP_BTC_USDC',{maxLevel:25,fetchImpl:async(u)=>{
+  url=u;
+  return {ok:true,json:async()=>({success:true,data:{timestamp:456,bids:[['10','2']],asks:[['11','3']]}})};
+ }});
+ assert.match(url,/PERP_BTC_USDC/);
+ assert.match(url,/max_level=25/);
+ assert.equal(out.receivedAt,456);
+ assert.equal(out.bids[0][0],'10');
+});
+
+test('Paradex collector preserves public orderbook sides and source timestamp',async()=>{
+ const out=await paradexBook('BTC-USD-PERP',{fetchImpl:async()=>({ok:true,json:async()=>({last_updated_at:789,bids:[['10','2']],asks:[['11','3']]})})});
+ assert.equal(out.venue,'paradex');
+ assert.equal(out.receivedAt,789);
+ assert.equal(out.asks.length,1);
 });
 
 test('dYdX collector maps indexer orderbook',async()=>{
  const out=await dydxBook('BTC-USD',{fetchImpl:async()=>({ok:true,json:async()=>({bids:[{price:'10',size:'2'}],asks:[{price:'11',size:'3'}]})})});
  assert.equal(out.venue,'dydx');assert.equal(out.bids[0].price,'10');
+});
+
+test('GMX collector restricts oracle networks and reads market info',async()=>{
+ let url='';
+ const out=await gmxMarketsInfo({chain:'arbitrum',fetchImpl:async u=>{
+  url=u;
+  return {ok:true,json:async()=>[{name:'BTC/USD'}]};
+ }});
+ assert.match(url,/arbitrum-api\.gmxinfra\.io\/markets\/info/);
+ assert.equal(out.length,1);
+ await assert.rejects(()=>gmxMarketsInfo({chain:'megaeth',fetchImpl:async()=>({ok:true,json:async()=>[]})}),/Unsupported GMX oracle network/);
 });
