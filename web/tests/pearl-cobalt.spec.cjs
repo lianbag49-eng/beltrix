@@ -28,8 +28,9 @@ test('Pearl Cobalt keeps trading controls available and market intelligence sync
  await expect(page.locator('.order-ticket')).toBeVisible();
  await expect(page.locator('.terminal-account')).toBeVisible();
  await expect(page.locator('[data-pc-intel="market"]')).not.toHaveText('—');
- const symbol=await page.locator('#marketPickerSymbol').innerText();
- await expect(page.locator('[data-pc-intel="market"]')).toContainText(symbol.trim());
+ await expect(page.locator('#marketPickerSymbol')).not.toHaveText('Select market');
+ const symbol=(await page.locator('#marketPickerSymbol').innerText()).trim();
+ await expect(page.locator('[data-pc-intel="market"]')).toContainText(symbol);
 });
 
 test('Pearl Cobalt mobile hides desktop rails and avoids horizontal overflow',async({page})=>{
@@ -111,8 +112,6 @@ test('Wallet, Explore, DeFi and Boost use the Pearl Cobalt desktop shell',async(
   await expect(page.locator('body')).toHaveAttribute('data-page',route);
   await expect(page.locator('#'+route)).toHaveClass(/active/);
   await expect(page.locator('#pcWalletSurfaceNav')).toBeVisible();
-  await expect(page.locator('#pcWalletSurfaceNav [data-pc-wallet-page="'+route+'"]')).toHaveClass(/active/);
-  await expect(page.locator('.pc-wallet-surface-nav')).toHaveCount(1);
   await expect(page.locator('.bottom-nav')).toBeHidden();
   await expect(page.locator('#pcSidebar')).toBeHidden();
   await expect(page.locator('#pcRightRail')).toBeHidden();
@@ -142,9 +141,9 @@ test('Wallet surfaces follow light and dark Pearl Cobalt theme tokens',async({pa
 test('Desktop Wallet workspace navigation reaches DeFi and returns to Trade',async({page})=>{
  await page.setViewportSize({width:1280,height:900});
  await page.goto('/web/#wallet');
- await page.locator('#pcWalletSurfaceNav [data-pc-wallet-page="defi"]').click();
+ await page.locator('#pcWalletSurfaceNav [data-pc-wallet-route="defi"]').click();
  await expect(page.locator('body')).toHaveAttribute('data-page','defi');
- await page.locator('#pcWalletSurfaceNav [data-pc-wallet-page="markets"]').click();
+ await page.locator('#pcWalletSurfaceNav [data-pc-wallet-route="markets"]').click();
  await expect(page.locator('body')).toHaveAttribute('data-page','markets');
  await expect(page.locator('.order-ticket')).toBeVisible();
 });
@@ -220,4 +219,65 @@ test('USDT wallet opens inside the Pearl Cobalt theme system',async({page})=>{
  await expect(page.locator('#usdtDialog')).toBeVisible();
  const dark=await page.locator('#usdtDialog').evaluate(el=>getComputedStyle(el).backgroundColor);
  expect(dark).not.toBe(light.bg);
+});
+
+
+test('Pearl Cobalt desktop wallet surfaces use the full workspace and unified navigation',async({page})=>{
+ await page.setViewportSize({width:1440,height:1000});
+ await page.goto('/web/#wallet');
+ await expect(page.locator('body')).toHaveAttribute('data-page','wallet');
+ await expect(page.locator('#wallet')).toBeVisible();
+ await expect(page.locator('.pc-wallet-surface-nav')).toBeVisible();
+ await expect(page.locator('.pc-wallet-surface-nav button')).toHaveCount(5);
+ await expect(page.locator('.bottom-nav')).toBeHidden();
+ const width=await page.locator('#wallet').evaluate(el=>el.getBoundingClientRect().width);
+ expect(width).toBeGreaterThan(900);
+ const colors=await page.locator('#wallet').evaluate(el=>({
+  wallet:getComputedStyle(el).color,
+  body:getComputedStyle(document.body).color,
+  background:getComputedStyle(document.documentElement).getPropertyValue('--card').trim()
+ }));
+ expect(colors.wallet).toBe(colors.body);
+ expect(colors.background).toBeTruthy();
+
+ await page.locator('.pc-wallet-surface-nav [data-pc-wallet-route="explore"]').click();
+ await expect(page.locator('body')).toHaveAttribute('data-page','explore');
+ await expect(page.locator('#explore')).toBeVisible();
+
+ await page.locator('#pcWalletSurfaceNav [data-pc-wallet-route="defi"]').click();
+ await expect(page.locator('body')).toHaveAttribute('data-page','defi');
+ await expect(page.locator('#defi')).toBeVisible();
+
+ await page.locator('#pcWalletSurfaceNav [data-pc-wallet-route="boost"]').click();
+ await expect(page.locator('body')).toHaveAttribute('data-page','boost');
+ await expect(page.locator('#boost')).toBeVisible();
+
+ await page.locator('#pcWalletSurfaceNav [data-pc-wallet-route="markets"]').click();
+ await expect(page.locator('body')).toHaveAttribute('data-page','markets');
+ await expect(page.locator('.order-ticket')).toBeVisible();
+});
+
+test('Pearl Cobalt Wallet and USDT modal follow light and dark themes',async({page})=>{
+ await page.setViewportSize({width:1440,height:1000});
+ await page.goto('/web/#wallet');
+ await expect(page.locator('html')).toHaveAttribute('data-theme','light');
+ await expect(page.locator('#walletUsdtEntry')).toBeVisible();
+ await page.locator('#walletUsdtEntry').click();
+ await expect(page.locator('#usdtDialog')).toBeVisible();
+ const light=await page.locator('#usdtDialog').evaluate(el=>({
+  bg:getComputedStyle(el).backgroundColor,
+  color:getComputedStyle(el).color
+ }));
+ await page.locator('#usdtClose').click();
+
+ await page.locator('#pcThemeToggle').click();
+ await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
+ await page.locator('#walletUsdtEntry').click();
+ await expect(page.locator('#usdtDialog')).toBeVisible();
+ const dark=await page.locator('#usdtDialog').evaluate(el=>({
+  bg:getComputedStyle(el).backgroundColor,
+  color:getComputedStyle(el).color
+ }));
+ expect(dark.bg).not.toBe(light.bg);
+ expect(dark.color).not.toBe(light.color);
 });
