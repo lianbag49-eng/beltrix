@@ -16,6 +16,7 @@ export async function collectAssetBooks(asset,{fetchImpl=fetch,notionalUsd=10000
  const rows=[];
  for(const venue of BOOK_VENUES){
   const symbol=route.symbols[venue];
+  const startedAt=Date.now();
   try{
    const raw=await BOOK_COLLECTORS[venue](symbol,{fetchImpl});
    const snapshot=liquiditySnapshot(raw);
@@ -29,7 +30,8 @@ export async function collectAssetBooks(asset,{fetchImpl=fetch,notionalUsd=10000
     snapshot,
     buy:estimateExecutionCost(snapshot.book,{side:'buy',notionalUsd,feeBps}),
     sell:estimateExecutionCost(snapshot.book,{side:'sell',notionalUsd,feeBps}),
-    health:bookHealth(snapshot.book,{now,notionalUsd})
+    health:bookHealth(snapshot.book,{now,notionalUsd}),
+    latencyMs:Math.max(0,Date.now()-startedAt)
    }));
   }catch(error){
    rows.push(Object.freeze({
@@ -42,7 +44,8 @@ export async function collectAssetBooks(asset,{fetchImpl=fetch,notionalUsd=10000
     snapshot:null,
     buy:null,
     sell:null,
-    health:Object.freeze({status:'unavailable',reasons:['collector-error']})
+    health:Object.freeze({status:'unavailable',reasons:['collector-error']}),
+    latencyMs:Math.max(0,Date.now()-startedAt)
    }));
   }
  }
@@ -65,6 +68,7 @@ const gmxSymbol=row=>row?.symbol||row?.name||row?.marketName||null;
 
 export async function collectGmxState(asset,{chain='arbitrum',fetchImpl=fetch}={}){
  const canonical=canonicalAsset(asset);
+ const startedAt=Date.now();
  try{
   const payload=await gmxMarketsInfo({chain,fetchImpl});
   const rows=Array.isArray(payload)?payload:Array.isArray(payload?.data)?payload.data:[];
@@ -103,6 +107,7 @@ export async function collectGmxState(asset,{chain='arbitrum',fetchImpl=fetch}={
    capacity:Object.freeze({long,short}),
    capacityError,
    receivedAt:Date.now(),
+   latencyMs:Math.max(0,Date.now()-startedAt),
    note:'GMX uses oracle/pool execution. Capacity is JIT-aware indicative increase capacity, not a CLOB depth substitute or request-specific prepare-order guarantee.'
   });
  }catch(error){
@@ -117,6 +122,7 @@ export async function collectGmxState(asset,{chain='arbitrum',fetchImpl=fetch}={
    capacity:Object.freeze({long:null,short:null}),
    capacityError:null,
    receivedAt:null,
+   latencyMs:Math.max(0,Date.now()-startedAt),
    error:String(error?.message||error)
   });
  }
