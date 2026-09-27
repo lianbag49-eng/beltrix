@@ -50,7 +50,7 @@ export function prepareBeltrixTrade({
 
  const settlement=selectSettlement(i,market,settlementRegistry);
  const context=settlementContextById[settlement.id]||{};
- const prepared=settlement.prepareIntent(i,{...context,now,market});
+ const prepared=settlement.prepareIntent(i,{...context,now,protocolMarket:market});
  return Object.freeze({
   ok:true,
   intent:i,
