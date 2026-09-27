@@ -2,9 +2,9 @@
 
 ## 1. Executive Summary
 
-**BELTRIX**는 탈중앙 파생상품 시장을 대상으로 개발 중인 **DEX Trading Terminal + Multi-Venue Infrastructure** 프로젝트입니다.
+**BELTRIX**는 탈중앙 파생상품 시장을 대상으로 개발 중인 **Decentralized Derivatives Protocol + Trading Infrastructure** 프로젝트입니다.
 
-현재 공개 제품은 Hyperliquid를 execution baseline으로 사용하며, 주요 perpetual market을 BELTRIX 자체 UI에서 탐색하고 차트·호가·선물 거래 흐름을 사용할 수 있도록 구성되어 있습니다.
+현재 공개 제품의 live settlement는 Hyperliquid를 사용하지만, BELTRIX의 상위 거래 의미와 정책은 자체 Protocol Core로 분리되어 있습니다. Market Registry, Trade Intent, Oracle Policy, Risk Engine, Governance-ready Config, Settlement Adapter를 BELTRIX가 정의하고 Hyperliquid는 현재 settlement substrate 역할을 합니다.
 
 동시에 내부적으로는 Hyperliquid, Orderly, GMX, Paradex, dYdX 등 주요 DEX를 대상으로 **Market Intelligence, execution qualification, BD, fee/revenue 및 white-label 분석 인프라**를 개발하고 있습니다.
 
@@ -81,7 +81,41 @@ https://lianbag49-eng.github.io/beltrix/
 
 ---
 
-# 4. Internal DEX Intelligence
+# 4. BELTRIX Protocol Core
+
+BELTRIX는 특정 거래소 주문 형식 자체를 제품의 핵심으로 두지 않습니다.
+
+현재 구현된 protocol layer:
+
+- BELTRIX Market Registry
+- Venue-independent Trade Intent
+- Multi-source Oracle Consensus
+- Risk Policy
+- User-controlled Settlement Preferences
+- Settlement Adapter Registry
+- Governance-ready signer / quorum / timelock semantics
+- Hyperliquid bootstrap settlement adapter
+- Explicit disabled BELTRIX-native settlement adapter
+
+현재 maturity는 **Bootstrap**입니다.
+
+다음 Hybrid 단계에서는 BELTRIX 자체 market definition과 operating policy를 가진 builder-deployed perp market을 준비하고, 이후 최종적으로 external settlement dependency를 제거하는 BELTRIX-native settlement를 연구합니다.
+
+# 5. BELTRIX HIP-3 Hybrid Path
+
+HIP-3 hybrid plan은 BELTRIX Market Registry를 기준으로 다음 운영 설정을 만드는 구조입니다.
+
+- market registration plan
+- oracle updater policy
+- margin configuration
+- open-interest caps
+- fee recipient policy
+- scoped sub-deployer permissions
+- funding/growth/annotation configuration
+
+현재 코드는 **unsigned deployment plan**만 생성하며 실제 mainnet 배포나 사용자 자금 연결을 활성화하지 않습니다.
+
+# 6. Internal DEX Intelligence
 
 BELTRIX 내부 Admin / Market Intelligence 시스템은 경쟁 DEX를 직접 실행시키기 전에 기술 및 사업 관점에서 비교하도록 설계되었습니다.
 
@@ -120,7 +154,7 @@ GMX:
 
 ---
 
-# 5. Market Metrics & Monitoring
+# 7. Market Metrics & Monitoring
 
 Phase 4부터 내부 Market Intelligence는 단일 시점 비교뿐 아니라 시간축 데이터도 축적하도록 확장하고 있습니다.
 
@@ -154,7 +188,7 @@ Phase 5에서는 추가로 다음 기능을 구축했습니다.
 
 ---
 
-# 6. Execution Qualification
+# 8. Execution Qualification
 
 BELTRIX는 “API가 존재한다”는 이유만으로 새로운 venue를 바로 실거래에 연결하지 않습니다.
 
@@ -177,7 +211,7 @@ BELTRIX는 “API가 존재한다”는 이유만으로 새로운 venue를 바�
 
 ---
 
-# 7. White-label Strategy
+# 9. White-label Strategy
 
 BELTRIX는 향후 B2B white-label을 중요한 사업 축으로 검토하고 있습니다.
 
@@ -215,7 +249,7 @@ Custom frontend + UI fee / referral 기반 integration 연구
 
 ---
 
-# 8. Business Model
+# 10. Business Model
 
 BELTRIX가 검토하는 수익 모델은 다음과 같습니다.
 
@@ -242,7 +276,7 @@ BELTRIX가 검토하는 수익 모델은 다음과 같습니다.
 
 ---
 
-# 9. 핵심 차별점
+# 11. 핵심 차별점
 
 ### Asset-first
 거래소를 기준으로 UI를 분할하지 않고 마켓을 중심으로 여러 venue를 연결합니다.
@@ -261,7 +295,7 @@ API integration뿐 아니라 BD, fees, referral, white-label, operational depend
 
 ---
 
-# 10. 현재 단계 구분
+# 12. 현재 단계 구분
 
 ## LIVE / PUBLIC
 - Hyperliquid-first BELTRIX trading terminal
@@ -302,19 +336,19 @@ API integration뿐 아니라 BD, fees, referral, white-label, operational depend
 
 ---
 
-# 11. 1분 소개 스크립트
+# 13. 1분 소개 스크립트
 
-“BELTRIX는 탈중앙 파생상품 시장을 위한 트레이딩 터미널입니다. 지금 공개 제품은 Hyperliquid를 기반으로 전체 마켓을 BELTRIX 자체 UI에서 볼 수 있게 만들었고, 단순 프론트엔드에서 끝내지 않고 여러 DEX를 연결할 수 있는 인프라 구조로 확장하고 있습니다.
+“BELTRIX는 탈중앙 파생상품 시장을 위한 자체 Protocol Layer를 만들고 있습니다. 공개 제품은 Hyperliquid에서 settlement를 시작했지만, BELTRIX Market Registry, Trade Intent, Oracle, Risk, Governance, Settlement Adapter를 별도로 구축해 특정 거래소에 종속되지 않는 구조로 전환했습니다.
 
 내부적으로는 Hyperliquid, Orderly, GMX, Paradex, dYdX 같은 거래소의 유동성, 스프레드, 예상 체결비용, Funding, OI, Volume, API 상태를 자산 기준으로 정규화해서 비교하고 있습니다.
 
 향후에는 이 인프라를 기반으로 새로운 execution venue를 검증해서 추가하거나 파트너사가 자기 브랜드로 사용할 수 있는 white-label 거래 터미널까지 확장하는 것이 목표입니다.
 
-결국 BELTRIX가 만들려는 것은 하나의 DEX UI가 아니라 여러 DEX와 유동성 인프라를 연결하는 Trading Infrastructure Layer입니다.”
+결국 BELTRIX가 만들려는 것은 Hyperliquid 프론트엔드가 아니라, 자체 시장 정책을 소유하고 필요에 따라 여러 settlement substrate를 사용할 수 있는 Decentralized Derivatives Protocol입니다.”
 
 ---
 
-# 12. 짧은 메신저 소개
+# 14. 짧은 메신저 소개
 
 BELTRIX라는 DEX 트레이딩 인프라를 개발하고 있습니다.
 
@@ -326,10 +360,10 @@ https://lianbag49-eng.github.io/beltrix/
 
 ---
 
-# 13. 예상 질문
+# 15. 예상 질문
 
 ## “BELTRIX 자체 DEX인가요?”
-현재 단계에서는 Hyperliquid-first trading terminal 및 infrastructure project입니다. BELTRIX 자체 독립 유동성/오더북을 가진 별도 venue라고 설명하지 않습니다.
+현재 BELTRIX는 자체 Protocol Core를 가진 bootstrap-stage decentralized derivatives protocol입니다. 다만 BELTRIX-native matching/settlement와 독립 유동성은 아직 배포되지 않았으므로 완전 독립 native DEX라고 설명하지 않습니다.
 
 ## “다른 DEX도 거래 가능한가요?”
 현재 경쟁 DEX는 read-only Market Intelligence와 기술 검증 단계입니다. 실 execution은 qualification 및 E2E 검증 이후 단계적으로 검토합니다.
@@ -345,10 +379,10 @@ Frontend/builder economics, referral attribution, B2B white-label, integration, 
 
 ---
 
-# 14. Recommended Positioning
+# 16. Recommended Positioning
 
 ### Korean
-**BELTRIX — 멀티베뉴 DEX 트레이딩 터미널 및 Market Intelligence / Execution Infrastructure**
+**BELTRIX — 자체 Protocol Core를 구축 중인 탈중앙 파생상품 Protocol / Trading Infrastructure**
 
 ### English
-**BELTRIX — A Hyperliquid-first decentralized derivatives terminal evolving into multi-venue market intelligence, execution and white-label infrastructure.**
+**BELTRIX — A decentralized derivatives protocol in bootstrap stage, using Hyperliquid as its current settlement substrate while building its own market, oracle, risk, governance and settlement layers.**
