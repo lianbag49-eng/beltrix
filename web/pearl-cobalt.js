@@ -28,8 +28,8 @@ function applyTheme(theme,{persist=true}={}){
   toggle.setAttribute('aria-pressed',String(value==='dark'));
   toggle.setAttribute('aria-label',value==='dark'?'Switch to light mode':'Switch to dark mode');
   toggle.innerHTML=value==='dark'
-   ?'<span aria-hidden="true">☀</span><span>Light</span>'
-   :'<span aria-hidden="true">◐</span><span>Dark</span>';
+   ?'<span class="pc-theme-icon" aria-hidden="true">☀</span><span>Light</span>'
+   :'<span class="pc-theme-icon" aria-hidden="true">◐</span><span>Dark</span>';
  }
  window.dispatchEvent(new CustomEvent('beltrix:theme',{detail:{theme:value}}));
  window.dispatchEvent(new Event('resize'));
@@ -40,9 +40,8 @@ function node(tag,cls,html=''){
  const el=document.createElement(tag);el.className=cls;el.innerHTML=html;return el;
 }
 function safeText(id,fallback='—'){return ($(id)?.textContent||fallback).trim()||fallback}
-function currentSymbol(){
- return safeText('marketPickerSymbol',safeText('marketSymbol','Market')).replace(/\s+/g,' ');
-}
+function currentSymbol(){return safeText('marketPickerSymbol',safeText('marketSymbol','Market')).replace(/\s+/g,' ')}
+function currentMarketValue(){return $('marketSymbol')?.value||''}
 function activateMarket(value){
  const select=$('marketSymbol');
  if(!select||select.disabled)return;
@@ -57,13 +56,8 @@ function openMarketPicker(){
  const dialog=$('marketPickerDialog');
  if(dialog?.showModal)dialog.showModal();
 }
-function scrollToElement(el){
- el?.scrollIntoView({behavior:'smooth',block:'start'});
-}
-function syncThemeToggle(){
- if(!$('pcThemeToggle'))return;
- applyTheme(root.dataset.theme||'light',{persist:false});
-}
+function scrollToElement(el){el?.scrollIntoView({behavior:'smooth',block:'start'})}
+function syncThemeToggle(){if($('pcThemeToggle'))applyTheme(root.dataset.theme||'light',{persist:false})}
 
 function mountHeader(){
  if($('pcThemeToggle'))return;
@@ -71,21 +65,25 @@ function mountHeader(){
  const brand=top?.querySelector('.brand');
  if(!top||!brand)return;
 
+ brand.querySelector('small').textContent='DECENTRALIZED DERIVATIVES';
+
  const nav=node('div','pc-header-nav');
- nav.setAttribute('role','group');nav.setAttribute('aria-label','Pearl Cobalt product shortcuts');
+ nav.setAttribute('role','group');
+ nav.setAttribute('aria-label','BELTRIX product shortcuts');
  const items=[
-  ['Trade',()=>scrollToElement($('markets'))],
+  ['Dashboard',()=>scrollToElement($('markets'))],
   ['Markets',openMarketPicker],
-  ['Portfolio',()=>scrollToElement(document.querySelector('.terminal-account'))],
-  ['Analytics',()=>scrollToElement($('pcMarketIntel'))],
-  ['Protocol',()=>scrollToElement($('pcProtocolCard'))]
+  ['Trade',()=>scrollToElement(document.querySelector('.trade-layout'))],
+  ['Protocol',()=>scrollToElement($('pcProtocolCard'))],
+  ['Intelligence',()=>scrollToElement($('pcIntelligenceBar'))],
+  ['Portfolio',()=>scrollToElement(document.querySelector('.terminal-account'))]
  ];
- for(const item of items){
-  const b=node('button','pc-header-link',item[0]);b.type='button';b.setAttribute('aria-label','Open '+item[0]+' section');b.onclick=item[1];nav.append(b);
+ for(const [label,action] of items){
+  const b=node('button','pc-header-link',label);b.type='button';b.onclick=action;nav.append(b);
  }
  brand.after(nav);
 
- const search=node('button','pc-market-search','<span aria-hidden="true">⌕</span><span>Search markets</span><kbd>⌘K</kbd>');
+ const search=node('button','pc-market-search','<span aria-hidden="true">⌕</span><span>Search markets, tokens, or strategies…</span><kbd>⌘K</kbd>');
  search.type='button';search.onclick=openMarketPicker;
  const theme=node('button','pc-theme-toggle');theme.type='button';theme.id='pcThemeToggle';
  theme.onclick=()=>applyTheme(nextTheme(root.dataset.theme));
@@ -105,21 +103,71 @@ function mountHeader(){
 function marketOptions(){
  const select=$('marketSymbol');
  if(!select)return [];
- return [...select.options].filter(o=>o.value).slice(0,12).map(o=>({
+ return [...select.options].filter(o=>o.value).slice(0,16).map(o=>({
   value:o.value,
   label:(o.textContent||o.value).trim()
  }));
 }
+function optionBase(label){
+ return String(label||'').replace(/\s*\/.*$/,'').replace(/-PERP$/i,'').split(':').pop().replace(/^@\d+$/,'SPOT');
+}
+function preferredMarketCards(){
+ const options=marketOptions();
+ const active=currentMarketValue();
+ const desired=['BTC','ETH','SOL'];
+ const chosen=[];
+ for(const base of desired){
+  const found=options.find(o=>optionBase(o.label).toUpperCase()===base);
+  if(found)chosen.push(found);
+ }
+ if(!chosen.some(x=>x.value===active)){
+  const current=options.find(x=>x.value===active);
+  if(current)chosen.unshift(current);
+ }
+ return [...new Map(chosen.map(x=>[x.value,x])).values()].slice(0,3);
+}
+
+function mountMarketStrip(){
+ if($('pcMarketStrip'))return;
+ const marketCard=document.querySelector('#markets .market-card');
+ if(!marketCard)return;
+ const strip=node('section','pc-market-strip');strip.id='pcMarketStrip';
+ const controls=marketCard.querySelector('.simple-trade-toolbar')||marketCard.querySelector(':scope > .market-controls');
+ marketCard.insertBefore(strip,controls||marketCard.firstChild);
+ renderMarketStrip();
+}
+function renderMarketStrip(){
+ const strip=$('pcMarketStrip');if(!strip)return;
+ const active=currentMarketValue();
+ const rows=preferredMarketCards();
+ strip.replaceChildren();
+ for(const row of rows){
+  const base=optionBase(row.label);
+  const button=node('button','pc-ticker-card');
+  button.type='button';button.dataset.marketValue=row.value;
+  button.setAttribute('aria-current',String(row.value===active));
+  const selected=row.value===active;
+  button.innerHTML=
+   '<span class="pc-ticker-coin">'+base.slice(0,3)+'</span>'+
+   '<span class="pc-ticker-copy"><strong>'+row.label+'</strong><small>'+(selected?safeText('marketMark','Live market'):'Open market')+'</small></span>'+
+   '<span class="pc-ticker-change '+(selected?($('marketChange')?.className||''):'')+'">'+(selected?safeText('marketChange','Live'):'↗')+'</span>';
+  button.onclick=()=>activateMarket(row.value);
+  strip.append(button);
+ }
+ const add=node('button','pc-ticker-card pc-add-market','<span class="pc-add-plus">+</span><span class="pc-ticker-copy"><strong>Add market</strong><small>Browse all markets</small></span>');
+ add.type='button';add.onclick=openMarketPicker;strip.append(add);
+}
+
 function renderWatchlist(sidebar){
  const list=sidebar?.querySelector('.pc-watchlist-list');if(!list)return;
  const rows=marketOptions();
- const active=$('marketSymbol')?.value;
+ const active=currentMarketValue();
  list.replaceChildren();
  for(const row of rows){
   const b=node('button','pc-market-row');
   b.type='button';b.dataset.marketValue=row.value;b.setAttribute('aria-current',String(row.value===active));
-  const base=row.label.replace(/\s*\/.*$/,'').replace(/-PERP$/i,'').split(':').pop();
-  b.innerHTML='<span class="pc-coin">'+(base||'?').slice(0,3)+'</span><span><strong>'+row.label+'</strong><small>Perpetual market</small></span><span class="pc-row-arrow">›</span>';
+  const base=optionBase(row.label);
+  b.innerHTML='<span class="pc-coin">'+(base||'?').slice(0,3)+'</span><span><strong>'+row.label+'</strong><small>'+(row.value===active?safeText('marketMark','Live'):'Perpetual market')+'</small></span><span class="pc-row-arrow">›</span>';
   b.onclick=()=>activateMarket(row.value);
   list.append(b);
  }
@@ -130,28 +178,32 @@ function mountSidebar(){
  if($('pcSidebar'))return;
  const sidebarHtml=[
   '<div class="pc-rail-nav">',
-  '<button type="button" data-pc-action="trade" class="active" aria-label="Open trading workspace"><span>⌁</span>Trade</button>',
-  '<button type="button" data-pc-action="markets" aria-label="Open market selector"><span>◈</span>Markets</button>',
-  '<button type="button" data-pc-action="portfolio" aria-label="Open trading portfolio"><span>▣</span>Portfolio</button>',
-  '<button type="button" data-pc-action="analytics" aria-label="Open market intelligence"><span>▥</span>Analytics</button>',
-  '<button type="button" data-pc-action="protocol" aria-label="Open protocol overview"><span>⬡</span>Protocol</button>',
+  '<button type="button" data-pc-action="dashboard" class="active"><span>⌂</span>Dashboard</button>',
+  '<button type="button" data-pc-action="markets"><span>▥</span>Markets</button>',
+  '<button type="button" data-pc-action="trade"><span>⇄</span>Trade</button>',
+  '<button type="button" data-pc-action="protocol"><span>⬡</span>Protocol</button>',
+  '<button type="button" data-pc-action="analytics"><span>⌁</span>Intelligence</button>',
+  '<button type="button" data-pc-action="portfolio"><span>◔</span>Portfolio</button>',
+  '<button type="button" data-pc-action="governance"><span>⌘</span>Governance</button>',
   '</div>',
   '<section class="pc-watchlist">',
   '<header><div><small>MARKETS</small><strong>Watchlist</strong></div><button type="button" data-pc-add-market aria-label="Open market selector">+</button></header>',
   '<div class="pc-watchlist-list"></div>',
   '</section>',
-  '<section class="pc-brand-note"><strong>Open markets.<br>Higher standards.</strong><p>Self-custodial trading with BELTRIX protocol controls.</p></section>'
+  '<section class="pc-brand-note"><span class="pc-brand-line"></span><strong>Open markets.<br>Higher standards.</strong><p>BELTRIX protocol controls with self-custodial settlement.</p></section>',
+  '<div class="pc-sidebar-foot"><button type="button" data-pc-action="settings"><span>⚙</span>Settings</button></div>'
  ].join('');
- const sidebar=node('aside','pc-sidebar',sidebarHtml);
- sidebar.id='pcSidebar';
- const top=document.querySelector('.top');
- top.after(sidebar);
+ const sidebar=node('aside','pc-sidebar',sidebarHtml);sidebar.id='pcSidebar';
+ document.querySelector('.top').after(sidebar);
  sidebar.querySelector('[data-pc-add-market]').onclick=openMarketPicker;
- sidebar.querySelector('[data-pc-action="trade"]').onclick=()=>scrollToElement($('markets'));
+ sidebar.querySelector('[data-pc-action="dashboard"]').onclick=()=>scrollToElement($('markets'));
  sidebar.querySelector('[data-pc-action="markets"]').onclick=openMarketPicker;
+ sidebar.querySelector('[data-pc-action="trade"]').onclick=()=>scrollToElement(document.querySelector('.trade-layout'));
  sidebar.querySelector('[data-pc-action="portfolio"]').onclick=()=>scrollToElement(document.querySelector('.terminal-account'));
- sidebar.querySelector('[data-pc-action="analytics"]').onclick=()=>scrollToElement($('pcMarketIntel'));
+ sidebar.querySelector('[data-pc-action="analytics"]').onclick=()=>scrollToElement($('pcIntelligenceBar'));
  sidebar.querySelector('[data-pc-action="protocol"]').onclick=()=>scrollToElement($('pcProtocolCard'));
+ sidebar.querySelector('[data-pc-action="governance"]').onclick=()=>scrollToElement($('pcProtocolCard'));
+ sidebar.querySelector('[data-pc-action="settings"]').onclick=()=>window.openPage?.('settings');
  renderWatchlist(sidebar);
 }
 
@@ -160,64 +212,87 @@ function mountRightRail(){
  const railHtml=[
   '<section class="pc-insight-card pc-protocol-card" id="pcProtocolCard">',
   '<div class="pc-card-kicker"><span class="pc-icon">⬡</span><span>Protocol Overview</span><span class="pc-live-pill">BOOTSTRAP</span></div>',
-  '<h2>Own the policy.<br>Keep settlement modular.</h2>',
-  '<p>BELTRIX defines market identity, intent, oracle policy and risk controls. Hyperliquid is the current settlement substrate.</p>',
-  '<div class="pc-protocol-grid">',
-  '<div><small>Market registry</small><strong>BTC · ETH · SOL</strong></div>',
-  '<div><small>Custody</small><strong>Self-custody</strong></div>',
-  '<div><small>Settlement</small><strong>Hyperliquid</strong></div>',
-  '<div><small>Native layer</small><strong>Research</strong></div>',
-  '</div></section>',
-  '<section class="pc-insight-card" id="pcMarketIntel">',
-  '<div class="pc-card-kicker"><span class="pc-icon">▥</span><span>Market Intelligence</span><span class="pc-status-dot">Live</span></div>',
-  '<div class="pc-intel-grid">',
-  '<div><small>Market</small><strong data-pc-intel="market">—</strong></div>',
-  '<div><small>Mark price</small><strong data-pc-intel="mark">—</strong></div>',
-  '<div><small>Open interest</small><strong data-pc-intel="oi">—</strong></div>',
-  '<div><small>24h volume</small><strong data-pc-intel="volume">—</strong></div>',
-  '<div><small>Funding</small><strong data-pc-intel="funding">—</strong></div>',
-  '<div><small>24h change</small><strong data-pc-intel="change">—</strong></div>',
+  '<h2>A decentralized derivatives protocol built beyond one venue.</h2>',
+  '<p>BELTRIX owns market identity, intent, oracle policy and risk controls. Settlement stays modular and user-signed.</p>',
+  '<div class="pc-protocol-list">',
+  '<div><span>Market Registry</span><strong>BTC · ETH · SOL</strong></div>',
+  '<div><span>Oracle Policy</span><strong>Multi-source</strong></div>',
+  '<div><span>Risk Engine</span><strong>Guarded</strong></div>',
+  '<div><span>Settlement</span><strong>Hyperliquid bootstrap</strong></div>',
   '</div>',
-  '<p class="pc-intel-note">Read-only telemetry. Execution remains behind wallet review and protocol safety checks.</p>',
+  '<button type="button" class="pc-outline-action" data-pc-protocol-action>Explore protocol</button>',
+  '</section>',
+  '<section class="pc-insight-card pc-promo-card">',
+  '<span class="pc-promo-kicker">BELTRIX</span>',
+  '<h3>A more open<br>tomorrow.</h3>',
+  '<p>Decentralized derivatives for global markets.</p>',
+  '<span class="pc-promo-horizon" aria-hidden="true"></span>',
   '</section>'
  ].join('');
- const rail=node('aside','pc-right-rail',railHtml);
- rail.id='pcRightRail';
- const sidebar=$('pcSidebar');
- sidebar.after(rail);
+ const rail=node('aside','pc-right-rail',railHtml);rail.id='pcRightRail';
+ $('pcSidebar').after(rail);
+ rail.querySelector('[data-pc-protocol-action]').onclick=()=>scrollToElement($('pcIntelligenceBar'));
 }
 
-function syncIntel(){
- const rail=$('pcRightRail');if(!rail)return;
+function mountIntelligenceBar(){
+ if($('pcIntelligenceBar'))return;
+ const account=document.querySelector('.terminal-account');
+ if(!account)return;
+ const bar=node('section','pc-intelligence-bar',[
+  '<div class="pc-intel-head"><div><span class="pc-icon">⌬</span><strong>Protocol &amp; Market Intelligence</strong></div><span class="pc-intel-live">● Live</span></div>',
+  '<div class="pc-intel-cards">',
+  '<article><small>Funding rate</small><strong data-pc-metric="funding">—</strong><span>Current venue rate</span></article>',
+  '<article><small>Open interest</small><strong data-pc-metric="oi">—</strong><span>Selected market</span></article>',
+  '<article><small>24h volume</small><strong data-pc-metric="volume">—</strong><span>Selected market</span></article>',
+  '<article><small>Oracle status</small><strong data-pc-metric="oracle">—</strong><span>Venue oracle feed</span></article>',
+  '<article><small>Protocol risk</small><strong class="pc-risk-state">Guarded</strong><span>Wallet review + policy checks</span></article>',
+  '</div>'
+ ].join(''));
+ bar.id='pcIntelligenceBar';account.before(bar);
+}
+
+function syncIntelligence(){
+ const bar=$('pcIntelligenceBar');if(!bar)return;
  const values={
-  market:currentSymbol(),
-  mark:safeText('marketMark'),
+  funding:safeText('marketFunding'),
   oi:safeText('marketOI'),
   volume:safeText('marketVolume'),
-  funding:safeText('marketFunding'),
-  change:safeText('marketChange')
+  oracle:safeText('marketOracle')
  };
- for(const entry of Object.entries(values)){
-  const el=rail.querySelector('[data-pc-intel="'+entry[0]+'"]');if(el)el.textContent=entry[1];
+ for(const [key,value] of Object.entries(values)){
+  const el=bar.querySelector('[data-pc-metric="'+key+'"]');if(el)el.textContent=value;
  }
- const change=rail.querySelector('[data-pc-intel="change"]');
- const source=$('marketChange');
- if(change&&source)change.className=source.className;
 }
 
+function decorateCore(){
+ const marketCard=document.querySelector('#markets .market-card');
+ marketCard?.classList.add('pc-main-workspace');
+ marketCard?.querySelector(':scope > .market-controls')?.classList.add('pc-core-controls');
+ document.querySelector('.trade-layout')?.classList.add('pc-trade-grid');
+ document.querySelector('.chart-panel')?.classList.add('pc-chart-card');
+ document.querySelector('.depth')?.classList.add('pc-book-card');
+ document.querySelector('.order-ticket')?.classList.add('pc-order-card');
+ document.querySelector('.terminal-account')?.classList.add('pc-account-card');
+ document.querySelector('.simple-trade-toolbar')?.classList.add('pc-product-toolbar');
+}
+
+function syncAll(){
+ renderWatchlist($('pcSidebar'));
+ renderMarketStrip();
+ syncIntelligence();
+}
 function mount(){
- mountHeader();mountSidebar();mountRightRail();
- renderWatchlist($('pcSidebar'));syncIntel();
+ mountHeader();mountSidebar();mountRightRail();mountMarketStrip();mountIntelligenceBar();decorateCore();syncAll();
 
  const select=$('marketSymbol');
  if(select){
-  select.addEventListener('change',()=>{queueMicrotask(()=>{renderWatchlist($('pcSidebar'));syncIntel();})});
-  new MutationObserver(()=>renderWatchlist($('pcSidebar'))).observe(select,{childList:true,subtree:true});
+  select.addEventListener('change',()=>queueMicrotask(syncAll));
+  new MutationObserver(syncAll).observe(select,{childList:true,subtree:true});
  }
- for(const id of ['marketMark','marketOI','marketVolume','marketFunding','marketChange','marketPickerSymbol']){
-  const el=$(id);if(el)new MutationObserver(syncIntel).observe(el,{childList:true,subtree:true,characterData:true});
+ for(const id of ['marketMark','marketOracle','marketOI','marketVolume','marketFunding','marketChange','marketPickerSymbol']){
+  const el=$(id);if(el)new MutationObserver(syncAll).observe(el,{childList:true,subtree:true,characterData:true});
  }
- window.addEventListener('beltrix:market',()=>{renderWatchlist($('pcSidebar'));syncIntel();});
+ window.addEventListener('beltrix:market',syncAll);
  window.addEventListener('beltrix:page',e=>{
   const trading=e.detail==='markets';
   $('pcSidebar')?.classList.toggle('pc-hidden',!trading);
