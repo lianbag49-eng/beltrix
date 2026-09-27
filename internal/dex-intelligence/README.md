@@ -118,3 +118,42 @@ Market-data collection never submits orders or signs transactions.
 - Account/tier trading fees are not hard-coded when they can vary.
 - Collector failure is isolated per venue instead of collapsing the full table.
 - 30-decimal protocol values are normalized explicitly before presentation.
+
+
+## Phase 4 — funding / OI / volume / API health history
+
+Phase 4 adds local time-series telemetry to the internal Admin.
+
+### Metric collectors
+
+Currently normalized where the public source semantics are sufficiently clear:
+
+- Hyperliquid: mark price, current funding, open interest in base units, estimated
+  open-interest USD using mark price, and daily notional volume.
+- Paradex: mark price, funding, open interest and 24h volume. OI/volume are
+  retained as venue-native values rather than being mislabeled as USD.
+- dYdX: guarded parsing of indexer market data for mark/oracle price, next
+  funding, open interest and 24h volume. Values remain venue-native unless the
+  unit is explicitly normalized.
+
+Orderly remains part of book/liquidity/API-health monitoring while its market
+metric field semantics are normalized separately.
+
+### Local telemetry history
+
+Each internal Admin refresh can persist a snapshot containing:
+
+- collector success/failure
+- API latency
+- spread and depth
+- minimum simulated fill ratio
+- funding / OI / 24h volume when normalized
+- GMX long/short trading capacity
+
+History uses browser local storage, retains at most 720 snapshots and prunes
+entries older than 7 days. This is **not** a server-side 24/7 monitoring
+service; collection occurs while the internal Admin is being used or its
+optional auto-snapshot timer is active.
+
+The history module is intentionally storage-agnostic so the same normalized
+snapshot format can later be moved to a database-backed collector.
