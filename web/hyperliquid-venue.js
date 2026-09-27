@@ -28,7 +28,7 @@ export function normalizeHyperliquidMarkets(meta,marketType='perp'){
    const base=tokens.find(t=>t.index===p.tokens?.[0]),quote=tokens.find(t=>t.index===p.tokens?.[1]);
    return normalizeVenueMarket({
     venue:'hyperliquid',symbol:p.name,base:base?.name||p.name,quote:quote?.name||'USDC',marketType:'spot',
-    nativeId:10000+p.index,minSize:null,maxLeverage:null,raw:{...p,szDecimals:base?.szDecimals}
+    nativeId:10000+p.index,minSize:null,maxLeverage:null,raw:{...p,szDecimals:base?.szDecimals,baseToken:base||null,quoteToken:quote||null}
    });
   });
  }
