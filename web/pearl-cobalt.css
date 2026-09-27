@@ -214,3 +214,227 @@ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] .chart-fullscreen,
 html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] .chart-fullscreen .chart-heading{
  background:var(--pc-canvas);color:var(--text)
 }
+
+
+/* === Pearl Cobalt V2 · approved production composition === */
+html[data-beltrix-ui="pearl-cobalt"]{
+ --pc-accent:#0b5cff;--pc-accent-2:#397fff;--pc-accent-soft:#edf4ff;--pc-accent-border:#c9dcfb;
+ --pc-surface:#ffffff;--pc-surface-2:#f8fbff;--pc-surface-3:#eef5ff;--pc-sidebar:#fbfdff;
+ --pc-ink:#0d1b31;--pc-muted:#708198;--pc-border:#dbe5f2;--pc-shadow-sm:0 6px 20px rgba(42,73,115,.07);
+ --pc-shadow-lg:0 16px 48px rgba(31,73,125,.10);--pc-radius:14px;
+ --bg:#f4f8fd;--card:var(--pc-surface);--card2:var(--pc-surface-2);--line:var(--pc-border);--text:var(--pc-ink);--muted:var(--pc-muted);
+}
+html[data-beltrix-ui="pearl-cobalt"][data-theme="dark"]{
+ --pc-accent:#1670ff;--pc-accent-2:#4b97ff;--pc-accent-soft:#0d2444;--pc-accent-border:#1d4f8d;
+ --pc-surface:#091626;--pc-surface-2:#0d1b2d;--pc-surface-3:#10243b;--pc-sidebar:#071321;
+ --pc-ink:#eef5ff;--pc-muted:#8ea2bb;--pc-border:#1c3552;--pc-shadow-sm:0 8px 24px rgba(0,0,0,.22);
+ --pc-shadow-lg:0 18px 52px rgba(0,0,0,.34);
+ --bg:#06101d;--card:var(--pc-surface);--card2:var(--pc-surface-2);--line:var(--pc-border);--text:var(--pc-ink);--muted:var(--pc-muted);
+}
+html[data-beltrix-ui="pearl-cobalt"] body{
+ background:
+  radial-gradient(circle at 82% -5%,color-mix(in srgb,var(--pc-accent) 12%,transparent),transparent 32%),
+  linear-gradient(180deg,color-mix(in srgb,var(--bg) 98%,white 2%),var(--bg));
+}
+html[data-beltrix-ui="pearl-cobalt"] body:before{opacity:.16;background-size:80px 80px}
+html[data-beltrix-ui="pearl-cobalt"] .app{
+ max-width:1880px;padding:12px 14px 96px;
+ grid-template-columns:176px minmax(760px,1fr) 258px;
+ gap:12px;
+}
+html[data-beltrix-ui="pearl-cobalt"] .top{
+ top:8px;min-height:58px;padding:7px 9px;border-radius:13px;
+ box-shadow:var(--pc-shadow-sm);background:color-mix(in srgb,var(--pc-header) 92%,transparent);
+}
+html[data-beltrix-ui="pearl-cobalt"] .brand b{font-size:18px;letter-spacing:4.6px}
+html[data-beltrix-ui="pearl-cobalt"] .brand small{font-size:7px;letter-spacing:1.55px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-header-nav{gap:2px;margin-left:14px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-header-link{padding:8px 9px;font-size:10px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-market-search{min-width:270px;max-width:360px;padding:8px 11px;background:var(--pc-surface-2)}
+html[data-beltrix-ui="pearl-cobalt"] .pc-theme-toggle{min-width:72px;justify-content:center;background:var(--pc-surface)}
+html[data-beltrix-ui="pearl-cobalt"] .pc-theme-icon{font-size:14px;line-height:1}
+html[data-beltrix-ui="pearl-cobalt"] .pc-sidebar{top:78px;gap:9px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-right-rail{top:78px;gap:10px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-rail-nav,
+html[data-beltrix-ui="pearl-cobalt"] .pc-watchlist,
+html[data-beltrix-ui="pearl-cobalt"] .pc-brand-note,
+html[data-beltrix-ui="pearl-cobalt"] .pc-insight-card{
+ border-radius:12px;box-shadow:var(--pc-shadow-sm)
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-rail-nav{padding:7px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-rail-nav button{min-height:36px;padding:7px 9px;font-size:10px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-rail-nav button span:first-child{width:17px;text-align:center;color:var(--pc-accent)}
+html[data-beltrix-ui="pearl-cobalt"] .pc-sidebar-foot{padding:5px 7px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+html[data-beltrix-ui="pearl-cobalt"] .pc-sidebar-foot button{
+ width:100%;display:flex;align-items:center;gap:10px;border:0;background:none;color:var(--muted);padding:9px;border-radius:8px;font-size:10px;text-align:left
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-sidebar-foot button:hover{background:var(--pc-accent-soft);color:var(--pc-accent)}
+html[data-beltrix-ui="pearl-cobalt"] .pc-watchlist{padding:10px 8px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-watchlist-list{max-height:330px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-market-row{grid-template-columns:26px minmax(0,1fr) auto;min-height:42px;padding:5px 6px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-coin{width:25px;height:25px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-brand-note{
+ position:relative;overflow:hidden;min-height:142px;padding:14px;
+ background:
+  linear-gradient(155deg,var(--card) 20%,color-mix(in srgb,var(--pc-accent) 10%,var(--card)) 100%)
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-brand-note:after{
+ content:"";position:absolute;right:-22px;bottom:-30px;width:125px;height:95px;opacity:.5;
+ background:linear-gradient(145deg,transparent 35%,color-mix(in srgb,var(--pc-accent) 34%,transparent) 36% 46%,transparent 47%),
+            linear-gradient(35deg,transparent 48%,color-mix(in srgb,var(--pc-accent) 20%,transparent) 49% 56%,transparent 57%);
+ transform:rotate(-8deg)
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-brand-line{display:block;width:34px;height:2px;background:var(--pc-accent);margin-bottom:12px}
+html[data-beltrix-ui="pearl-cobalt"] #markets .market-card{
+ padding:10px;border-radius:13px;box-shadow:var(--pc-shadow-lg);
+ overflow:visible
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-market-strip{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(150px,.7fr);gap:8px;margin-bottom:9px
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-ticker-card{
+ min-width:0;min-height:66px;padding:9px 10px;border:1px solid var(--line);border-radius:11px;
+ background:var(--pc-surface-2);color:var(--text);display:grid;grid-template-columns:34px minmax(0,1fr) auto;
+ gap:9px;align-items:center;text-align:left;box-shadow:none
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-ticker-card:hover,
+html[data-beltrix-ui="pearl-cobalt"] .pc-ticker-card[aria-current="true"]{border-color:var(--pc-accent-border);background:var(--pc-accent-soft)}
+html[data-beltrix-ui="pearl-cobalt"] .pc-ticker-coin{
+ width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+ background:var(--pc-accent);color:#fff;font-size:8px;font-weight:800
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-ticker-copy{min-width:0}
+html[data-beltrix-ui="pearl-cobalt"] .pc-ticker-copy strong{display:block;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-beltrix-ui="pearl-cobalt"] .pc-ticker-copy small{display:block;margin-top:3px;font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-beltrix-ui="pearl-cobalt"] .pc-ticker-change{font-size:9px;color:var(--green);font-weight:700;white-space:nowrap}
+html[data-beltrix-ui="pearl-cobalt"] .pc-add-market .pc-add-plus{
+ width:32px;height:32px;border-radius:9px;display:grid;place-items:center;border:1px solid var(--pc-accent-border);color:var(--pc-accent);font-size:20px
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-add-market .pc-ticker-change{display:none}
+html[data-beltrix-ui="pearl-cobalt"] .pc-product-toolbar{
+ margin:0 0 8px;padding:7px 8px;border:1px solid var(--line);border-radius:10px;background:var(--pc-surface-2)
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-core-controls{
+ margin:0 0 8px!important;padding:0!important;gap:7px!important;align-items:center
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-core-controls>.select,
+html[data-beltrix-ui="pearl-cobalt"] .pc-core-controls .market-picker-button,
+html[data-beltrix-ui="pearl-cobalt"] .pc-core-controls>.wallet{min-height:34px;padding:7px 9px;font-size:10px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-trade-grid{
+ grid-template-columns:minmax(0,1fr) 224px 278px!important;gap:10px!important;
+ align-items:start
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-chart-card,
+html[data-beltrix-ui="pearl-cobalt"] .pc-book-card,
+html[data-beltrix-ui="pearl-cobalt"] .pc-order-card{
+ border:1px solid var(--line);border-radius:11px;background:var(--pc-surface);min-width:0
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-chart-card{padding:8px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-book-card{padding:8px;border-left:1px solid var(--line)!important}
+html[data-beltrix-ui="pearl-cobalt"] .pc-order-card{padding:10px!important;margin:0!important;position:sticky;top:78px}
+html[data-beltrix-ui="pearl-cobalt"] #marketCanvas{height:390px!important}
+html[data-beltrix-ui="pearl-cobalt"] .chart-studio{border-radius:9px!important;overflow:hidden}
+html[data-beltrix-ui="pearl-cobalt"] .market-stats{
+ grid-template-columns:repeat(7,minmax(82px,1fr));gap:7px;padding:8px;margin:0 0 8px;
+ border:1px solid var(--line);border-radius:10px;background:var(--pc-surface-2)
+}
+html[data-beltrix-ui="pearl-cobalt"] .market-stats>div{padding:3px 5px}
+html[data-beltrix-ui="pearl-cobalt"] .market-stats small{font-size:8px}
+html[data-beltrix-ui="pearl-cobalt"] .market-stats strong{font-size:11px;margin-top:3px}
+html[data-beltrix-ui="pearl-cobalt"] .market-stats span{font-size:8px}
+html[data-beltrix-ui="pearl-cobalt"] .book-head,
+html[data-beltrix-ui="pearl-cobalt"] .book-level{font-size:10px}
+html[data-beltrix-ui="pearl-cobalt"] .book-level{padding:4px 3px;border-radius:4px}
+html[data-beltrix-ui="pearl-cobalt"] .book-spread{padding:8px 4px;font-size:10px;font-weight:700}
+html[data-beltrix-ui="pearl-cobalt"] .pc-order-card .fast-order-bar,
+html[data-beltrix-ui="pearl-cobalt"] .pc-order-card .gold-directions{border-radius:8px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-order-card .futures-actions button{min-height:42px!important;border-radius:8px!important}
+html[data-beltrix-ui="pearl-cobalt"] .pc-order-card .futures-long{background:var(--pc-accent)!important;color:#fff!important}
+html[data-beltrix-ui="pearl-cobalt"] .pc-order-card .futures-short{background:var(--pc-surface-2)!important;color:var(--text)!important;border:1px solid var(--line)!important}
+html[data-beltrix-ui="pearl-cobalt"] .pc-intelligence-bar{
+ margin:10px 0 0;padding:10px;border:1px solid var(--line);border-radius:11px;background:var(--pc-surface-2)
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-intel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-intel-head>div{display:flex;align-items:center;gap:8px;font-size:11px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-intel-live{font-size:8px;color:var(--green);font-weight:700}
+html[data-beltrix-ui="pearl-cobalt"] .pc-intel-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-intel-cards article{
+ min-width:0;padding:9px;border:1px solid var(--line);border-radius:9px;background:var(--pc-surface)
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-intel-cards small{display:block;font-size:8px;color:var(--muted)}
+html[data-beltrix-ui="pearl-cobalt"] .pc-intel-cards strong{display:block;margin-top:4px;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-beltrix-ui="pearl-cobalt"] .pc-intel-cards span{display:block;margin-top:3px;font-size:7px;color:var(--muted)}
+html[data-beltrix-ui="pearl-cobalt"] .pc-risk-state{color:var(--green)}
+html[data-beltrix-ui="pearl-cobalt"] .pc-account-card{
+ margin-top:9px!important;padding:9px!important;border:1px solid var(--line)!important;border-radius:11px;background:var(--pc-surface)
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-account-card>.terminal-section-head{margin-bottom:2px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-account-card>.terminal-section-head h3{font-size:11px}
+html[data-beltrix-ui="pearl-cobalt"] .account-tabs{gap:14px;margin-bottom:6px}
+html[data-beltrix-ui="pearl-cobalt"] .account-tabs button{font-size:10px;padding:8px 0}
+html[data-beltrix-ui="pearl-cobalt"] .terminal-table th{padding:8px 7px;font-size:9px}
+html[data-beltrix-ui="pearl-cobalt"] .terminal-table td{padding:9px 7px;font-size:10px}
+html[data-beltrix-ui="pearl-cobalt"] .terminal-venue{opacity:.82;margin-top:10px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-protocol-card h2{font-size:18px;margin:13px 0 8px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-protocol-card>p{font-size:9px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-protocol-list{display:grid;gap:5px;margin-top:12px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-protocol-list>div{
+ display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--pc-surface-2)
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-protocol-list span{font-size:8px;color:var(--muted)}
+html[data-beltrix-ui="pearl-cobalt"] .pc-protocol-list strong{font-size:8px;text-align:right}
+html[data-beltrix-ui="pearl-cobalt"] .pc-outline-action{
+ width:100%;margin-top:11px;padding:9px 10px;border:1px solid var(--pc-accent-border);border-radius:8px;background:var(--pc-accent-soft);color:var(--pc-accent);font-size:9px;font-weight:700
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-promo-card{min-height:180px;position:relative;overflow:hidden;background:linear-gradient(150deg,var(--card),var(--pc-accent-soft))}
+html[data-beltrix-ui="pearl-cobalt"] .pc-promo-card:after{
+ content:"";position:absolute;inset:auto -18px -45px 24px;height:140px;opacity:.68;
+ background:
+  linear-gradient(145deg,transparent 35%,color-mix(in srgb,var(--pc-accent) 30%,transparent) 36% 43%,transparent 44%),
+  linear-gradient(35deg,transparent 52%,color-mix(in srgb,var(--pc-accent) 18%,transparent) 53% 59%,transparent 60%)
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-promo-kicker{font-size:8px;font-weight:800;letter-spacing:2px;color:var(--pc-accent)}
+html[data-beltrix-ui="pearl-cobalt"] .pc-promo-card h3{font-size:22px;line-height:1.05;margin:12px 0 8px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-promo-card p{max-width:170px;font-size:9px;line-height:1.55;color:var(--muted)}
+html[data-beltrix-ui="pearl-cobalt"] .pc-promo-horizon{position:absolute;right:16px;top:16px;width:28px;height:2px;background:var(--pc-accent)}
+html[data-beltrix-ui="pearl-cobalt"][data-theme="dark"] .pc-ticker-card,
+html[data-beltrix-ui="pearl-cobalt"][data-theme="dark"] .pc-chart-card,
+html[data-beltrix-ui="pearl-cobalt"][data-theme="dark"] .pc-book-card,
+html[data-beltrix-ui="pearl-cobalt"][data-theme="dark"] .pc-order-card{box-shadow:inset 0 1px 0 rgba(255,255,255,.02)}
+@media(max-width:1540px){
+ html[data-beltrix-ui="pearl-cobalt"] .app{grid-template-columns:168px minmax(720px,1fr) 230px}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-header-link:nth-last-child(-n+2){display:none}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-trade-grid{grid-template-columns:minmax(0,1fr) 210px 260px!important}
+ html[data-beltrix-ui="pearl-cobalt"] #marketCanvas{height:350px!important}
+}
+@media(max-width:1320px){
+ html[data-beltrix-ui="pearl-cobalt"] .app{grid-template-columns:164px minmax(0,1fr)}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-right-rail{display:none!important}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-market-strip{grid-template-columns:repeat(3,minmax(0,1fr))}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-add-market{display:none}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-market-search{min-width:210px}
+}
+@media(max-width:1080px){
+ html[data-beltrix-ui="pearl-cobalt"] .pc-trade-grid{grid-template-columns:minmax(0,1fr) 245px!important}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-book-card{grid-column:1;grid-row:2}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-order-card{grid-column:2;grid-row:1/3}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-intel-cards{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:900px){
+ html[data-beltrix-ui="pearl-cobalt"] .pc-market-strip{display:flex;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-ticker-card{min-width:190px}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-trade-grid{display:flex!important;flex-direction:column}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-chart-card,
+ html[data-beltrix-ui="pearl-cobalt"] .pc-book-card,
+ html[data-beltrix-ui="pearl-cobalt"] .pc-order-card{width:100%;position:static}
+ html[data-beltrix-ui="pearl-cobalt"] #marketCanvas{height:300px!important}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-intel-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:680px){
+ html[data-beltrix-ui="pearl-cobalt"] .pc-market-strip{margin-inline:-1px}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-ticker-card{min-width:164px;min-height:58px}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-ticker-coin{width:30px;height:30px}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-intel-cards{display:flex;overflow-x:auto;scrollbar-width:none}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-intel-cards article{min-width:155px}
+ html[data-beltrix-ui="pearl-cobalt"] #marketCanvas{height:270px!important}
+}
