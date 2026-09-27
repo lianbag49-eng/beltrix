@@ -136,7 +136,21 @@ Phase 4부터 내부 Market Intelligence는 단일 시점 비교뿐 아니라 �
 - API Latency
 - GMX Capacity
 
-현재 history는 내부 Admin 브라우저의 local storage 기반으로 최대 7일 보관하도록 설계되어 있으며, 추후 database-backed historical analytics로 이전할 수 있는 구조입니다.
+현재 history는 내부 Admin 브라우저의 local storage 기반으로 최대 7일 보관됩니다.
+
+Phase 5에서는 추가로 다음 기능을 구축했습니다.
+
+- Venue Health Alert
+- Collector outage / stale-data detection
+- API latency / success-ratio monitoring
+- Partial-fill / depth-drop monitoring
+- Funding / OI / Volume / Latency / Spread / Depth trend view
+- Market Intelligence Alert → 내부 BD follow-up event
+- PostgreSQL persistence schema
+- Reusable collector runner
+- Storage repository / Postgres adapter
+
+서버형 history를 위한 코드 구조는 준비됐지만, 현재 BELTRIX 전용 production database에 schema를 적용하거나 24/7 collector를 배포했다고 설명하지는 않습니다. 실제 서버 운영은 dedicated backend/database 적용 이후 단계입니다.
 
 ---
 
@@ -267,6 +281,9 @@ API integration뿐 아니라 BD, fees, referral, white-label, operational depend
 - BD / white-label research
 - Funding/OI/volume history
 - API health monitoring
+- Venue health alerts
+- Funding/OI/Volume and liquidity trend analytics
+- Server persistence readiness
 
 ## RESEARCH-ONLY
 - Orderly execution
@@ -275,7 +292,7 @@ API integration뿐 아니라 BD, fees, referral, white-label, operational depend
 - dYdX execution
 
 ## ROADMAP
-- Database-backed market history
+- Deploy database-backed market history / scheduled collector
 - Extended asset coverage
 - Venue testnet E2E
 - New venue qualification
