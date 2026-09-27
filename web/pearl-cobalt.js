@@ -164,6 +164,39 @@ function mountSidebar(){
  renderWatchlist(sidebar);
 }
 
+function mountWalletSurfaceNavigation(){
+ const routes=[
+  ['wallet','Wallet'],
+  ['explore','Explore'],
+  ['defi','DeFi'],
+  ['boost','Boost'],
+  ['markets','Trade']
+ ];
+ for(const pageId of ['wallet','explore','defi','boost']){
+  const page=$(pageId);if(!page||page.querySelector('.pc-wallet-surface-nav'))continue;
+  const nav=node('nav','pc-wallet-surface-nav');
+  nav.setAttribute('aria-label','Wallet workspace');
+  for(const [id,label] of routes){
+   const b=node('button','',label);
+   b.type='button';b.dataset.pcWalletRoute=id;
+   b.onclick=()=>window.openPage?.(id);
+   nav.append(b);
+  }
+  page.prepend(nav);
+ }
+}
+
+function syncPageShell(page=document.body.dataset.page){
+ const trading=page==='markets';
+ $('pcSidebar')?.classList.toggle('pc-hidden',!trading);
+ $('pcRightRail')?.classList.toggle('pc-hidden',!trading);
+ document.querySelectorAll('.pc-wallet-surface-nav [data-pc-wallet-route]').forEach(b=>{
+  const active=b.dataset.pcWalletRoute===page;
+  b.classList.toggle('active',active);
+  b.setAttribute('aria-current',active?'page':'false');
+ });
+}
+
 function mountRightRail(){
  if($('pcRightRail'))return;
  const railHtml=[
@@ -215,8 +248,8 @@ function syncIntel(){
 }
 
 function mount(){
- mountHeader();mountSidebar();mountRightRail();
- renderWatchlist($('pcSidebar'));syncIntel();
+ mountHeader();mountSidebar();mountRightRail();mountWalletSurfaceNavigation();
+ renderWatchlist($('pcSidebar'));syncIntel();syncPageShell();
 
  const select=$('marketSymbol');
  if(select){
@@ -227,11 +260,7 @@ function mount(){
   const el=$(id);if(el)new MutationObserver(syncIntel).observe(el,{childList:true,subtree:true,characterData:true});
  }
  window.addEventListener('beltrix:market',()=>{renderWatchlist($('pcSidebar'));syncIntel();});
- window.addEventListener('beltrix:page',e=>{
-  const trading=e.detail==='markets';
-  $('pcSidebar')?.classList.toggle('pc-hidden',!trading);
-  $('pcRightRail')?.classList.toggle('pc-hidden',!trading);
- });
+ window.addEventListener('beltrix:page',e=>syncPageShell(e.detail));
  document.body.dataset.pearlCobalt='ready';
 }
 
