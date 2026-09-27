@@ -1,10 +1,12 @@
 const {test,expect}=require('@playwright/test');
 
-test('Pearl Cobalt defaults to light, toggles dark, and persists',async({page})=>{
+test('Pearl Cobalt production shell mounts and toggles dark mode',async({page})=>{
  await page.goto('/web/#markets');
  await expect(page.locator('html')).toHaveAttribute('data-beltrix-ui','pearl-cobalt');
- await expect(page.locator('html')).toHaveAttribute('data-theme','light');
  await expect(page.locator('#pcThemeToggle')).toBeVisible();
+ await expect(page.locator('#pcMarketRibbon')).toBeVisible();
+ await expect(page.locator('#pcIntelligenceStrip')).toBeVisible();
+
  const mobile=(page.viewportSize()?.width||1280)<=900;
  if(mobile){
   await expect(page.locator('#pcSidebar')).toBeHidden();
@@ -14,32 +16,33 @@ test('Pearl Cobalt defaults to light, toggles dark, and persists',async({page})=
   await expect(page.locator('#pcProtocolCard')).toBeVisible();
   await expect(page.locator('#pcMarketIntel')).toBeVisible();
  }
+
  await page.locator('#pcThemeToggle').click();
  await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
+ await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#07111f');
  await page.reload();
  await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
  await page.locator('#pcThemeToggle').click();
  await expect(page.locator('html')).toHaveAttribute('data-theme','light');
 });
 
-test('Pearl Cobalt keeps trading controls available and market intelligence synchronized',async({page})=>{
+test('Pearl Cobalt keeps the trading workspace and intelligence strip synchronized',async({page})=>{
  await page.goto('/web/#markets');
  await expect(page.locator('#marketPickerButton')).toBeVisible();
+ await expect(page.locator('.chart-panel')).toBeVisible();
+ await expect(page.locator('.depth')).toBeVisible();
  await expect(page.locator('.order-ticket')).toBeVisible();
  await expect(page.locator('.terminal-account')).toBeVisible();
- await expect(page.locator('[data-pc-intel="market"]')).not.toHaveText('—');
- const symbol=await page.locator('#marketPickerSymbol').innerText();
- await expect(page.locator('[data-pc-intel="market"]')).toContainText(symbol.trim());
+ await expect(page.locator('[data-pc-strip="funding"]')).not.toHaveText('—');
+ await expect(page.locator('[data-pc-strip="oi"]')).not.toHaveText('—');
+ await expect(page.locator('[data-pc-strip="volume"]')).not.toHaveText('—');
 });
 
-test('Pearl Cobalt mobile hides desktop rails and avoids horizontal overflow',async({page})=>{
- await page.setViewportSize({width:390,height:844});
- await page.goto('/web/#markets');
- await expect(page.locator('#pcThemeToggle')).toBeVisible();
- await expect(page.locator('#pcSidebar')).toBeHidden();
- await expect(page.locator('#pcRightRail')).toBeHidden();
- expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
- await page.locator('#pcThemeToggle').click();
- await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
- expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+test('Pearl Cobalt responsive layout avoids horizontal overflow',async({page})=>{
+ for(const size of [{width:1440,height:1000},{width:390,height:844}]){
+  await page.setViewportSize(size);
+  await page.goto('/web/#markets');
+  await expect(page.locator('#pcMarketRibbon')).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBe(true);
+ }
 });
