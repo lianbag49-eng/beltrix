@@ -354,7 +354,7 @@ window.addEventListener('beltrix:page',e=>{if(e.detail==='defi')loadPools();});
 window.addEventListener('beltrix:wallet',e=>{const d=e.detail;if(s.account||!d?.account||!d.provider||!NETWORKS.some(n=>n.chain.id===d.chainId))return;detachProvider();s.provider=d.provider;s.providerName=$('walletProvider')?.value==='okx'?'OKX Wallet':'Browser wallet';s.net=network(d.chainId);prefs.network=d.chainId;s.provider.on?.('accountsChanged',accountEvent);s.provider.on?.('chainChanged',chainEvent);s.provider.on?.('disconnect',disconnectEvent);setAccount(d.account,false);});
 window.beltrixWallet={get provider(){return s.provider},get account(){return s.account},openAccounts:showAccounts};
 renderDapps();renderHome();
-const route=location.hash.slice(1),initial=route==='assets'?'wallet':route==='discover'?'explore':route;window.openPage(['markets','swap','settings','wallet','explore','defi','boost'].includes(initial)?initial:'wallet');
+const route=location.hash.slice(1),initial=route==='assets'?'wallet':route==='discover'?'explore':route;window.openPage(['markets','swap','settings','wallet','explore','defi','boost'].includes(initial)?initial:'markets');
 // Poll confirmations only; never retry a write or trigger a wallet request in the background.
 setInterval(()=>{if(!document.hidden&&!s.busy)pollJournal().catch(()=>{});},30000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&s.account&&!s.busy&&Date.now()-s.updated>60000)refreshWallet();});
