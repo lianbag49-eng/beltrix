@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BELTRIX Market Intelligence</title>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<main>
+<header class="top">
+ <div><span>BELTRIX INTERNAL</span><h1>Market Intelligence</h1><p id="asOf"></p></div>
+ <div class="controls">
+  <input id="search" type="search" placeholder="Search venue, BD route, capability…">
+  <select id="focus">
+   <option value="all">All research</option>
+   <option value="white-label">White-label / frontend</option>
+   <option value="affiliate">Affiliate / referral</option>
+   <option value="execution">Execution candidates</option>
+  </select>
+ </div>
+</header>
+<section id="summary" class="summary"></section>
+<section class="note"><strong>Internal-only research surface.</strong> This directory is intentionally excluded from BELTRIX public-site publishing. Values are public-data snapshots, not an automatic venue-routing policy.</section>
+<section id="cards" class="cards"></section>
+<section class="comparison">
+ <h2>Comparison table</h2>
+ <div class="scroll"><table>
+  <thead><tr><th>Venue</th><th>30d perp volume</th><th>Open interest</th><th>Integration</th><th>BD state</th></tr></thead>
+  <tbody id="tableBody"></tbody>
+ </table></div>
+</section>
+</main>
+<script type="module" src="./app.js"></script>
+</body>
+</html>
