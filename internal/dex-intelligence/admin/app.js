@@ -9,6 +9,9 @@ import {collectMarketMetrics} from '../market-metrics.js';
 import {makeTelemetrySnapshot,saveTelemetry,loadTelemetry,telemetryForAsset,apiHealthSummary,DEFAULT_HISTORY_KEY} from '../telemetry-history.js';
 import {VENUE_RESEARCH,researchProfile,flattenResearch,researchCoverage} from '../venue-research.js';
 import {buildMarketIntelligence} from '../market-intelligence.js';
+import {evaluateMarketAlerts,dedupeAlerts} from '../alert-engine.js';
+import {alertsToBdEvents} from '../bd-events.js';
+import {venueTrendSeries,seriesStats,TREND_METRICS} from '../trend-series.js';
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -21,10 +24,13 @@ const rate=n=>finite(n)?(Number(n)*100).toFixed(5)+'%':'N/A';
 const yn=v=>v?'<span class="ok">Yes</span>':'<span class="na">No</span>';
 const health=v=>v==='healthy'?'<span class="ok">Healthy</span>':v==='degraded'?'<span class="warn">Degraded</span>':v==='live'?'<span class="ok">Live</span>':'<span class="bad">Unavailable</span>';
 const statusClass=v=>v==='tested'||v==='implemented'||v==='documented'?'ok':v==='blocked'?'bad':'na';
+const severityClass=v=>v==='critical'?'severity-critical':v==='warning'?'severity-warning':'severity-info';
 
 let autoTimer=null;
 let latestMetrics=[];
 let latestHistory=loadTelemetry(localStorage);
+let latestAlerts=[];
+let latestBdEvents=[];
 
 function table(headers,rows){
  return '<div class="table-wrap"><table><thead><tr>'+headers.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
@@ -50,6 +56,20 @@ function renderOverview(){
  }).join('')+'</div>';
 }
 
+function renderBdEvents(){
+ const rows=(latestBdEvents||[]).map(v=>[
+  esc(v.venue),
+  '<span class="'+(v.priority==='high'?'bad':v.priority==='medium'?'warn':'na')+'">'+esc(v.priority)+'</span>',
+  esc(v.title),
+  esc(v.detail),
+  esc(v.asset||'N/A'),
+  v.timestamp?new Date(v.timestamp).toLocaleString():'N/A'
+ ]);
+ $('bdEventTable').innerHTML=rows.length
+  ?table(['Venue','Priority','Event','Detail','Asset','Time'],rows)
+  :'<p class="note">No current Market Intelligence follow-up events.</p>';
+}
+
 function renderBD(){
  const pipeline=INITIAL_BD_PIPELINE.map(v=>[
   esc(v.name),'<code>'+esc(v.stage)+'</code>',esc(v.objectives.join(', ')),esc(v.nextAction||'N/A'),esc(v.nextActionAt||'N/A'),
@@ -66,6 +86,7 @@ function renderBD(){
 
  const rows=bdMatrix().map(v=>[esc(v.name),esc(v.marketModel),esc(v.integration),esc(v.revenue),yn(v.whiteLabel),yn(v.sharedLiquidity),yn(v.executionCandidate)]);
  $('bdTable').innerHTML=table(['Venue','Market model','Integration','Revenue modes','White-label','Shared liquidity','Execution candidate'],rows);
+ renderBdEvents();
 }
 
 function renderFees(){
@@ -106,6 +127,19 @@ function renderIntegration(){
  $('integrationTable').innerHTML=table(['Venue','Data status','Chains','Canonical mappings','Official sources'],rows);
 }
 
+function renderAlerts(alerts=latestAlerts){
+ const rows=(alerts||[]).map(v=>[
+  esc(v.venue),
+  '<span class="'+severityClass(v.severity)+'">'+esc(v.severity)+'</span>',
+  esc(v.key),
+  esc(v.message),
+  '<code>'+esc(JSON.stringify(v.evidence||{}))+'</code>'
+ ]);
+ $('alertTable').innerHTML=rows.length
+  ?table(['Venue','Severity','Alert','Message','Evidence'],rows)
+  :'<p class="ok">No current venue-health alerts for this snapshot.</p>';
+}
+
 function renderMarketIntelligence(bookRows,gmx){
  const mi=buildMarketIntelligence({bookRows,gmxState:gmx});
  const s=mi.summary;
@@ -122,12 +156,67 @@ function renderMarketIntelligence(bookRows,gmx){
    esc(v.missingExecutionGates??'N/A'),pct(v.researchKnownRatio),(v.flags||[]).map(x=>'<span class="tag">'+esc(x)+'</span>').join(' ')||'None'
   ])
  );
+ return mi;
 }
 
 function metricValue(metric,key,usdKey,unitKey){
  if(finite(metric?.[usdKey]))return usd(metric[usdKey]);
  if(finite(metric?.[key]))return fmt(metric[key])+(metric?.[unitKey]?' '+esc(metric[unitKey]):'');
  return 'N/A';
+}
+
+function trendValueLabel(value,unit){
+ if(!finite(value))return 'N/A';
+ if(unit==='USD')return usd(value);
+ if(unit==='%')return Number(value).toFixed(5)+'%';
+ if(unit==='ms')return fmt(value)+' ms';
+ if(unit==='bps')return fmt(value)+' bps';
+ return fmt(value)+' '+unit;
+}
+
+function trendChartSvg(series){
+ const source=(series?.points||[]).slice(-120);
+ if(!source.length)return '<p class="note">No stored points for this venue / metric combination yet.</p>';
+ const width=900,height=220,padX=44,padY=24;
+ let min=Math.min(...source.map(x=>x.value)),max=Math.max(...source.map(x=>x.value));
+ if(min===max){const bump=Math.abs(min||1)*0.05||1;min-=bump;max+=bump}
+ const span=Math.max(1,max-min);
+ const x=(i)=>padX+(i/Math.max(1,source.length-1))*(width-padX*2);
+ const y=(v)=>height-padY-((v-min)/span)*(height-padY*2);
+ const points=source.map((p,i)=>x(i).toFixed(1)+','+y(p.value).toFixed(1)).join(' ');
+ const grids=[0,.25,.5,.75,1].map(f=>{
+  const yy=(padY+f*(height-padY*2)).toFixed(1);
+  const value=(max-f*span);
+  return '<line class="trend-grid" x1="'+padX+'" y1="'+yy+'" x2="'+(width-padX)+'" y2="'+yy+'"/>'+
+   '<text class="trend-label" x="4" y="'+(Number(yy)+3)+'">'+esc(trendValueLabel(value,series.unit))+'</text>';
+ }).join('');
+ const first=source[0],last=source[source.length-1];
+ const labels='<text class="trend-label" x="'+padX+'" y="'+(height-4)+'">'+esc(new Date(first.timestamp).toLocaleTimeString())+'</text>'+
+  '<text class="trend-label" text-anchor="end" x="'+(width-padX)+'" y="'+(height-4)+'">'+esc(new Date(last.timestamp).toLocaleTimeString())+'</text>';
+ const lastDot='<circle class="trend-dot" cx="'+x(source.length-1).toFixed(1)+'" cy="'+y(last.value).toFixed(1)+'" r="3"/>';
+ return '<svg viewBox="0 0 '+width+' '+height+'" role="img" aria-label="'+esc(series.label)+' trend">'+grids+'<polyline class="trend-line" points="'+points+'"/>'+lastDot+labels+'</svg>';
+}
+
+function renderTrend(){
+ const venue=$('trendVenue')?.value||'hyperliquid';
+ const metric=$('trendMetric')?.value||'funding';
+ const asset=currentAsset();
+ const series=venueTrendSeries(latestHistory,{asset,venue,metric});
+ const stats=seriesStats(series);
+ $('trendStats').innerHTML=[
+  ['Points',stats.count],
+  ['Minimum',trendValueLabel(stats.min,series.unit)],
+  ['Maximum',trendValueLabel(stats.max,series.unit)],
+  ['Latest',trendValueLabel(stats.last,series.unit)],
+  ['Change',trendValueLabel(stats.change,series.unit)]
+ ].map(([label,value])=>'<article class="summary-card"><strong>'+esc(value)+'</strong><span>'+esc(label)+'</span></article>').join('');
+ $('trendChart').innerHTML='<p class="note">'+esc(asset)+' · '+esc(venue)+' · '+esc(TREND_METRICS[metric]?.label||metric)+'</p>'+trendChartSvg(series);
+}
+
+function previousVenueStates(history,asset){
+ const rows=telemetryForAsset(history,asset);
+ const previous=rows.length?rows[rows.length-1]:null;
+ return previous?.venues||{};
 }
 
 function renderHistory(metricRows=latestMetrics){
@@ -158,6 +247,7 @@ function renderHistory(metricRows=latestMetrics){
   finite(v.capacityShortUsd)?usd(v.capacityShortUsd):'N/A'
  ]));
  $('historyTable').innerHTML=recent.length?table(['Time','Venue','Health','Latency','Funding','Open interest','24h volume','Spread','Long cap','Short cap'],recent):'<p class="note">No local snapshots for '+esc(asset)+' yet.</p>';
+ renderTrend();
 }
 
 function setAutoRefresh(){
@@ -168,6 +258,7 @@ function setAutoRefresh(){
 
 async function refreshLiquidity({record=true}={}){
  const asset=currentAsset(),notional=currentNotional(),fees=feeAssumptions();
+ const previousByVenue=previousVenueStates(latestHistory,asset);
  $('liquidityStatus').textContent='Loading '+asset+' public market data…';
  $('liquidityTable').textContent='';
  $('gmxState').textContent='Loading GMX pool state…';
@@ -206,7 +297,12 @@ async function refreshLiquidity({record=true}={}){
   const snapshot=makeTelemetrySnapshot({asset,bookRows:rows,gmxState:gmx,metricRows:metrics,timestamp:Date.now()});
   latestHistory=saveTelemetry(localStorage,snapshot,{maxEntries:720,maxAgeMs:7*24*60*60*1000});
  }
- renderMarketIntelligence(rows,gmx);
+ const mi=renderMarketIntelligence(rows,gmx);
+ const healthByVenue=apiHealthSummary(latestHistory,asset);
+ latestAlerts=dedupeAlerts(evaluateMarketAlerts(mi.rows,{healthByVenue,previousByVenue}));
+ latestBdEvents=alertsToBdEvents(latestAlerts,{asset,timestamp:Date.now()});
+ renderAlerts();
+ renderBdEvents();
  renderHistory(metrics);
 }
 
@@ -219,6 +315,8 @@ $('refresh').onclick=()=>{renderOverview();refreshLiquidity({record:true})};
 $('assetSelect').onchange=()=>{renderOverview();renderHistory();refreshLiquidity({record:true})};
 $('notional').onchange=()=>refreshLiquidity({record:true});
 $('autoRefresh').onchange=setAutoRefresh;
+$('trendVenue').onchange=renderTrend;
+$('trendMetric').onchange=renderTrend;
 $('clearHistory').onclick=()=>{
  localStorage.removeItem(DEFAULT_HISTORY_KEY);
  latestHistory=[];
@@ -231,5 +329,7 @@ renderBD();
 renderFees();
 renderExecution();
 renderIntegration();
+renderAlerts();
+renderBdEvents();
 renderHistory();
 refreshLiquidity({record:true});

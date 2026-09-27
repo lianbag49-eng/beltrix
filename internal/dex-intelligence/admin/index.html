@@ -48,6 +48,9 @@
   <p class="note">Operational telemetry is descriptive only. This view does not rank or auto-select venues.</p>
   <div id="miSummary" class="summary-cards"></div>
   <div id="miTable"></div>
+  <h2>Venue Health Alerts</h2>
+  <p class="note">Alerts describe operational conditions only; they do not recommend or rank venues.</p>
+  <div id="alertTable"></div>
  </section>
  <section id="history" data-panel hidden>
   <h2>Funding / Open Interest / Volume / API Health History</h2>
@@ -63,6 +66,30 @@
    <button id="clearHistory" type="button">Clear local history</button>
   </div>
   <div id="metricCurrent"></div>
+  <h2>Trend view</h2>
+  <div class="controls">
+   <label>Venue
+    <select id="trendVenue">
+     <option value="hyperliquid">Hyperliquid</option>
+     <option value="orderly">Orderly</option>
+     <option value="paradex">Paradex</option>
+     <option value="dydx">dYdX</option>
+     <option value="gmx">GMX</option>
+    </select>
+   </label>
+   <label>Metric
+    <select id="trendMetric">
+     <option value="funding">Funding</option>
+     <option value="openInterestUsd">Open Interest USD</option>
+     <option value="volume24hUsd">24h Volume USD</option>
+     <option value="latency">API Latency</option>
+     <option value="spread">Spread</option>
+     <option value="depth25">Depth ±25bps</option>
+    </select>
+   </label>
+  </div>
+  <div id="trendStats" class="summary-cards"></div>
+  <div id="trendChart" class="trend-chart"></div>
   <h2>API health history</h2>
   <div id="healthHistory"></div>
   <h2>Recent snapshots</h2>
@@ -72,6 +99,9 @@
   <h2>BD / White-label pipeline</h2>
   <p class="note">Stages reflect BELTRIX internal research state. They do not imply outreach or a commercial partnership unless explicitly recorded.</p>
   <div id="bdPipeline"></div>
+  <h2>Market Intelligence → BD events</h2>
+  <p class="note">Operational alerts are translated into internal follow-up events; they do not imply outreach has occurred.</p>
+  <div id="bdEventTable"></div>
   <h2>Orderly white-label research</h2>
   <div id="whiteLabelResearch"></div>
   <h2>Venue capability matrix</h2>
