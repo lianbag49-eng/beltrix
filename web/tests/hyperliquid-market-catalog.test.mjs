@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {hyperliquidLogoUrl,hyperliquidAssetName,normalizeAllPerpMetas} from '../hyperliquid-market-catalog.js';
+import {hyperliquidLogoUrl,hyperliquidAssetName,normalizeAllPerpMetas,enrichHyperliquidRow} from '../hyperliquid-market-catalog.js';
 
 test('Hyperliquid official-hosted logo URL follows market asset convention',()=>{
  assert.equal(hyperliquidLogoUrl('BTC'),'https://app.hyperliquid.xyz/coins/BTC_USDC.svg');
@@ -22,4 +22,11 @@ test('allPerpMetas normalizes validator and HIP-3 markets with correct asset ids
  assert.equal(rows[1].asset,110000);
  assert.equal(rows[1].value,'xyz:XYZ100');
  assert.equal(rows[1].onlyIsolated,true);
+});
+
+
+test('spot market ids use base token for the official Hyperliquid logo',()=>{
+ const row=enrichHyperliquidRow({value:'@107',base:'HYPE',quote:'USDC',spot:true});
+ assert.equal(row.logo,'https://app.hyperliquid.xyz/coins/HYPE_USDC.svg');
+ assert.equal(row.name,'Hyperliquid');
 });
