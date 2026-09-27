@@ -40,9 +40,9 @@ export function createMarketPicker(select){
    item.append(logoWrap(market,'small'));
    const copy=document.createElement('span');copy.className='market-picker-copy';
    const top=document.createElement('strong');top.textContent=market.displaySymbol||market.base||market.value;
-   const bottom=document.createElement('small');bottom.textContent=market.fullName&&market.fullName!==market.base?market.fullName+' · '+market.label:market.label;
+   const bottom=document.createElement('small');const venue=market.hip3?(market.dexFullName||market.dex):'';bottom.textContent=[market.fullName&&market.fullName!==market.displaySymbol?market.fullName:null,venue,market.label].filter(Boolean).join(' · ');
    copy.append(top,bottom);item.append(copy);
-   const tag=document.createElement('span');tag.className='market-picker-tag';tag.textContent=market.spot?'SPOT':'PERP';item.append(tag);
+   const tag=document.createElement('span');tag.className='market-picker-tag';tag.textContent=market.spot?'SPOT':market.hip3?'HIP-3':'PERP';item.append(tag);
    item.onclick=()=>{select.value=market.value;select.dispatchEvent(new Event('change',{bubbles:true}));dialog.close();};
    list.append(item);
   }
