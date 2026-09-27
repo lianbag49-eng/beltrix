@@ -5,9 +5,15 @@ test('Pearl Cobalt defaults to light, toggles dark, and persists',async({page})=
  await expect(page.locator('html')).toHaveAttribute('data-beltrix-ui','pearl-cobalt');
  await expect(page.locator('html')).toHaveAttribute('data-theme','light');
  await expect(page.locator('#pcThemeToggle')).toBeVisible();
- await expect(page.locator('#pcSidebar')).toBeVisible();
- await expect(page.locator('#pcProtocolCard')).toBeVisible();
- await expect(page.locator('#pcMarketIntel')).toBeVisible();
+ const mobile=(page.viewportSize()?.width||1280)<=900;
+ if(mobile){
+  await expect(page.locator('#pcSidebar')).toBeHidden();
+  await expect(page.locator('#pcRightRail')).toBeHidden();
+ }else{
+  await expect(page.locator('#pcSidebar')).toBeVisible();
+  await expect(page.locator('#pcProtocolCard')).toBeVisible();
+  await expect(page.locator('#pcMarketIntel')).toBeVisible();
+ }
  await page.locator('#pcThemeToggle').click();
  await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
  await page.reload();
