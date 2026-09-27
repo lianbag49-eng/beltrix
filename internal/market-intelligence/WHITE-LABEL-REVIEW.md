@@ -56,3 +56,16 @@ No second white-label product is launched until:
 - auth/signing/key architecture passes security review
 - attribution and payout reconciliation exist
 - staged testnet/simulation E2E passes
+
+## Aster
+Model:
+- V3 public/trading APIs
+- explicit Builder approval / fee fields
+- Agent Wallet permission model
+
+Potential use:
+- future second execution venue
+- builder-economics benchmark
+- Chinese-language API / regional partner research
+
+Current status: custom integration candidate, **not** a confirmed turnkey white-label DEX creator. Keep funded execution disabled until reconciliation, security, risk, legal and E2E gates pass.
