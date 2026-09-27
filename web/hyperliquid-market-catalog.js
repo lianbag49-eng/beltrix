@@ -69,6 +69,8 @@ export function normalizeAllPerpMetas(payload){
     maxLeverage:item?.maxLeverage,
     onlyIsolated:!!item?.onlyIsolated||item?.marginMode==='strictIsolated'||item?.marginMode==='noCross',
     delisted:false,
+    hip3:dexIndex>0,
+    tradeSupported:dexIndex===0,
     context:Array.isArray(contexts)?contexts[index]||null:null,
     logo:hyperliquidLogoUrl(prefixed),
     name:hyperliquidAssetName(prefixed),
