@@ -2,6 +2,8 @@ import {VENUES} from '../venue-registry.js';
 import {bdMatrix} from '../bd-matrix.js';
 import {hyperliquidBook,paradexBook,dydxBook} from '../public-data.js';
 import {liquiditySnapshot} from '../liquidity.js';
+import {COMMERCIAL_MODELS} from '../commercial-model.js';
+import {INITIAL_QUALIFICATION} from '../execution-qualification.js';
 
 const $=id=>document.getElementById(id);
 const fmt=n=>Number.isFinite(n)?new Intl.NumberFormat('en-US',{maximumFractionDigits:2}).format(n):'N/A';
@@ -18,6 +20,30 @@ function renderOverview(){
 function renderBD(){
  const rows=bdMatrix().map(v=>[v.name,v.marketModel,v.integration,v.revenue,yn(v.whiteLabel),yn(v.sharedLiquidity),yn(v.executionCandidate)]);
  $('bdTable').innerHTML=table(['Venue','Market model','Integration','Revenue modes','White-label','Shared liquidity','Execution candidate'],rows);
+}
+
+function renderFees(){
+ const rows=COMMERCIAL_MODELS.map(v=>[
+  v.venue,
+  v.frontendRevenue.join(', ')||'N/A',
+  yn(v.affiliate),
+  yn(v.whiteLabel),
+  v.feeControl,
+  v.checkedAt,
+  v.sources.map((d,i)=>'<a href="'+d+'" target="_blank" rel="noopener">Source '+(i+1)+'</a>').join(' · ')
+ ]);
+ $('feesTable').innerHTML=table(['Venue','Frontend revenue','Affiliate','White-label','Fee control','Checked','Sources'],rows);
+}
+
+function renderExecution(){
+ const rows=Object.values(INITIAL_QUALIFICATION).map(v=>[
+  v.venue,
+  v.qualified?'<span class="ok">Qualified</span>':'<span class="na">Research only</span>',
+  v.missing.length?String(v.missing.length):'0',
+  v.missing.join(', ')||'All gates evidenced',
+  v.reviewedAt||'N/A'
+ ]);
+ $('executionTable').innerHTML=table(['Venue','Status','Missing gates','Required evidence','Reviewed'],rows);
 }
 
 function renderIntegration(){
@@ -50,4 +76,4 @@ for(const b of document.querySelectorAll('[data-tab]'))b.onclick=()=>{
  for(const p of document.querySelectorAll('[data-panel]'))p.hidden=p.id!==b.dataset.tab;
 };
 $('refresh').onclick=refreshLiquidity;
-renderOverview();renderBD();renderIntegration();refreshLiquidity();
+renderOverview();renderBD();renderFees();renderExecution();renderIntegration();refreshLiquidity();
