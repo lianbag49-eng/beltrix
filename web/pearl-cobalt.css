@@ -478,3 +478,31 @@ html[data-beltrix-ui="pearl-cobalt"] .w-inline-status.error{color:var(--red)}
 }
 
 /* Pearl Cobalt wallet surface validation sync. */
+
+
+/* Final wallet workspace normalization: one in-page navigation, no legacy grid offsets. */
+html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav{
+ position:static!important;top:auto!important;z-index:auto!important;
+ display:flex!important;align-items:center;gap:6px;width:100%!important;
+ margin:0 0 16px!important;padding:6px!important;
+ border:1px solid var(--line)!important;border-radius:12px!important;
+ background:var(--card)!important;box-shadow:var(--pc-shadow)!important;
+ grid-column:auto!important;grid-row:auto!important;
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav button{
+ min-height:36px;padding:7px 12px;border:0;border-radius:8px;
+ background:transparent;color:var(--muted);font-size:11px;font-weight:650;
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav button:hover,
+html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav button.active{
+ background:var(--pc-accent-soft);color:var(--pc-accent);
+}
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="wallet"] #wallet.page.active,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="explore"] #explore.page.active,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] #defi.page.active,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] #boost.page.active{
+ margin-top:0!important;
+}
+@media(max-width:900px){
+ html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav{display:none!important}
+}
