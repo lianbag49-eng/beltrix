@@ -15,9 +15,11 @@ export function bookMetrics({bids=[],asks=[],receivedAt=Date.now(),now=Date.now(
  const bid=b[0]?.price??null,ask=a[0]?.price??null;
  const mid=bid&&ask?(bid+ask)/2:null;
  const spreadBps=mid?((ask-bid)/mid)*10000:null;
+ const received=Number(receivedAt||0);
  return Object.freeze({
   bid,ask,mid,spreadBps,
-  staleMs:Math.max(0,Number(now)-Number(receivedAt||0)),
+  receivedAt:received||null,
+  staleMs:received?Math.max(0,Number(now)-received):null,
   crossed:!!(bid&&ask&&bid>=ask),
   bids:b,asks:a
  });
@@ -48,10 +50,44 @@ export function simulateMarketOrder(book,{side,notionalUsd}={}){
  const direction=side==='sell'?-1:1;
  const impactBps=avgPrice?direction*((avgPrice-book.mid)/book.mid)*10000:null;
  return Object.freeze({
+  requestedUsd:target,
   filledUsd,
   fillRatio:Math.min(1,filledUsd/target),
   avgPrice,
   impactBps
+ });
+}
+
+export function estimateExecutionCost(book,{side,notionalUsd,feeBps=null}={}){
+ const fill=simulateMarketOrder(book,{side,notionalUsd});
+ const fee=finite(feeBps)&&Number(feeBps)>=0?Number(feeBps):null;
+ const impact=finite(fill.impactBps)?Number(fill.impactBps):null;
+ const effectiveCostBps=fee===null||impact===null?null:impact+fee;
+ const estimatedCostUsd=effectiveCostBps===null?null:(fill.filledUsd*effectiveCostBps)/10000;
+ return Object.freeze({
+  ...fill,
+  feeBps:fee,
+  marketImpactBps:impact,
+  effectiveCostBps,
+  estimatedCostUsd
+ });
+}
+
+export function bookHealth(book,{now=Date.now(),maxStaleMs=15000,notionalUsd=10000,minFillRatio=0.99}={}){
+ const reasons=[];
+ if(!book?.bid||!book?.ask)reasons.push('missing-side');
+ if(book?.crossed)reasons.push('crossed-book');
+ const staleMs=book?.receivedAt?Math.max(0,Number(now)-Number(book.receivedAt)):book?.staleMs;
+ if(finite(staleMs)&&Number(staleMs)>Number(maxStaleMs))reasons.push('stale');
+ const buy=simulateMarketOrder(book,{side:'buy',notionalUsd});
+ const sell=simulateMarketOrder(book,{side:'sell',notionalUsd});
+ if(buy.fillRatio<minFillRatio||sell.fillRatio<minFillRatio)reasons.push('insufficient-depth');
+ return Object.freeze({
+  status:reasons.length?'degraded':'healthy',
+  staleMs:finite(staleMs)?Number(staleMs):null,
+  reasons:Object.freeze(reasons),
+  buyFillRatio:buy.fillRatio,
+  sellFillRatio:sell.fillRatio
  });
 }
 
