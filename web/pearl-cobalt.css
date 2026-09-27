@@ -438,3 +438,18 @@ html[data-beltrix-ui="pearl-cobalt"][data-theme="dark"] .pc-order-card{box-shado
  html[data-beltrix-ui="pearl-cobalt"] .pc-intel-cards article{min-width:155px}
  html[data-beltrix-ui="pearl-cobalt"] #marketCanvas{height:270px!important}
 }
+
+/* Pearl Cobalt stability fixes: no first-paint reflow, no legacy mobile grid overlap. */
+html[data-beltrix-ui="pearl-cobalt"],
+html[data-beltrix-ui="pearl-cobalt"] body{overflow-anchor:none}
+@media(max-width:900px){
+ html[data-beltrix-ui="pearl-cobalt"] .pc-trade-grid{display:flex!important;flex-direction:column!important;gap:10px!important}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-trade-grid>.pc-chart-card,
+ html[data-beltrix-ui="pearl-cobalt"] .pc-trade-grid>.pc-book-card,
+ html[data-beltrix-ui="pearl-cobalt"] .pc-trade-grid>.pc-order-card{
+  grid-column:auto!important;grid-row:auto!important;position:static!important;width:100%!important;max-width:none!important;margin:0!important
+ }
+ html[data-beltrix-ui="pearl-cobalt"] .pc-trade-grid>.pc-chart-card{order:1}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-trade-grid>.pc-book-card{order:2}
+ html[data-beltrix-ui="pearl-cobalt"] .pc-trade-grid>.pc-order-card{order:3}
+}
