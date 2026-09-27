@@ -60,6 +60,10 @@ function openMarketPicker(){
 function scrollToElement(el){
  el?.scrollIntoView({behavior:'smooth',block:'start'});
 }
+function openTrading(section=null){
+ window.openPage?.('markets');
+ if(section)queueMicrotask(()=>scrollToElement(typeof section==='string'?document.querySelector(section):section));
+}
 function syncThemeToggle(){
  if(!$('pcThemeToggle'))return;
  applyTheme(root.dataset.theme||'light',{persist:false});
@@ -74,14 +78,15 @@ function mountHeader(){
  const nav=node('div','pc-header-nav');
  nav.setAttribute('role','group');nav.setAttribute('aria-label','Pearl Cobalt product shortcuts');
  const items=[
-  ['Trade',()=>scrollToElement($('markets'))],
-  ['Markets',openMarketPicker],
-  ['Portfolio',()=>scrollToElement(document.querySelector('.terminal-account'))],
-  ['Analytics',()=>scrollToElement($('pcMarketIntel'))],
-  ['Protocol',()=>scrollToElement($('pcProtocolCard'))]
+  ['Trade',()=>openTrading()],
+  ['Markets',()=>{openTrading();queueMicrotask(openMarketPicker)}],
+  ['Portfolio',()=>openTrading('.terminal-account')],
+  ['Analytics',()=>openTrading('#pcMarketIntel')],
+  ['Protocol',()=>openTrading('#pcProtocolCard')],
+  ['Wallet',()=>window.openPage?.('wallet')]
  ];
  for(const item of items){
-  const b=node('button','pc-header-link',item[0]);b.type='button';b.setAttribute('aria-label','Open '+item[0]+' section');b.onclick=item[1];nav.append(b);
+  const b=node('button','pc-header-link',item[0]);b.type='button';b.setAttribute('aria-label',item[0]);b.onclick=item[1];nav.append(b);
  }
  brand.after(nav);
 
@@ -135,6 +140,8 @@ function mountSidebar(){
   '<button type="button" data-pc-action="portfolio" aria-label="Open trading portfolio"><span>▣</span>Portfolio</button>',
   '<button type="button" data-pc-action="analytics" aria-label="Open market intelligence"><span>▥</span>Analytics</button>',
   '<button type="button" data-pc-action="protocol" aria-label="Open protocol overview"><span>⬡</span>Protocol</button>',
+  '<button type="button" data-pc-action="wallet" aria-label="Open Wallet"><span>▤</span>Wallet</button>',
+  '<button type="button" data-pc-action="settings" aria-label="Open Settings"><span>⚙</span>Settings</button>',
   '</div>',
   '<section class="pc-watchlist">',
   '<header><div><small>MARKETS</small><strong>Watchlist</strong></div><button type="button" data-pc-add-market aria-label="Open market selector">+</button></header>',
@@ -147,11 +154,13 @@ function mountSidebar(){
  const top=document.querySelector('.top');
  top.after(sidebar);
  sidebar.querySelector('[data-pc-add-market]').onclick=openMarketPicker;
- sidebar.querySelector('[data-pc-action="trade"]').onclick=()=>scrollToElement($('markets'));
- sidebar.querySelector('[data-pc-action="markets"]').onclick=openMarketPicker;
- sidebar.querySelector('[data-pc-action="portfolio"]').onclick=()=>scrollToElement(document.querySelector('.terminal-account'));
- sidebar.querySelector('[data-pc-action="analytics"]').onclick=()=>scrollToElement($('pcMarketIntel'));
- sidebar.querySelector('[data-pc-action="protocol"]').onclick=()=>scrollToElement($('pcProtocolCard'));
+ sidebar.querySelector('[data-pc-action="trade"]').onclick=()=>openTrading();
+ sidebar.querySelector('[data-pc-action="markets"]').onclick=()=>{openTrading();queueMicrotask(openMarketPicker)};
+ sidebar.querySelector('[data-pc-action="portfolio"]').onclick=()=>openTrading('.terminal-account');
+ sidebar.querySelector('[data-pc-action="analytics"]').onclick=()=>openTrading('#pcMarketIntel');
+ sidebar.querySelector('[data-pc-action="protocol"]').onclick=()=>openTrading('#pcProtocolCard');
+ sidebar.querySelector('[data-pc-action="wallet"]').onclick=()=>window.openPage?.('wallet');
+ sidebar.querySelector('[data-pc-action="settings"]').onclick=()=>window.openPage?.('settings');
  renderWatchlist(sidebar);
 }
 
