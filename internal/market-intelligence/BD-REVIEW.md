@@ -86,3 +86,22 @@ No competitor venue can be enabled in funded BELTRIX routing until every gate in
 9. funded E2E approval
 
 This prevents research integrations from silently becoming live execution paths.
+
+## Aster — Builder / Agent Wallet workstream
+Stage: Technical review
+
+Primary question: whether Aster's explicit Builder and Agent Wallet APIs make it a useful second execution/distribution candidate after BELTRIX's Hyperliquid core is stable.
+
+Verified technical points in the current official API repository:
+- V3 is the recommended integration path.
+- Futures orders support builder attribution and fee-rate fields.
+- builder-approved-user endpoints expose maxFeeRate / builder identity.
+- Builder / Agent Wallet / public market data endpoints remain available under the September 2026 deposit prerequisite that applies to authenticated trading/account endpoints.
+
+Due diligence before any funded POC:
+1. commercial builder onboarding and fee settlement
+2. allowed max fee policy and user approval UX
+3. V3 futures testnet reconciliation
+4. agent-wallet permission revocation / recovery
+5. rate limits and operational SLA
+6. jurisdiction/product review
