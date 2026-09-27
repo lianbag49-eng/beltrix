@@ -7,8 +7,8 @@ test('Pearl Cobalt production shell mounts and toggles dark mode',async({page})=
  await expect(page.locator('#pcMarketRibbon')).toBeVisible();
  await expect(page.locator('#pcIntelligenceStrip')).toBeVisible();
 
- const mobile=(page.viewportSize()?.width||1280)<=900;
- if(mobile){
+ const width=page.viewportSize()?.width||1280;
+ if(width<=1320){
   await expect(page.locator('#pcSidebar')).toBeHidden();
   await expect(page.locator('#pcRightRail')).toBeHidden();
  }else{
