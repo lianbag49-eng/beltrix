@@ -102,3 +102,47 @@ test('Pearl Cobalt wallet remains readable in dark mode and USDT modal follows t
   return modal.backgroundColor===expected;
  })).toBe(true);
 });
+
+
+test('Wallet, Explore, DeFi and Boost use the Pearl Cobalt desktop shell',async({page})=>{
+ await page.setViewportSize({width:1280,height:900});
+ for(const route of ['wallet','explore','defi','boost']){
+  await page.goto('/web/#'+route);
+  await expect(page.locator('body')).toHaveAttribute('data-page',route);
+  await expect(page.locator('#'+route)).toHaveClass(/active/);
+  await expect(page.locator('.pc-wallet-surface-nav')).toBeVisible();
+  await expect(page.locator('.bottom-nav')).toBeHidden();
+  await expect(page.locator('#pcSidebar')).toBeHidden();
+  await expect(page.locator('#pcRightRail')).toBeHidden();
+  const width=await page.locator('#'+route).evaluate(el=>el.getBoundingClientRect().width);
+  expect(width).toBeGreaterThan(800);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ }
+});
+
+test('Wallet surfaces follow light and dark Pearl Cobalt theme tokens',async({page})=>{
+ await page.setViewportSize({width:1280,height:900});
+ await page.goto('/web/#wallet');
+ const light=await page.locator('.w-search-button').evaluate(el=>({
+  bg:getComputedStyle(el).backgroundColor,
+  color:getComputedStyle(el).color
+ }));
+ await page.locator('#pcThemeToggle').click();
+ await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
+ const dark=await page.locator('.w-search-button').evaluate(el=>({
+  bg:getComputedStyle(el).backgroundColor,
+  color:getComputedStyle(el).color
+ }));
+ expect(dark.bg).not.toBe(light.bg);
+ expect(dark.color).not.toBe(light.color);
+});
+
+test('Desktop Wallet workspace navigation reaches DeFi and returns to Trade',async({page})=>{
+ await page.setViewportSize({width:1280,height:900});
+ await page.goto('/web/#wallet');
+ await page.locator('.pc-wallet-surface-nav [data-pc-wallet-route="defi"]').click();
+ await expect(page.locator('body')).toHaveAttribute('data-page','defi');
+ await page.locator('.pc-wallet-surface-nav [data-pc-wallet-route="markets"]').click();
+ await expect(page.locator('body')).toHaveAttribute('data-page','markets');
+ await expect(page.locator('.order-ticket')).toBeVisible();
+});
