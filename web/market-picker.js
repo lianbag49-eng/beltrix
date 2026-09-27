@@ -31,7 +31,7 @@ export function createMarketPicker(select){
  function draw(){
   const query=search.value.trim().toLowerCase();
   list.replaceChildren();
-  const rows=markets.filter(m=>!query||[m.value,m.label,m.base,m.quote,m.fullName,m.displaySymbol].some(v=>String(v||'').toLowerCase().includes(query)));
+  const rows=markets.filter(m=>!query||[m.value,m.label,m.base,m.quote,m.fullName,m.displaySymbol,m.dex,m.dexFullName].some(v=>String(v||'').toLowerCase().includes(query)));
   for(const market of rows){
    const item=document.createElement('button');
    item.type='button';item.className='market-picker-row';
