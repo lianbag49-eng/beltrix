@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BELTRIX · DEX Intelligence</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<header><div><small>INTERNAL</small><h1>BELTRIX DEX Intelligence</h1><p>Competitive venues, BD, liquidity and infrastructure research.</p></div><button id="refresh">Refresh public data</button></header>
+<nav>
+ <button data-tab="overview" aria-pressed="true">Overview</button>
+ <button data-tab="liquidity">Liquidity</button>
+ <button data-tab="bd">BD / White-label</button>
+ <button data-tab="integration">Integration</button>
+</nav>
+<main>
+ <section id="overview" data-panel></section>
+ <section id="liquidity" data-panel hidden><h2>Liquidity comparison</h2><p class="note">Normalized public-book metrics. Unsupported venues remain N/A.</p><div id="liquidityTable"></div></section>
+ <section id="bd" data-panel hidden><h2>BD / White-label</h2><div id="bdTable"></div></section>
+ <section id="integration" data-panel hidden><h2>Integration inventory</h2><div id="integrationTable"></div></section>
+</main>
+<script type="module" src="./app.js"></script>
+</body>
+</html>
