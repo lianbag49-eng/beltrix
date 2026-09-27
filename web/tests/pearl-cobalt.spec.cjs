@@ -110,7 +110,7 @@ test('Wallet, Explore, DeFi and Boost use the Pearl Cobalt desktop shell',async(
   await page.goto('/web/#'+route);
   await expect(page.locator('body')).toHaveAttribute('data-page',route);
   await expect(page.locator('#'+route)).toHaveClass(/active/);
-  await expect(page.locator('#'+route+' .pc-wallet-surface-nav')).toBeVisible();
+  await expect(page.locator('#pcWalletSurfaceNav')).toBeVisible();
   await expect(page.locator('.bottom-nav')).toBeHidden();
   await expect(page.locator('#pcSidebar')).toBeHidden();
   await expect(page.locator('#pcRightRail')).toBeHidden();
