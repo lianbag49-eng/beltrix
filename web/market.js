@@ -3,6 +3,8 @@ import {createMarketChart} from './chart-ui.js';
 import './terminal-clean.js';
 import {validCandle,normalizeCandles} from './chart-core.js';
 import {hyperliquidNetwork,normalizeHyperliquidMarkets} from './hyperliquid-venue.js';
+import {normalizeAllPerpMetas,enrichHyperliquidRow} from './hyperliquid-market-catalog.js';
+import {installHyperliquidMarketPicker,setHyperliquidMarketRows} from './hyperliquid-market-picker.js';
 const $=id=>document.getElementById(id);
 const intervals={'1m':60000,'5m':300000,'15m':900000,'1h':3600000,'4h':14400000,'1d':86400000};
 let generation=0,controller,socket,retry,heartbeat,lastUpdate=0,candles=[],book=null,trades=[],lastTradeTime=0,streamReceived=0,dirty=false;
@@ -31,8 +33,14 @@ function paintContext(){
  $('marketContextStatus').textContent=stale?'Market statistics unavailable or stale. Funding is not assumed to be zero.':`${spot?'Spot market · No funding or leverage':'Perpetual funding settles hourly · Current rate is indicative'} · Statistics updated ${Math.floor((Date.now()-contextReceived)/1000)}s ago`;
 }
 async function refreshContext(token,coin){
- try{const rows=await info({type:selection()?.spot?'spotMetaAndAssetCtxs':'metaAndAssetCtxs'},AbortSignal.timeout(10000));if(token!==generation||coin!==selection()?.value)return;
- const i=rows?.[0]?.universe?.findIndex(x=>x.name===coin);if(i>=0&&rows[1]?.[i]&&finite(rows[1][i].markPx)){assetContext=rows[1][i];contextReceived=Date.now();paintContext();emit()}
+ const selected=selection();
+ try{
+  const request=selected?.spot?{type:'spotMetaAndAssetCtxs'}:{type:'metaAndAssetCtxs',...(selected?.dex?{dex:selected.dex}:{})};
+  const rows=await info(request,AbortSignal.timeout(10000));if(token!==generation||coin!==selection()?.value)return;
+  const universe=rows?.[0]?.universe||[];
+  const target=selected?.raw?.name||coin;
+  const i=universe.findIndex(x=>x.name===target||x.name===coin);
+  if(i>=0&&rows[1]?.[i]&&finite(rows[1][i].markPx)){assetContext=rows[1][i];contextReceived=Date.now();paintContext();emit()}
  }catch{if(token===generation)paintContext()}
 }
 const canvas=$('marketCanvas'),chart=createMarketChart(canvas);
@@ -68,12 +76,39 @@ async function selectMarket(){
  }catch(e){if(token===generation)status('Market request failed · Refresh to retry')}finally{clearTimeout(timeout)}
 }
 async function loadSymbols(){
- ++generation;cleanup();marketMeta=[];book=null;assetContext=null;contextReceived=0;paintContext();streamReceived=0;trades=[];lastTradeTime=0;lastUpdate=0;candleFeed='snapshot';$('marketPrice').textContent='—';$('marketSymbol').replaceChildren();emit();paintBook();candles=[];draw();status('Loading markets');
+ ++generation;cleanup();marketMeta=[];book=null;assetContext=null;contextReceived=0;paintContext();streamReceived=0;trades=[];lastTradeTime=0;lastUpdate=0;candleFeed='snapshot';$('marketPrice').textContent='—';$('marketSymbol').replaceChildren();emit();paintBook();candles=[];draw();status('Loading Hyperliquid markets');
  const mode=$('marketType').value,token=generation;const abort=new AbortController(),timeout=setTimeout(()=>abort.abort(),15000);
- try{const meta=await info({type:mode==='spot'?'spotMeta':'meta'},abort.signal);if(token!==generation)return;
- const rows=normalizeHyperliquidMarkets(meta,mode).map(m=>({value:m.symbol,label:mode==='spot'?`${m.base}/${m.quote}`:`${m.symbol} / ${m.quote} PERP`,asset:m.nativeId,szDecimals:m.raw?.szDecimals,spot:m.marketType==='spot',maxLeverage:m.maxLeverage,onlyIsolated:m.raw?.onlyIsolated,delisted:m.raw?.isDelisted}));
- marketMeta=rows;rows.forEach(r=>$('marketSymbol').add(new Option(r.label,r.value)));if(mode!=='spot'&&rows.some(x=>x.value==='ETH'))$('marketSymbol').value='ETH';await selectMarket();
- }catch{if(token===generation)status('Market list failed · Refresh to retry')}finally{clearTimeout(timeout)}
+ try{
+  let rows=[];
+  if(mode==='spot'){
+   const meta=await info({type:'spotMeta'},abort.signal);
+   rows=normalizeHyperliquidMarkets(meta,'spot').map(m=>enrichHyperliquidRow({
+    value:m.symbol,label:`${m.base}/${m.quote}`,asset:m.nativeId,szDecimals:m.raw?.szDecimals,
+    spot:true,maxLeverage:null,onlyIsolated:false,delisted:m.raw?.isDelisted,dex:'',raw:m.raw,base:m.base,quote:m.quote
+   }));
+  }else{
+   try{
+    const all=await info({type:'allPerpMetas'},abort.signal);
+    rows=normalizeAllPerpMetas(all);
+   }catch{
+    const meta=await info({type:'meta'},abort.signal);
+    rows=normalizeHyperliquidMarkets(meta,'perp').map(m=>enrichHyperliquidRow({
+     value:m.symbol,label:`${m.symbol} / ${m.quote} PERP`,asset:m.nativeId,szDecimals:m.raw?.szDecimals,
+     spot:false,maxLeverage:m.maxLeverage,onlyIsolated:m.raw?.onlyIsolated,delisted:m.raw?.isDelisted,dex:'',raw:m.raw,base:m.base,quote:m.quote
+    }));
+   }
+  }
+  if(token!==generation)return;
+  marketMeta=rows.filter(r=>!r.delisted);
+  const select=$('marketSymbol');
+  for(const row of marketMeta)select.add(new Option(row.label,row.value));
+  const preferred=marketMeta.find(x=>x.value==='BTC')||marketMeta.find(x=>x.value==='ETH')||marketMeta[0];
+  if(preferred)select.value=preferred.value;
+  setHyperliquidMarketRows(marketMeta);
+  await selectMarket();
+ }catch(e){
+  if(token===generation)status('Hyperliquid market list failed · '+String(e?.message||'Refresh to retry').slice(0,100))
+ }finally{clearTimeout(timeout)}
 }
 $('bookDepth').onchange=selectMarket;$('marketNetwork').onchange=loadSymbols;$('marketType').onchange=loadSymbols;$('marketSymbol').onchange=selectMarket;$('marketInterval').onchange=selectMarket;$('marketRefresh').onclick=()=> $('marketSymbol').options.length?selectMarket():loadSymbols();
 new ResizeObserver(()=>chart.resize()).observe(canvas);
@@ -86,4 +121,4 @@ setInterval(()=>{
  else if(streamReceived)status('Stale order book · Orders locked');
  if(streamReceived)emit();
 },1000);
-window.addEventListener('pagehide',()=>{++generation;cleanup()});window.addEventListener('pageshow',e=>{if(e.persisted)loadSymbols()});loadSymbols();
+window.addEventListener('pagehide',()=>{++generation;cleanup()});window.addEventListener('pageshow',e=>{if(e.persisted)loadSymbols()});installHyperliquidMarketPicker();loadSymbols();
