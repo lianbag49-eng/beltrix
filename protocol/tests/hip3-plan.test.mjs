@@ -8,15 +8,15 @@ test('HIP-3 plan preserves BELTRIX-owned market oracle and risk policy',()=>{
  const plan=buildBeltrixHip3Plan({
   market:btc,
   dexName:'beltrix',
-  feeRecipient:'0xfee',
-  oracleUpdater:'0xoracle',
+  feeRecipient:'0x1111111111111111111111111111111111111111',
+  oracleUpdater:'0x2222222222222222222222222222222222222222',
   marginTableId:1,
   openInterestCapUsd:5000000,
   fundingMultiplier:1,
   annotation:'BELTRIX BTC perpetual',
   roleGrants:[
-   {role:'oracle-updater',account:'0xoracle'},
-   {role:'emergency-guardian',account:'0xguard'}
+   {role:'oracle-updater',account:'0x2222222222222222222222222222222222222222'},
+   {role:'emergency-guardian',account:'0x3333333333333333333333333333333333333333'}
   ],
   szDecimals:5
  });
@@ -34,13 +34,13 @@ test('HIP-3 plan preserves BELTRIX-owned market oracle and risk policy',()=>{
 test('HIP-3 plan rejects leverage outside Hyperliquid deployer range',()=>{
  const market={...btc,riskPolicy:{...btc.riskPolicy,maxLeverage:75}};
  assert.throws(()=>buildBeltrixHip3Plan({
-  market,dexName:'beltrix',feeRecipient:'x',oracleUpdater:'y',marginTableId:1,openInterestCapUsd:1000000
+  market,dexName:'beltrix',feeRecipient:'0x1111111111111111111111111111111111111111',oracleUpdater:'0x2222222222222222222222222222222222222222',marginTableId:1,openInterestCapUsd:1000000
  }),/max leverage must be 1-50/);
 });
 
 test('HIP-3 plan is not represented as a broadcast payload',()=>{
  const plan=buildBeltrixHip3Plan({
-  market:btc,dexName:'beltrix',feeRecipient:'x',oracleUpdater:'y',marginTableId:1,openInterestCapUsd:1000000
+  market:btc,dexName:'beltrix',feeRecipient:'0x1111111111111111111111111111111111111111',oracleUpdater:'0x2222222222222222222222222222222222222222',marginTableId:1,openInterestCapUsd:1000000
  });
  assert.equal(plan.researchOnly,true);
  assert.match(plan.warnings[0],/unsigned deployment plan/i);
