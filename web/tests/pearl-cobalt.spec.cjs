@@ -67,3 +67,38 @@ test('Wallet remains available only when explicitly requested',async({page})=>{
  await expect(page.locator('#wallet')).toHaveClass(/active/);
  await expect(page.locator('#markets')).not.toHaveClass(/active/);
 });
+
+
+test('Pearl Cobalt wallet surfaces use full desktop width and theme colors',async({page})=>{
+ await page.setViewportSize({width:1280,height:900});
+ await page.goto('/web/#wallet');
+ await expect(page.locator('body')).toHaveAttribute('data-page','wallet');
+ const walletBox=await page.locator('#wallet').boundingBox();
+ expect(walletBox.width).toBeGreaterThan(900);
+ expect(await page.evaluate(()=>getComputedStyle(document.querySelector('#wallet')).color===getComputedStyle(document.body).color)).toBe(true);
+ await expect(page.locator('.bottom-nav')).toBeHidden();
+ for(const route of ['explore','defi','boost']){
+  await page.evaluate(id=>window.openPage(id),route);
+  await expect(page.locator('body')).toHaveAttribute('data-page',route);
+  const box=await page.locator('#'+route).boundingBox();
+  expect(box.width).toBeGreaterThan(900);
+  expect(await page.evaluate(id=>document.documentElement.scrollWidth<=window.innerWidth&&getComputedStyle(document.getElementById(id)).color===getComputedStyle(document.body).color,route)).toBe(true);
+ }
+});
+
+test('Pearl Cobalt wallet remains readable in dark mode and USDT modal follows theme',async({page})=>{
+ await page.setViewportSize({width:1280,height:900});
+ await page.goto('/web/#wallet');
+ await page.locator('#pcThemeToggle').click();
+ await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
+ expect(await page.evaluate(()=>getComputedStyle(document.querySelector('#wallet')).color===getComputedStyle(document.body).color)).toBe(true);
+ await page.evaluate(()=>window.openUsdt?.('receive'));
+ await expect(page.locator('#usdtDialog')).toBeVisible();
+ expect(await page.evaluate(()=>{
+  const modal=getComputedStyle(document.querySelector('#usdtDialog'));
+  const card=getComputedStyle(document.documentElement).getPropertyValue('--card').trim();
+  const probe=document.createElement('div');probe.style.color=card;document.body.append(probe);
+  const expected=getComputedStyle(probe).color;probe.remove();
+  return modal.backgroundColor===expected;
+ })).toBe(true);
+});
