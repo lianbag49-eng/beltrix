@@ -160,3 +160,22 @@ Phase 8 adds:
 
 The code remains deployment-neutral. No production multisig, timelock, oracle
 operator key or onchain ownership is created by these modules.
+
+
+## Phase 9 — operational readiness and public verification
+
+Phase 9 adds deployment-neutral operational safety tools:
+
+- ownership transition dry-run
+- incident recovery plans with no automatic critical resume
+- overlap-safe oracle operator rotation
+- public protocol config disclosure
+- deterministic SHA-256 config fingerprints
+- HIP-3 testnet dry-run planning
+- explicit structural-vs-production readiness gates
+
+Phase 9 does not bind real production multisig, guardian or oracle operator
+addresses. It also does not broadcast an HIP-3 deployment.
+
+The structural code is ready while production binding and testnet evidence
+remain explicit external dependencies.
