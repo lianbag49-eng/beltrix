@@ -164,37 +164,43 @@ function mountSidebar(){
  renderWatchlist(sidebar);
 }
 
-function mountWalletSurfaceNavigation(){
- const routes=[
+function mountWalletSurfaceNav(){
+ if($('pcWalletSurfaceNav'))return;
+ const nav=node('nav','pc-wallet-surface-nav');
+ nav.id='pcWalletSurfaceNav';
+ nav.setAttribute('aria-label','Wallet workspace');
+ const rows=[
   ['wallet','Wallet'],
   ['explore','Explore'],
   ['defi','DeFi'],
   ['boost','Boost'],
   ['markets','Trade']
  ];
- for(const pageId of ['wallet','explore','defi','boost']){
-  const page=$(pageId);if(!page||page.querySelector('.pc-wallet-surface-nav'))continue;
-  const nav=node('nav','pc-wallet-surface-nav');
-  nav.setAttribute('aria-label','Wallet workspace');
-  for(const [id,label] of routes){
-   const b=node('button','',label);
-   b.type='button';b.dataset.pcWalletRoute=id;
-   b.onclick=()=>window.openPage?.(id);
-   nav.append(b);
-  }
-  page.prepend(nav);
+ for(const [page,label] of rows){
+  const b=node('button','pc-wallet-surface-link',label);
+  b.type='button';
+  b.dataset.pcWalletRoute=page;
+  b.onclick=()=>window.openPage?.(page);
+  nav.append(b);
  }
+ const wallet=$('wallet');
+ if(wallet)wallet.before(nav);
 }
 
 function syncPageShell(page=document.body.dataset.page){
  const trading=page==='markets';
+ const walletPage=['wallet','explore','defi','boost'].includes(page);
  $('pcSidebar')?.classList.toggle('pc-hidden',!trading);
  $('pcRightRail')?.classList.toggle('pc-hidden',!trading);
- document.querySelectorAll('.pc-wallet-surface-nav [data-pc-wallet-route]').forEach(b=>{
-  const active=b.dataset.pcWalletRoute===page;
-  b.classList.toggle('active',active);
-  b.setAttribute('aria-current',active?'page':'false');
- });
+ const nav=$('pcWalletSurfaceNav');
+ if(nav){
+  nav.hidden=!walletPage;
+  nav.querySelectorAll('[data-pc-wallet-route]').forEach(b=>{
+   const active=b.dataset.pcWalletRoute===page;
+   b.classList.toggle('active',active);
+   b.setAttribute('aria-current',active?'page':'false');
+  });
+ }
 }
 
 function mountRightRail(){
@@ -248,7 +254,7 @@ function syncIntel(){
 }
 
 function mount(){
- mountHeader();mountSidebar();mountRightRail();mountWalletSurfaceNavigation();
+ mountHeader();mountWalletSurfaceNav();mountSidebar();mountRightRail();
  renderWatchlist($('pcSidebar'));syncIntel();syncPageShell();
 
  const select=$('marketSymbol');
