@@ -5,18 +5,26 @@ import {INITIAL_QUALIFICATION} from '../execution-qualification.js';
 import {INITIAL_BD_PIPELINE,nextActionState} from '../bd-pipeline.js';
 import {SUPPORTED_CANONICAL_ASSETS,marketRouting} from '../market-normalizer.js';
 import {collectAssetBooks,collectGmxState} from '../market-snapshot.js';
+import {collectMarketMetrics} from '../market-metrics.js';
+import {makeTelemetrySnapshot,saveTelemetry,loadTelemetry,telemetryForAsset,apiHealthSummary,DEFAULT_HISTORY_KEY} from '../telemetry-history.js';
 import {VENUE_RESEARCH,researchProfile,flattenResearch,researchCoverage} from '../venue-research.js';
 import {buildMarketIntelligence} from '../market-intelligence.js';
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fmt=n=>Number.isFinite(Number(n))?new Intl.NumberFormat('en-US',{maximumFractionDigits:2}).format(Number(n)):'N/A';
-const usd=n=>Number.isFinite(Number(n))?'$'+fmt(n):'N/A';
-const bps=n=>Number.isFinite(Number(n))?fmt(n)+' bps':'N/A';
-const pct=n=>Number.isFinite(Number(n))?(Number(n)*100).toFixed(1)+'%':'N/A';
+const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
+const fmt=n=>finite(n)?new Intl.NumberFormat('en-US',{maximumFractionDigits:2}).format(Number(n)):'N/A';
+const usd=n=>finite(n)?'$'+fmt(n):'N/A';
+const bps=n=>finite(n)?fmt(n)+' bps':'N/A';
+const pct=n=>finite(n)?(Number(n)*100).toFixed(1)+'%':'N/A';
+const rate=n=>finite(n)?(Number(n)*100).toFixed(5)+'%':'N/A';
 const yn=v=>v?'<span class="ok">Yes</span>':'<span class="na">No</span>';
 const health=v=>v==='healthy'?'<span class="ok">Healthy</span>':v==='degraded'?'<span class="warn">Degraded</span>':v==='live'?'<span class="ok">Live</span>':'<span class="bad">Unavailable</span>';
 const statusClass=v=>v==='tested'||v==='implemented'||v==='documented'?'ok':v==='blocked'?'bad':'na';
+
+let autoTimer=null;
+let latestMetrics=[];
+let latestHistory=loadTelemetry(localStorage);
 
 function table(headers,rows){
  return '<div class="table-wrap"><table><thead><tr>'+headers.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
@@ -44,20 +52,14 @@ function renderOverview(){
 
 function renderBD(){
  const pipeline=INITIAL_BD_PIPELINE.map(v=>[
-  esc(v.name),
-  '<code>'+esc(v.stage)+'</code>',
-  esc(v.objectives.join(', ')),
-  esc(v.nextAction||'N/A'),
-  esc(v.nextActionAt||'N/A'),
+  esc(v.name),'<code>'+esc(v.stage)+'</code>',esc(v.objectives.join(', ')),esc(v.nextAction||'N/A'),esc(v.nextActionAt||'N/A'),
   '<span class="'+(nextActionState(v)==='overdue'?'bad':nextActionState(v)==='due-soon'?'warn':'na')+'">'+esc(nextActionState(v))+'</span>'
  ]);
  $('bdPipeline').innerHTML=table(['Partner','Stage','Objectives','Next action','Due','Action state'],pipeline);
 
  const orderly=researchProfile('orderly');
  const whiteRows=Object.entries(orderly?.whiteLabel||{}).map(([key,v])=>[
-  esc(key),
-  '<span class="'+statusClass(v.status)+'">'+esc(v.status)+'</span>',
-  esc(v.note),
+  esc(key),'<span class="'+statusClass(v.status)+'">'+esc(v.status)+'</span>',esc(v.note),
   (v.sources||[]).map((src,i)=>'<a href="'+esc(src)+'" target="_blank" rel="noopener">Source '+(i+1)+'</a>').join(' · ')||'N/A'
  ]);
  $('whiteLabelResearch').innerHTML=table(['Area','Status','Finding','Official sources'],whiteRows);
@@ -68,12 +70,7 @@ function renderBD(){
 
 function renderFees(){
  const rows=COMMERCIAL_MODELS.map(v=>[
-  esc(v.venue),
-  esc(v.frontendRevenue.join(', ')||'N/A'),
-  yn(v.affiliate),
-  yn(v.whiteLabel),
-  esc(v.feeControl),
-  esc(v.checkedAt),
+  esc(v.venue),esc(v.frontendRevenue.join(', ')||'N/A'),yn(v.affiliate),yn(v.whiteLabel),esc(v.feeControl),esc(v.checkedAt),
   v.sources.map((d,i)=>'<a href="'+esc(d)+'" target="_blank" rel="noopener">Source '+(i+1)+'</a>').join(' · ')
  ]);
  $('feesTable').innerHTML=table(['Venue','Frontend revenue','Affiliate','White-label','Fee control','Checked','Sources'],rows);
@@ -81,12 +78,8 @@ function renderFees(){
 
 function renderExecution(){
  const rows=Object.values(INITIAL_QUALIFICATION).map(v=>[
-  esc(v.venue),
-  v.qualified?'<span class="ok">Execution qualified</span>':'<span class="na">Research only</span>',
-  esc(v.mode),
-  v.missing.length?String(v.missing.length):'0',
-  esc(v.missing.join(', ')||'All gates evidenced'),
-  esc(v.reviewedAt||'N/A')
+  esc(v.venue),v.qualified?'<span class="ok">Execution qualified</span>':'<span class="na">Research only</span>',
+  esc(v.mode),v.missing.length?String(v.missing.length):'0',esc(v.missing.join(', ')||'All gates evidenced'),esc(v.reviewedAt||'N/A')
  ]);
  $('executionTable').innerHTML=table(['Venue','Status','Mode','Missing gates','Required evidence','Reviewed'],rows);
 
@@ -95,10 +88,7 @@ function renderExecution(){
   for(const row of flattenResearch(profile)){
    if(row.group!=='execution')continue;
    researchRows.push([
-    esc(venue),
-    esc(row.key),
-    '<span class="'+statusClass(row.status)+'">'+esc(row.status)+'</span>',
-    esc(row.note),
+    esc(venue),esc(row.key),'<span class="'+statusClass(row.status)+'">'+esc(row.status)+'</span>',esc(row.note),
     row.sources.map((src,i)=>'<a href="'+esc(src)+'" target="_blank" rel="noopener">Source '+(i+1)+'</a>').join(' · ')||'N/A'
    ]);
   }
@@ -120,45 +110,74 @@ function renderMarketIntelligence(bookRows,gmx){
  const mi=buildMarketIntelligence({bookRows,gmxState:gmx});
  const s=mi.summary;
  $('miSummary').innerHTML=[
-  ['Venues observed',s.venues],
-  ['Live / healthy',s.live],
-  ['Degraded',s.degraded],
-  ['Unavailable',s.unavailable],
-  ['Execution qualified',s.executionQualified],
-  ['Research only',s.researchOnly]
+  ['Venues observed',s.venues],['Live / healthy',s.live],['Degraded',s.degraded],['Unavailable',s.unavailable],
+  ['Execution qualified',s.executionQualified],['Research only',s.researchOnly]
  ].map(([label,value])=>'<article class="summary-card"><strong>'+esc(value)+'</strong><span>'+esc(label)+'</span></article>').join('');
 
  $('miTable').innerHTML=table(
   ['Venue','Model','Data','Spread','Depth ±25bps','Min fill','Buy impact','Sell impact','Long capacity','Short capacity','JIT L/S','Missing exec gates','Research coverage','Flags'],
   mi.rows.map(v=>[
-   esc(v.venue),
-   esc(v.model),
-   health(v.dataStatus),
-   bps(v.spreadBps),
-   usd(v.depth25Usd),
-   pct(v.minFillRatio),
-   bps(v.buyImpactBps),
-   bps(v.sellImpactBps),
-   usd(v.capacityLongUsd),
-   usd(v.capacityShortUsd),
-   esc((v.jitStatusLong||'N/A')+' / '+(v.jitStatusShort||'N/A')),
-   esc(v.missingExecutionGates??'N/A'),
-   pct(v.researchKnownRatio),
-   (v.flags||[]).map(x=>'<span class="tag">'+esc(x)+'</span>').join(' ')||'None'
+   esc(v.venue),esc(v.model),health(v.dataStatus),bps(v.spreadBps),usd(v.depth25Usd),pct(v.minFillRatio),bps(v.buyImpactBps),bps(v.sellImpactBps),
+   usd(v.capacityLongUsd),usd(v.capacityShortUsd),esc((v.jitStatusLong||'N/A')+' / '+(v.jitStatusShort||'N/A')),
+   esc(v.missingExecutionGates??'N/A'),pct(v.researchKnownRatio),(v.flags||[]).map(x=>'<span class="tag">'+esc(x)+'</span>').join(' ')||'None'
   ])
  );
 }
 
-async function refreshLiquidity(){
+function metricValue(metric,key,usdKey,unitKey){
+ if(finite(metric?.[usdKey]))return usd(metric[usdKey]);
+ if(finite(metric?.[key]))return fmt(metric[key])+(metric?.[unitKey]?' '+esc(metric[unitKey]):'');
+ return 'N/A';
+}
+
+function renderHistory(metricRows=latestMetrics){
+ const asset=currentAsset();
+ const history=telemetryForAsset(latestHistory,asset);
+ const healthRows=Object.entries(apiHealthSummary(latestHistory,asset)).map(([venue,v])=>[
+  esc(venue),String(v.samples),pct(v.successRatio),fmt(v.avgLatencyMs)+' ms',fmt(v.p95LatencyMs)+' ms',health(v.lastStatus),
+  v.lastSeen?new Date(v.lastSeen).toLocaleString():'N/A'
+ ]);
+ $('healthHistory').innerHTML=healthRows.length?table(['Venue','Samples','Success','Avg latency','P95 latency','Last status','Last seen'],healthRows):'<p class="note">No stored health snapshots yet.</p>';
+
+ const current=(metricRows||[]).map(v=>[
+  esc(v.venue),esc(v.symbol),v.ok?'<span class="ok">Live</span>':'<span class="bad">Unavailable</span>',
+  finite(v.markPrice)?fmt(v.markPrice):'N/A',rate(v.fundingRate),
+  metricValue(v,'openInterest','openInterestUsd','openInterestUnit'),
+  metricValue(v,'volume24h','volume24hUsd','volume24hUnit'),
+  finite(v.latencyMs)?fmt(v.latencyMs)+' ms':'N/A'
+ ]);
+ $('metricCurrent').innerHTML=current.length?table(['Venue','Symbol','Status','Mark','Funding','Open interest','24h volume','Metric latency'],current):'<p class="note">Refresh to collect market metrics.</p>';
+
+ const recent=history.slice(-40).reverse().flatMap(s=>Object.entries(s.venues||{}).map(([venue,v])=>[
+  new Date(s.timestamp).toLocaleString(),esc(venue),health(v.health),finite(v.latencyMs)?fmt(v.latencyMs)+' ms':'N/A',
+  v.metric?rate(v.metric.fundingRate):'N/A',
+  v.metric?metricValue(v.metric,'openInterest','openInterestUsd','openInterestUnit'):'N/A',
+  v.metric?metricValue(v.metric,'volume24h','volume24hUsd','volume24hUnit'):'N/A',
+  finite(v.spreadBps)?bps(v.spreadBps):'N/A',
+  finite(v.capacityLongUsd)?usd(v.capacityLongUsd):'N/A',
+  finite(v.capacityShortUsd)?usd(v.capacityShortUsd):'N/A'
+ ]));
+ $('historyTable').innerHTML=recent.length?table(['Time','Venue','Health','Latency','Funding','Open interest','24h volume','Spread','Long cap','Short cap'],recent):'<p class="note">No local snapshots for '+esc(asset)+' yet.</p>';
+}
+
+function setAutoRefresh(){
+ if(autoTimer){clearInterval(autoTimer);autoTimer=null}
+ const ms=Number($('autoRefresh')?.value||0);
+ if(ms>0)autoTimer=setInterval(()=>refreshLiquidity({record:true}),ms);
+}
+
+async function refreshLiquidity({record=true}={}){
  const asset=currentAsset(),notional=currentNotional(),fees=feeAssumptions();
  $('liquidityStatus').textContent='Loading '+asset+' public market data…';
  $('liquidityTable').textContent='';
  $('gmxState').textContent='Loading GMX pool state…';
 
- const [rows,gmx]=await Promise.all([
+ const [rows,gmx,metrics]=await Promise.all([
   collectAssetBooks(asset,{notionalUsd:notional,feeBpsByVenue:fees}),
-  collectGmxState(asset)
+  collectGmxState(asset),
+  collectMarketMetrics(asset)
  ]);
+ latestMetrics=metrics;
 
  $('liquidityStatus').textContent='Read-only snapshot · '+asset+' · $'+fmt(notional)+' simulated order · refreshed '+new Date().toLocaleTimeString();
 
@@ -166,24 +185,15 @@ async function refreshLiquidity(){
   if(!v.ok)return [esc(v.venue),'<code>'+esc(v.symbol)+'</code>',health('unavailable'),'N/A','N/A','N/A','N/A','N/A','N/A','N/A','N/A','<span class="bad">'+esc(v.error)+'</span>'];
   const s=v.snapshot;
   return [
-   esc(v.venue),
-   '<code>'+esc(v.symbol)+'</code>',
-   health(v.health.status),
-   bps(s.book.spreadBps),
-   usd(s.depth[25].total),
-   bps(v.buy?.marketImpactBps),
-   bps(v.sell?.marketImpactBps),
-   v.buy?.feeBps===null?'N/A':bps(v.buy.feeBps),
-   bps(v.buy?.effectiveCostBps),
-   bps(v.sell?.effectiveCostBps),
-   pct(Math.min(v.buy?.fillRatio??0,v.sell?.fillRatio??0)),
+   esc(v.venue),'<code>'+esc(v.symbol)+'</code>',health(v.health.status),bps(s.book.spreadBps),usd(s.depth[25].total),
+   bps(v.buy?.marketImpactBps),bps(v.sell?.marketImpactBps),v.buy?.feeBps===null?'N/A':bps(v.buy.feeBps),
+   bps(v.buy?.effectiveCostBps),bps(v.sell?.effectiveCostBps),pct(Math.min(v.buy?.fillRatio??0,v.sell?.fillRatio??0)),
    v.receivedAt?new Date(v.receivedAt).toLocaleTimeString():'N/A'
   ];
  });
  $('liquidityTable').innerHTML=table(['Venue','Symbol','Health','Spread','Depth ±25bps','Buy impact','Sell impact','Fee input','Buy effective','Sell effective','Min fill','Timestamp'],rendered);
 
- const cap=gmx.capacity||{};
- const long=cap.long,short=cap.short;
+ const cap=gmx.capacity||{},long=cap.long,short=cap.short;
  $('gmxState').innerHTML=gmx.ok
   ?'<strong>GMX '+esc(gmx.chain)+'</strong> · market-state endpoint healthy · '+fmt(gmx.marketCount)+' markets · '+fmt(gmx.matchingMarkets)+' '+esc(asset)+' matches'+
    (gmx.matchedSymbol?' · <code>'+esc(gmx.matchedSymbol)+'</code>':'')+
@@ -192,7 +202,12 @@ async function refreshLiquidity(){
    '<br><span class="note">'+esc(gmx.note)+'</span>'
   :'<strong>GMX '+esc(gmx.chain)+'</strong> · <span class="bad">Unavailable</span> · '+esc(gmx.error||'collector error');
 
+ if(record){
+  const snapshot=makeTelemetrySnapshot({asset,bookRows:rows,gmxState:gmx,metricRows:metrics,timestamp:Date.now()});
+  latestHistory=saveTelemetry(localStorage,snapshot,{maxEntries:720,maxAgeMs:7*24*60*60*1000});
+ }
  renderMarketIntelligence(rows,gmx);
+ renderHistory(metrics);
 }
 
 for(const b of document.querySelectorAll('[data-tab]'))b.onclick=()=>{
@@ -200,14 +215,21 @@ for(const b of document.querySelectorAll('[data-tab]'))b.onclick=()=>{
  for(const p of document.querySelectorAll('[data-panel]'))p.hidden=p.id!==b.dataset.tab;
 };
 
-$('refresh').onclick=()=>{renderOverview();refreshLiquidity()};
-$('assetSelect').onchange=()=>{renderOverview();refreshLiquidity()};
-$('notional').onchange=refreshLiquidity;
-for(const x of document.querySelectorAll('[data-fee]'))x.onchange=refreshLiquidity;
+$('refresh').onclick=()=>{renderOverview();refreshLiquidity({record:true})};
+$('assetSelect').onchange=()=>{renderOverview();renderHistory();refreshLiquidity({record:true})};
+$('notional').onchange=()=>refreshLiquidity({record:true});
+$('autoRefresh').onchange=setAutoRefresh;
+$('clearHistory').onclick=()=>{
+ localStorage.removeItem(DEFAULT_HISTORY_KEY);
+ latestHistory=[];
+ renderHistory();
+};
+for(const x of document.querySelectorAll('[data-fee]'))x.onchange=()=>refreshLiquidity({record:true});
 
 renderOverview();
 renderBD();
 renderFees();
 renderExecution();
 renderIntegration();
-refreshLiquidity();
+renderHistory();
+refreshLiquidity({record:true});
