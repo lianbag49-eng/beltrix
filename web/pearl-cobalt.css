@@ -492,3 +492,35 @@ html[data-beltrix-ui="pearl-cobalt"] #marketRefresh{display:inline-flex!importan
  html[data-beltrix-ui="pearl-cobalt"] .pc-intelligence-strip{padding:8px}
  html[data-beltrix-ui="pearl-cobalt"] .pc-strip-grid{grid-template-columns:1fr 1fr}
 }
+
+
+/* Pearl Cobalt v2.2 — stable viewport and drawer geometry */
+html[data-beltrix-ui="pearl-cobalt"],
+html[data-beltrix-ui="pearl-cobalt"] body{overflow-anchor:none!important}
+html[data-beltrix-ui="pearl-cobalt"] #futuresChart,
+html[data-beltrix-ui="pearl-cobalt"] #futuresLeverageDrawer,
+html[data-beltrix-ui="pearl-cobalt"] #futuresExtra{contain:layout style}
+@media(max-width:1500px){
+ html[data-beltrix-ui="pearl-cobalt"] .app{
+  display:block;
+  width:100%;
+  max-width:100%;
+  padding:10px 12px 100px;
+  overflow-x:clip;
+ }
+ html[data-beltrix-ui="pearl-cobalt"] .pc-sidebar,
+ html[data-beltrix-ui="pearl-cobalt"] .pc-right-rail{display:none!important}
+ html[data-beltrix-ui="pearl-cobalt"] #markets.page.active{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+ }
+ html[data-beltrix-ui="pearl-cobalt"] #markets .market-card,
+ html[data-beltrix-ui="pearl-cobalt"] #markets .trade-layout,
+ html[data-beltrix-ui="pearl-cobalt"] #markets .chart-panel,
+ html[data-beltrix-ui="pearl-cobalt"] #markets .depth,
+ html[data-beltrix-ui="pearl-cobalt"] #markets .order-ticket{
+  min-width:0;
+  max-width:100%;
+ }
+}
