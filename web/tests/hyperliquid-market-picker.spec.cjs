@@ -13,12 +13,20 @@ test('Hyperliquid picker exposes every returned perp with official logos and liv
  });
  await page.route('https://api.hyperliquid.xyz/info',async route=>{
   const body=route.request().postDataJSON();let data;
-  if(body.type==='meta')data={universe:[
-   {name:'BTC',szDecimals:5,maxLeverage:40},
-   {name:'ETH',szDecimals:4,maxLeverage:50},
-   {name:'SOL',szDecimals:2,maxLeverage:20},
-   {name:'HYPE',szDecimals:2,maxLeverage:10}
-  ]};
+  if(body.type==='perpDexs')data=[null,{name:'xyz',fullName:'XYZ Markets'}];
+  else if(body.type==='allPerpMetas')data=[
+   {collateralToken:0,universe:[
+    {name:'BTC',szDecimals:5,maxLeverage:40},
+    {name:'ETH',szDecimals:4,maxLeverage:50},
+    {name:'SOL',szDecimals:2,maxLeverage:20},
+    {name:'HYPE',szDecimals:2,maxLeverage:10}
+   ]},
+   {collateralToken:0,universe:[{name:'xyz:NVDA',szDecimals:3,maxLeverage:10}]}
+  ];
+  else if(body.type==='metaAndAssetCtxs'&&body.dex==='xyz')data=[
+   {universe:[{name:'xyz:NVDA',szDecimals:3,maxLeverage:10}]},
+   [{markPx:'180',oraclePx:'180',dayNtlVlm:'50',openInterest:'1',funding:'0.0002',prevDayPx:'175'}]
+  ];
   else if(body.type==='metaAndAssetCtxs')data=[
    {universe:[
     {name:'BTC',szDecimals:5,maxLeverage:40},
@@ -52,21 +60,24 @@ test('Hyperliquid picker exposes every returned perp with official logos and liv
  await expect(page.locator('#marketCanvas')).toHaveAttribute('data-chart-bars','2');
 
  await page.locator('#marketPickerButton').click();
- await expect(page.locator('#marketPickerCount')).toHaveText('4 / 4 markets');
- await expect(page.locator('#marketPickerList .market-picker-row')).toHaveCount(4);
+ await expect(page.locator('#marketPickerCount')).toHaveText('5 / 5 markets');
+ await expect(page.locator('#marketPickerList .market-picker-row')).toHaveCount(5);
  await expect(page.locator('#marketPickerList img').first()).toHaveAttribute('src',/app\.hyperliquid\.xyz\/coins\//);
 
- await page.locator('#marketPickerList [data-market="BTC"]').click();
- await expect(page.locator('#marketSymbol')).toHaveValue('BTC');
- await expect(page.locator('#marketPickerSymbol')).toHaveText('BTC');
- await expect(page.locator('#chartAssetLogo')).toHaveAttribute('src',/\/coins\/BTC\.svg$/);
+ await expect(page.locator('#marketPickerList [data-market="xyz:NVDA"] .market-picker-tag')).toHaveText('HIP-3');
+ await page.locator('#marketPickerList [data-market="xyz:NVDA"]').click();
+ await expect(page.locator('#marketSymbol')).toHaveValue('xyz:NVDA');
+ await expect(page.locator('#marketPickerSymbol')).toHaveText('NVDA');
+ await expect(page.locator('#chartAssetLogo')).toHaveAttribute('src',/\/coins\/NVDA\.svg$/);
+ await expect(page.locator('#marketCanvas')).toHaveAttribute('data-chart-bars','2');
 });
 
 test('Hyperliquid spot picker uses token names and full spot universe',async({page})=>{
  await page.addInitScript(()=>{window.WebSocket=class{constructor(){this.readyState=1;setTimeout(()=>this.onopen?.(),0)}send(){}close(){this.readyState=3}}});
  await page.route('https://api.hyperliquid.xyz/info',async route=>{
   const body=route.request().postDataJSON();let data;
-  if(body.type==='meta')data={universe:[{name:'ETH',szDecimals:4,maxLeverage:50}]};
+  if(body.type==='perpDexs')data=[null];
+  else if(body.type==='allPerpMetas')data=[{collateralToken:0,universe:[{name:'ETH',szDecimals:4,maxLeverage:50}]}];
   else if(body.type==='metaAndAssetCtxs')data=[{universe:[{name:'ETH'}]},[{markPx:'2500',oraclePx:'2500',dayNtlVlm:'1',openInterest:'1',funding:'0',prevDayPx:'2490'}]];
   else if(body.type==='spotMeta')data={
    tokens:[
