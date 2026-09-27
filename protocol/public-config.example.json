@@ -1,0 +1,46 @@
+{
+  "protocol": "beltrix",
+  "schemaVersion": 1,
+  "revision": 0,
+  "network": "testnet",
+  "stage": "bootstrap",
+  "ownership": {
+    "owner": "0x1111111111111111111111111111111111111111",
+    "guardian": "0x2222222222222222222222222222222222222222"
+  },
+  "governance": {
+    "signers": [
+      "0x3333333333333333333333333333333333333333",
+      "0x4444444444444444444444444444444444444444",
+      "0x5555555555555555555555555555555555555555"
+    ],
+    "quorum": 2,
+    "timelockMs": 3600000
+  },
+  "oracle": {
+    "operators": [
+      "0x6666666666666666666666666666666666666666",
+      "0x7777777777777777777777777777777777777777",
+      "0x8888888888888888888888888888888888888888"
+    ],
+    "quorum": 2
+  },
+  "markets": [
+    {
+      "id": "BTC-PERP",
+      "status": "active"
+    }
+  ],
+  "settlements": [
+    {
+      "id": "hyperliquid",
+      "status": "live-bootstrap"
+    },
+    {
+      "id": "beltrix-native",
+      "status": "research"
+    }
+  ],
+  "generatedAt": "1970-01-01T00:00:00.000Z",
+  "_note": "Example placeholder addresses only. Do not use these addresses for production."
+}
