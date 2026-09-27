@@ -1,5 +1,5 @@
 import {marketRouting,canonicalAsset} from './market-normalizer.js';
-import {hyperliquidBook,orderlyBook,paradexBook,dydxBook,gmxMarketsInfo} from './public-data.js';
+import {hyperliquidBook,orderlyBook,paradexBook,dydxBook,gmxMarketsInfo,gmxTradingCapacity} from './public-data.js';
 import {liquiditySnapshot,estimateExecutionCost,bookHealth} from './liquidity.js';
 
 const BOOK_COLLECTORS=Object.freeze({
@@ -49,6 +49,20 @@ export async function collectAssetBooks(asset,{fetchImpl=fetch,notionalUsd=10000
  return Object.freeze(rows);
 }
 
+const gmxMatch=(rows,canonical)=>rows.find(row=>{
+ const haystack=JSON.stringify({
+  name:row?.name,
+  symbol:row?.symbol,
+  marketName:row?.marketName,
+  indexToken:row?.indexToken?.symbol,
+  longToken:row?.longToken?.symbol,
+  shortToken:row?.shortToken?.symbol
+ }).toUpperCase();
+ return haystack.includes(canonical);
+})||null;
+
+const gmxSymbol=row=>row?.symbol||row?.name||row?.marketName||null;
+
 export async function collectGmxState(asset,{chain='arbitrum',fetchImpl=fetch}={}){
  const canonical=canonicalAsset(asset);
  try{
@@ -65,6 +79,19 @@ export async function collectGmxState(asset,{chain='arbitrum',fetchImpl=fetch}={
    }).toUpperCase();
    return haystack.includes(canonical);
   });
+  const matched=gmxMatch(rows,canonical);
+  const symbol=gmxSymbol(matched);
+  let long=null,short=null,capacityError=null;
+  if(symbol){
+   const result=await Promise.allSettled([
+    gmxTradingCapacity(symbol,{direction:'long',chain,fetchImpl}),
+    gmxTradingCapacity(symbol,{direction:'short',chain,fetchImpl})
+   ]);
+   if(result[0].status==='fulfilled')long=result[0].value;
+   if(result[1].status==='fulfilled')short=result[1].value;
+   const errors=result.filter(x=>x.status==='rejected').map(x=>String(x.reason?.message||x.reason));
+   if(errors.length)capacityError=errors.join(' | ');
+  }
   return Object.freeze({
    venue:'gmx',
    asset:canonical,
@@ -72,8 +99,11 @@ export async function collectGmxState(asset,{chain='arbitrum',fetchImpl=fetch}={
    ok:true,
    marketCount:rows.length,
    matchingMarkets:matches.length,
+   matchedSymbol:symbol,
+   capacity:Object.freeze({long,short}),
+   capacityError,
    receivedAt:Date.now(),
-   note:'GMX is an oracle/liquidity-pool venue; CLOB depth and orderbook impact are intentionally not fabricated.'
+   note:'GMX uses oracle/pool execution. Capacity is JIT-aware indicative increase capacity, not a CLOB depth substitute or request-specific prepare-order guarantee.'
   });
  }catch(error){
   return Object.freeze({
@@ -83,6 +113,9 @@ export async function collectGmxState(asset,{chain='arbitrum',fetchImpl=fetch}={
    ok:false,
    marketCount:0,
    matchingMarkets:0,
+   matchedSymbol:null,
+   capacity:Object.freeze({long:null,short:null}),
+   capacityError:null,
    receivedAt:null,
    error:String(error?.message||error)
   });
