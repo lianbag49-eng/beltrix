@@ -28,8 +28,9 @@ test('Pearl Cobalt keeps trading controls available and market intelligence sync
  await expect(page.locator('.order-ticket')).toBeVisible();
  await expect(page.locator('.terminal-account')).toBeVisible();
  await expect(page.locator('[data-pc-intel="market"]')).not.toHaveText('—');
- const symbol=await page.locator('#marketPickerSymbol').innerText();
- await expect(page.locator('[data-pc-intel="market"]')).toContainText(symbol.trim());
+ await expect(page.locator('#marketPickerSymbol')).not.toHaveText('Select market');
+ const symbol=(await page.locator('#marketPickerSymbol').innerText()).trim();
+ await expect(page.locator('[data-pc-intel="market"]')).toContainText(symbol);
 });
 
 test('Pearl Cobalt mobile hides desktop rails and avoids horizontal overflow',async({page})=>{
