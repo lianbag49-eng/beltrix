@@ -331,7 +331,7 @@ html[data-beltrix-ui="pearl-cobalt"] .pc-order-card{
 }
 html[data-beltrix-ui="pearl-cobalt"] .pc-chart-card{padding:8px}
 html[data-beltrix-ui="pearl-cobalt"] .pc-book-card{padding:8px;border-left:1px solid var(--line)!important}
-html[data-beltrix-ui="pearl-cobalt"] .pc-order-card{padding:10px!important;margin:0!important;position:sticky;top:78px}
+html[data-beltrix-ui="pearl-cobalt"] .pc-order-card{padding:10px!important;margin:0!important;position:static}
 html[data-beltrix-ui="pearl-cobalt"] #marketCanvas{height:390px!important}
 html[data-beltrix-ui="pearl-cobalt"] .chart-studio{border-radius:9px!important;overflow:hidden}
 html[data-beltrix-ui="pearl-cobalt"] .market-stats{
