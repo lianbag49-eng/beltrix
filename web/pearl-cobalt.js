@@ -282,6 +282,25 @@ function decorateCore(){
  document.querySelector('.simple-trade-toolbar')?.classList.add('pc-product-toolbar');
 }
 
+function stabilizeMobileDisclosures(){
+ const mobile=matchMedia('(max-width:680px)');
+ for(const id of ['futuresChart','futuresLeverageDrawer','futuresExtra']){
+  const details=$(id);
+  const summary=details?.querySelector(':scope > summary');
+  if(!summary||summary.dataset.pcStableScroll==='1')continue;
+  summary.dataset.pcStableScroll='1';
+  summary.addEventListener('click',()=>{
+   if(!mobile.matches)return;
+   const before=window.scrollY;
+   const restore=()=>{
+    const scroller=document.scrollingElement||document.documentElement;
+    if(Math.abs(window.scrollY-before)>1)scroller.scrollTop=before;
+   };
+   requestAnimationFrame(()=>{restore();requestAnimationFrame(restore);});
+  });
+ }
+}
+
 function syncActiveMarketViews(){
  const active=currentMarketValue();
  const mark=safeText('marketMark','Live market');
@@ -315,7 +334,7 @@ function rebuildMarketViews(){
 }
 
 function mount(){
- mountHeader();mountSidebar();mountRightRail();mountMarketStrip();mountIntelligenceBar();decorateCore();
+ mountHeader();mountSidebar();mountRightRail();mountMarketStrip();mountIntelligenceBar();decorateCore();stabilizeMobileDisclosures();
  rebuildMarketViews();
 
  const select=$('marketSymbol');
