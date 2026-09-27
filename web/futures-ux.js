@@ -41,7 +41,7 @@ async function refreshSizing(){
   attemptedAt=Date.now();
   const coin=market.market.value,spot=!!market.market.spot,v=version,u=user,n=network;
   const c=new AbortController();controller=c;loading=true;const timer=setTimeout(()=>c.abort(),8000);
-  async function info(type){const r=await fetch(API[n],{method:'POST',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({type,user:u,...(type==='activeAssetData'?{coin}:{})}),signal:c.signal});if(!r.ok)throw Error('Size data unavailable');return r.json();}
+  async function info(type){const extra=type==='activeAssetData'?{coin}:type==='clearinghouseState'&&market?.market?.dex?{dex:market.market.dex}:{};const r=await fetch(API[n],{method:'POST',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({type,user:u,...extra}),signal:c.signal});if(!r.ok)throw Error('Size data unavailable');return r.json();}
   try{
     const [asset,perps]=await Promise.all([spot?Promise.resolve(null):info('activeAssetData'),spot?Promise.resolve(null):info('clearinghouseState')]);
     if(v!==version||u!==user||n!==network||coin!==market?.market?.value)return;
