@@ -71,8 +71,8 @@ function mountHeader(){
  const brand=top?.querySelector('.brand');
  if(!top||!brand)return;
 
- const nav=node('nav','pc-header-nav');
- nav.setAttribute('aria-label','Primary product areas');
+ const nav=node('div','pc-header-nav');
+ nav.setAttribute('role','group');nav.setAttribute('aria-label','Pearl Cobalt product shortcuts');
  const items=[
   ['Trade',()=>scrollToElement($('markets'))],
   ['Markets',openMarketPicker],
@@ -81,7 +81,7 @@ function mountHeader(){
   ['Protocol',()=>scrollToElement($('pcProtocolCard'))]
  ];
  for(const item of items){
-  const b=node('button','pc-header-link',item[0]);b.type='button';b.onclick=item[1];nav.append(b);
+  const b=node('button','pc-header-link',item[0]);b.type='button';b.setAttribute('aria-label','Open '+item[0]+' section');b.onclick=item[1];nav.append(b);
  }
  brand.after(nav);
 
@@ -130,11 +130,11 @@ function mountSidebar(){
  if($('pcSidebar'))return;
  const sidebarHtml=[
   '<div class="pc-rail-nav">',
-  '<button type="button" data-pc-action="trade" class="active"><span>⌁</span>Trade</button>',
-  '<button type="button" data-pc-action="markets"><span>◈</span>Markets</button>',
-  '<button type="button" data-pc-action="portfolio"><span>▣</span>Portfolio</button>',
-  '<button type="button" data-pc-action="analytics"><span>▥</span>Analytics</button>',
-  '<button type="button" data-pc-action="protocol"><span>⬡</span>Protocol</button>',
+  '<button type="button" data-pc-action="trade" class="active" aria-label="Open trading workspace"><span>⌁</span>Trade</button>',
+  '<button type="button" data-pc-action="markets" aria-label="Open market selector"><span>◈</span>Markets</button>',
+  '<button type="button" data-pc-action="portfolio" aria-label="Open trading portfolio"><span>▣</span>Portfolio</button>',
+  '<button type="button" data-pc-action="analytics" aria-label="Open market intelligence"><span>▥</span>Analytics</button>',
+  '<button type="button" data-pc-action="protocol" aria-label="Open protocol overview"><span>⬡</span>Protocol</button>',
   '</div>',
   '<section class="pc-watchlist">',
   '<header><div><small>MARKETS</small><strong>Watchlist</strong></div><button type="button" data-pc-add-market aria-label="Open market selector">+</button></header>',
