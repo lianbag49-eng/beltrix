@@ -19,6 +19,7 @@ jobs:
           node-version: '22'
       - run: npm ci
       - run: npm run test:intelligence
+      - run: npm run build:intelligence
       - run: npm run build
       - name: Ensure internal intelligence is excluded from public deploy
         run: |

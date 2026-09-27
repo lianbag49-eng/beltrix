@@ -82,6 +82,10 @@ export async function paradexMarkets({fetchImpl=fetch}={}){
  return json('https://api.prod.paradex.trade/v1/markets',{},fetchImpl);
 }
 
+export async function paradexMarketSummary(symbol,{fetchImpl=fetch}={}){
+ return json('https://api.prod.paradex.trade/v1/markets/summary?market='+encodeURIComponent(symbol),{},fetchImpl);
+}
+
 export async function dydxMarkets({fetchImpl=fetch}={}){
  return json('https://indexer.dydx.trade/v4/perpetualMarkets',{},fetchImpl);
 }
@@ -143,7 +147,7 @@ export async function gmxTradingCapacity(symbol,{direction='long',chain='arbitru
 export const READ_ONLY_COLLECTORS=Object.freeze({
  hyperliquid:Object.freeze({book:hyperliquidBook,markets:hyperliquidContexts}),
  orderly:Object.freeze({book:orderlyBook,markets:orderlyMarkets}),
- paradex:Object.freeze({book:paradexBook,markets:paradexMarkets}),
+ paradex:Object.freeze({book:paradexBook,markets:paradexMarkets,summary:paradexMarketSummary}),
  dydx:Object.freeze({book:dydxBook,markets:dydxMarkets}),
  gmx:Object.freeze({markets:gmxMarketsInfo,capacity:gmxTradingCapacity})
 });

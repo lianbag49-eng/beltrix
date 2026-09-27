@@ -14,6 +14,7 @@
  <button data-tab="overview" aria-pressed="true">Overview</button>
  <button data-tab="liquidity">Liquidity / Cost</button>
  <button data-tab="intelligence">Market Intelligence</button>
+ <button data-tab="history">Metrics History</button>
  <button data-tab="bd">BD / White-label</button>
  <button data-tab="fees">Fees / Revenue</button>
  <button data-tab="execution">Execution gates</button>
@@ -47,6 +48,25 @@
   <p class="note">Operational telemetry is descriptive only. This view does not rank or auto-select venues.</p>
   <div id="miSummary" class="summary-cards"></div>
   <div id="miTable"></div>
+ </section>
+ <section id="history" data-panel hidden>
+  <h2>Funding / Open Interest / Volume / API Health History</h2>
+  <p class="note">Snapshots are stored locally in this browser for up to 7 days. Venue-native units are kept when semantics are not safely comparable.</p>
+  <div class="controls">
+   <label>Auto snapshot
+    <select id="autoRefresh">
+     <option value="0">Off</option>
+     <option value="60000">Every 60 sec</option>
+     <option value="300000">Every 5 min</option>
+    </select>
+   </label>
+   <button id="clearHistory" type="button">Clear local history</button>
+  </div>
+  <div id="metricCurrent"></div>
+  <h2>API health history</h2>
+  <div id="healthHistory"></div>
+  <h2>Recent snapshots</h2>
+  <div id="historyTable"></div>
  </section>
  <section id="bd" data-panel hidden>
   <h2>BD / White-label pipeline</h2>
