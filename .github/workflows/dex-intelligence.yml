@@ -1,0 +1,27 @@
+name: Validate DEX Intelligence
+on:
+  pull_request:
+    paths:
+      - 'internal/dex-intelligence/**'
+      - 'package.json'
+      - '.github/workflows/dex-intelligence.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm run test:intelligence
+      - run: npm run build
+      - name: Ensure internal intelligence is excluded from public deploy
+        run: |
+          node web/prepare-site.mjs --root
+          test ! -e public/internal
+          test ! -e public/dex-intelligence
