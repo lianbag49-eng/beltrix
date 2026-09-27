@@ -55,7 +55,7 @@ function availability(){
  const locked=!!unresolved(),venueTradable=market?.venue==='hyperliquid'&&market?.tradable!==false;$('tradeReview').disabled=busy||!venueTradable||!client||!freshMarket(market)||locked;$('tradeConnect').disabled=busy||(!venueTradable&&!client);$('walletProvider').disabled=busy||!venueTradable;$('tradeSubmit').disabled=busy||(pending?.network==='mainnet'&&!$('tradeLiveAck').checked);
  $('tradeLeverageReview').disabled=busy||!venueTradable||!client||!freshMarket(market)||market?.market?.spot||!Number.isInteger(market?.market?.maxLeverage)||locked;
  $('tradeReconcile').hidden=!locked;$('tradeReconcile').disabled=busy;renderBuilder();
- for(const id of ['tradeType','tradeSide','tradeSize','tradePrice','tradeTrigger','tradeSlippage','tradeLeverage','tradeMarginMode','tradeTwapMinutes','tradeTwapRandom','marketNetwork','marketType','marketSymbol','marketVenue'])$(id).disabled=busy;
+ for(const id of ['tradeType','tradeSide','tradeSize','tradePrice','tradeTrigger','tradeSlippage','tradeLeverage','tradeMarginMode','tradeTwapMinutes','tradeTwapRandom','marketNetwork','marketType','marketSymbol'])$(id).disabled=busy;
  if(!venueTradable)$('marketType').disabled=true;
  $('tradeReduce').disabled=busy||market?.market?.spot||['Stop','TakeProfit'].includes($('tradeType').value);
  if(!venueTradable){
