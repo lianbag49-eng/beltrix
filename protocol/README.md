@@ -179,3 +179,22 @@ addresses. It also does not broadcast an HIP-3 deployment.
 
 The structural code is ready while production binding and testnet evidence
 remain explicit external dependencies.
+
+
+## Phase 10 — BELTRIX-native isolated risk simulation
+
+Phase 10 adds a pure, non-custodial research simulator for the future
+BELTRIX-native margin / liquidation engine.
+
+Implemented:
+
+- isolated-margin position model
+- initial / maintenance margin checks
+- long / short liquidation price
+- funding cashflow and funding caps
+- liquidation fee / insurance draw / residual deficit
+- price-shock stress grids
+
+This is **not** a production margin engine. Cross-margin, portfolio netting,
+partial liquidation, ADL, bad-debt policy, dynamic risk tiers and external risk
+review remain explicit readiness blockers.
