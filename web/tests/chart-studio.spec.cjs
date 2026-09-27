@@ -24,11 +24,14 @@ async function setup(page){
 async function expand(page){await page.locator('#cleanOpenChart').click();await expect(page.locator('#chartFullscreen')).toBeVisible();await expect(page.locator('#marketCanvas')).toBeVisible();}
 async function stamp(page){await page.evaluate(()=>{if(document.getElementById('chartPreviewStamp'))return;const d=document.createElement('div');d.id='chartPreviewStamp';d.textContent='DESIGN PREVIEW · SAMPLE DATA · NO REAL ACCOUNT';d.style.cssText='font:9px system-ui;color:#ceb480;background:#201b13;padding:7px 10px;text-align:center;letter-spacing:.4px';document.querySelector('.top').before(d);});}
 
-test('one visible navigation; secondary routes remain accessible',async({page})=>{
- const {errors}=await setup(page);await expect(page.locator('.app>.nav')).toBeHidden();await expect(page.locator('.bottom-nav')).toBeVisible();
- expect(await page.locator('nav').evaluateAll(ns=>ns.filter(n=>n.getClientRects().length).length)).toBe(1);
+test('one desktop product navigation; secondary routes remain accessible',async({page})=>{
+ const {errors}=await setup(page);
+ await expect(page.locator('.app>.nav')).toBeHidden();
+ await expect(page.locator('.bottom-nav')).toBeHidden();
+ await expect(page.locator('#pcSidebar')).toBeVisible();
+ await expect(page.getByRole('button',{name:'Trade',exact:true})).toBeVisible();
  await page.locator('#cleanMore').click();await expect(page.locator('#cleanMoreDialog')).toBeVisible();await page.locator('[data-clean-route=settings]').click();await expect(page.locator('body')).toHaveAttribute('data-page','settings');
- await page.locator('.bottom-nav [data-page=markets]').click();await expect(page.locator('body')).toHaveAttribute('data-page','markets');expect(errors).toEqual([]);
+ await page.getByRole('button',{name:'Trade',exact:true}).click();await expect(page.locator('body')).toHaveAttribute('data-page','markets');expect(errors).toEqual([]);
 });
 test('folding really draws candles and saved indicator choices restore',async({page})=>{
  await setup(page);await page.setViewportSize({width:390,height:844});await expect(page.locator('#marketCanvas')).toBeHidden();
