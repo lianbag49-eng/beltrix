@@ -84,7 +84,7 @@ async function loadSymbols(){
    const meta=await info({type:'spotMeta'},abort.signal);
    rows=normalizeHyperliquidMarkets(meta,'spot').map(m=>enrichHyperliquidRow({
     value:m.symbol,label:`${m.base}/${m.quote}`,asset:m.nativeId,szDecimals:m.raw?.szDecimals,
-    spot:true,maxLeverage:null,onlyIsolated:false,delisted:m.raw?.isDelisted,dex:'',raw:m.raw,base:m.base,quote:m.quote
+    spot:true,maxLeverage:null,onlyIsolated:false,delisted:m.raw?.isDelisted,dex:'',tradeSupported:true,raw:m.raw,base:m.base,quote:m.quote
    }));
   }else{
    try{
@@ -95,7 +95,7 @@ async function loadSymbols(){
     const meta=await info({type:'meta'},abort.signal);
     rows=normalizeHyperliquidMarkets(meta,'perp').map(m=>enrichHyperliquidRow({
      value:m.symbol,label:`${m.symbol} / ${m.quote} PERP`,asset:m.nativeId,szDecimals:m.raw?.szDecimals,
-     spot:false,maxLeverage:m.maxLeverage,onlyIsolated:m.raw?.onlyIsolated,delisted:m.raw?.isDelisted,dex:'',raw:m.raw,base:m.base,quote:m.quote
+     spot:false,maxLeverage:m.maxLeverage,onlyIsolated:m.raw?.onlyIsolated,delisted:m.raw?.isDelisted,dex:'',tradeSupported:true,raw:m.raw,base:m.base,quote:m.quote
     }));
    }
   }
