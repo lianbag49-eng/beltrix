@@ -131,40 +131,6 @@ function renderWatchlist(sidebar){
  if(!rows.length)list.innerHTML='<p class="pc-empty">Markets are loading…</p>';
 }
 
-function mountWalletSurfaceNav(){
- if($('pcWalletSurfaceNav'))return;
- const nav=node('nav','pc-wallet-surface-nav');
- nav.id='pcWalletSurfaceNav';
- nav.setAttribute('aria-label','Wallet workspace');
- const rows=[
-  ['wallet','Wallet'],
-  ['explore','Explore'],
-  ['defi','DeFi'],
-  ['boost','Boost'],
-  ['markets','Trade']
- ];
- for(const [page,label] of rows){
-  const b=node('button','pc-wallet-surface-link',label);
-  b.type='button';
-  b.dataset.pcWalletPage=page;
-  b.onclick=()=>window.openPage?.(page);
-  nav.append(b);
- }
- const wallet=$('wallet');
- if(wallet)wallet.before(nav);
-}
-function syncWalletSurfaceNav(page=document.body.dataset.page){
- const nav=$('pcWalletSurfaceNav');
- if(!nav)return;
- const walletPage=['wallet','explore','defi','boost'].includes(page);
- nav.hidden=!walletPage;
- nav.querySelectorAll('[data-pc-wallet-page]').forEach(b=>{
-  const active=b.dataset.pcWalletPage===page;
-  b.classList.toggle('active',active);
-  b.setAttribute('aria-current',active?'page':'false');
- });
-}
-
 function mountSidebar(){
  if($('pcSidebar'))return;
  const sidebarHtml=[
@@ -198,11 +164,43 @@ function mountSidebar(){
  renderWatchlist(sidebar);
 }
 
+function mountWalletSurfaceNav(){
+ if($('pcWalletSurfaceNav'))return;
+ const nav=node('nav','pc-wallet-surface-nav');
+ nav.id='pcWalletSurfaceNav';
+ nav.setAttribute('aria-label','Wallet workspace');
+ const rows=[
+  ['wallet','Wallet'],
+  ['explore','Explore'],
+  ['defi','DeFi'],
+  ['boost','Boost'],
+  ['markets','Trade']
+ ];
+ for(const [page,label] of rows){
+  const b=node('button','pc-wallet-surface-link',label);
+  b.type='button';
+  b.dataset.pcWalletRoute=page;
+  b.onclick=()=>window.openPage?.(page);
+  nav.append(b);
+ }
+ const wallet=$('wallet');
+ if(wallet)wallet.before(nav);
+}
+
 function syncPageShell(page=document.body.dataset.page){
  const trading=page==='markets';
+ const walletPage=['wallet','explore','defi','boost'].includes(page);
  $('pcSidebar')?.classList.toggle('pc-hidden',!trading);
  $('pcRightRail')?.classList.toggle('pc-hidden',!trading);
- syncWalletSurfaceNav(page);
+ const nav=$('pcWalletSurfaceNav');
+ if(nav){
+  nav.hidden=!walletPage;
+  nav.querySelectorAll('[data-pc-wallet-route]').forEach(b=>{
+   const active=b.dataset.pcWalletRoute===page;
+   b.classList.toggle('active',active);
+   b.setAttribute('aria-current',active?'page':'false');
+  });
+ }
 }
 
 function mountRightRail(){
