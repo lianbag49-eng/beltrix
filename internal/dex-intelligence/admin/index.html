@@ -6,10 +6,13 @@
 <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-<header><div><small>INTERNAL</small><h1>BELTRIX DEX Intelligence</h1><p>Competitive venues, BD, liquidity and infrastructure research.</p></div><button id="refresh">Refresh public data</button></header>
+<header>
+ <div><small>INTERNAL · READ ONLY</small><h1>BELTRIX DEX Intelligence</h1><p>Asset-first competitive venues, BD, liquidity, execution cost and infrastructure research.</p></div>
+ <button id="refresh">Refresh public data</button>
+</header>
 <nav>
  <button data-tab="overview" aria-pressed="true">Overview</button>
- <button data-tab="liquidity">Liquidity</button>
+ <button data-tab="liquidity">Liquidity / Cost</button>
  <button data-tab="bd">BD / White-label</button>
  <button data-tab="fees">Fees / Revenue</button>
  <button data-tab="execution">Execution gates</button>
@@ -17,10 +20,36 @@
 </nav>
 <main>
  <section id="overview" data-panel></section>
- <section id="liquidity" data-panel hidden><h2>Liquidity comparison</h2><p class="note">Normalized public-book metrics. Unsupported venues remain N/A.</p><div id="liquidityTable"></div></section>
- <section id="bd" data-panel hidden><h2>BD / White-label</h2><div id="bdTable"></div></section>
- <section id="fees" data-panel hidden><h2>Fees / Revenue</h2><div id="feesTable"></div></section>
- <section id="execution" data-panel hidden><h2>Execution venue qualification</h2><p class="note">No new venue is enabled for BELTRIX execution until every gate has evidence.</p><div id="executionTable"></div></section>
+ <section id="liquidity" data-panel hidden>
+  <h2>Asset-first liquidity comparison</h2>
+  <p class="note">CLOB venues use normalized public books. GMX is kept as a pool/oracle model and is never represented as a fake orderbook.</p>
+  <div class="controls">
+   <label>Asset<select id="assetSelect"><option>BTC</option><option>ETH</option><option>SOL</option></select></label>
+   <label>Order notional (USD)<input id="notional" type="number" min="100" step="100" value="10000"></label>
+  </div>
+  <details class="fee-box">
+   <summary>Account fee assumptions (bps, optional)</summary>
+   <p class="note">Leave blank unless the applicable account/tier fee is known. Effective cost is not calculated from stale hard-coded fees.</p>
+   <div class="fee-grid">
+    <label>Hyperliquid<input data-fee="hyperliquid" type="number" min="0" step="0.01" placeholder="bps"></label>
+    <label>Orderly<input data-fee="orderly" type="number" min="0" step="0.01" placeholder="bps"></label>
+    <label>Paradex<input data-fee="paradex" type="number" min="0" step="0.01" placeholder="bps"></label>
+    <label>dYdX<input data-fee="dydx" type="number" min="0" step="0.01" placeholder="bps"></label>
+   </div>
+  </details>
+  <p id="liquidityStatus" class="note"></p>
+  <div id="liquidityTable"></div>
+  <div id="gmxState" class="pool-state"></div>
+ </section>
+ <section id="bd" data-panel hidden>
+  <h2>BD / White-label pipeline</h2>
+  <p class="note">Stages reflect BELTRIX internal research state. They do not imply outreach or a commercial partnership unless explicitly recorded.</p>
+  <div id="bdPipeline"></div>
+  <h2>Venue capability matrix</h2>
+  <div id="bdTable"></div>
+ </section>
+ <section id="fees" data-panel hidden><h2>Fees / Revenue</h2><p class="note">Commercial models are separated from live liquidity so account-specific fees can be applied explicitly.</p><div id="feesTable"></div></section>
+ <section id="execution" data-panel hidden><h2>Execution venue qualification</h2><p class="note">No competitor venue is enabled for execution until every gate has evidence. Public BELTRIX execution remains isolated.</p><div id="executionTable"></div></section>
  <section id="integration" data-panel hidden><h2>Integration inventory</h2><div id="integrationTable"></div></section>
 </main>
 <script type="module" src="./app.js"></script>
