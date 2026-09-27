@@ -16,7 +16,7 @@ test('market intelligence venue ids are unique and source-backed',()=>{
 
 test('Hyperliquid remains the public core while competitors remain gated',()=>{
  assert.equal(byId('hyperliquid').bd.status,'active-core');
- for(const id of ['orderly','gmx','dydx','paradex','drift','aevo']){
+ for(const id of ['orderly','gmx','dydx','paradex','aster','drift','aevo']){
   assert.equal(venueExecutionState(id).eligible,false);
   assert.ok(venueExecutionState(id).missing.length>0);
  }
