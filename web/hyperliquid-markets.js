@@ -31,20 +31,27 @@ export async function loadHyperliquidMarkets({network='mainnet',marketType='perp
  }
  const perps=await json(cfg.http,{type:'perpDexs'},signal,fetchImpl);
  const dexRows=Array.isArray(perps)?perps:[null];
+ const jobs=dexRows.map((row,dexIndex)=>({dexIndex,dex:dexIndex===0?'':String(row?.name||'').trim()})).filter(x=>x.dexIndex===0||x.dex);
  const out=[];
- for(let dexIndex=0;dexIndex<dexRows.length;dexIndex++){
-  const row=dexRows[dexIndex];
-  const dex=dexIndex===0?'':String(row?.name||'').trim();
-  if(dexIndex>0&&!dex)continue;
-  let meta;
-  try{meta=await json(cfg.http,{type:'meta',...(dex?{dex}:{})},signal,fetchImpl)}catch{continue}
-  for(let i=0;i<(meta?.universe||[]).length;i++){
-   const x=meta.universe[i];
-   if(x?.isDelisted)continue;
-   const rawName=String(x.name||'');
-   const display=rawName.includes(':')?rawName.split(':').at(-1):rawName;
-   const asset=dexIndex===0?i:100000+dexIndex*10000+i;
-   out.push(Object.freeze({value:rawName,label:display+' / USDC'+(dex?' · '+dex:''),displaySymbol:display,base:display,quote:'USDC',asset,szDecimals:x.szDecimals,spot:false,maxLeverage:x.maxLeverage,onlyIsolated:x.onlyIsolated,dex,dexIndex,logo:hyperliquidLogoUrl(display),raw:x}));
+ const concurrency=6;
+ for(let start=0;start<jobs.length;start+=concurrency){
+  const chunk=jobs.slice(start,start+concurrency);
+  const metas=await Promise.all(chunk.map(async job=>{
+   try{
+    const meta=await json(cfg.http,{type:'meta',...(job.dex?{dex:job.dex}:{})},signal,fetchImpl);
+    return {job,meta};
+   }catch{return {job,meta:null}}
+  }));
+  for(const {job,meta} of metas){
+   if(!meta)continue;
+   for(let i=0;i<(meta?.universe||[]).length;i++){
+    const x=meta.universe[i];
+    if(x?.isDelisted)continue;
+    const rawName=String(x.name||'');
+    const display=rawName.includes(':')?rawName.split(':').at(-1):rawName;
+    const asset=job.dexIndex===0?i:100000+job.dexIndex*10000+i;
+    out.push(Object.freeze({value:rawName,label:display+' / USDC'+(job.dex?' · '+job.dex:''),displaySymbol:display,base:display,quote:'USDC',asset,szDecimals:x.szDecimals,spot:false,maxLeverage:x.maxLeverage,onlyIsolated:x.onlyIsolated,dex:job.dex,dexIndex:job.dexIndex,logo:hyperliquidLogoUrl(display),raw:x}));
+   }
   }
  }
  return out;
