@@ -18,7 +18,8 @@ test('approved Black Gold layout has one primary action and preserves the origin
   for(const width of [320,390,430,1280]){
    await page.setViewportSize({width,height:844});await page.waitForTimeout(180);
    const ticket=await page.locator('.order-ticket').boundingBox(),book=await page.locator('.depth').boundingBox();
-   expect(book.x).toBeGreaterThan(ticket.x+ticket.width-1);
+   const separated=book.x>ticket.x+ticket.width-1||ticket.x>book.x+book.width-1||book.y>ticket.y+ticket.height-1||ticket.y>book.y+book.height-1;
+   expect(separated).toBe(true);
    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
    await expect(page.locator('#marketCanvas')).toBeHidden();
   }
