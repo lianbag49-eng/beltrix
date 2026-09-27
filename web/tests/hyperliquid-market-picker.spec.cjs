@@ -25,7 +25,7 @@ test('Hyperliquid market picker exposes validator and HIP-3 markets with logos a
  });
  await page.goto('/web/');
  await page.getByRole('button',{name:'Trade',exact:true}).click();
- await expect(page.locator('#marketPickerButton')).toContainText('BTC');
+ await expect(page.locator('#marketPickerButton')).toContainText('ETH');
  await page.locator('#marketPickerButton').click();
  await expect(page.locator('#marketPickerCount')).toHaveText('3 markets');
  await expect(page.locator('.hl-market-row')).toHaveCount(3);
