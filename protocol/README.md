@@ -142,3 +142,21 @@ recovery, testnet deploy/trading E2E, liquidation review and fee reconciliation.
 
 The goal is to make Hyperliquid a replaceable / inherited settlement substrate,
 not the owner of BELTRIX market semantics.
+
+
+## Phase 8 — independent oracle operators and ownership transition
+
+Phase 8 adds:
+
+- signed EVM oracle observations
+- configured oracle operator sets
+- signature recovery / operator verification
+- distinct-operator quorum
+- stale observation filtering
+- source-deviation failure handling
+- multisig / timelock ownership transition planning
+- explicit developer-permission revocation step
+- Phase 8 readiness gates
+
+The code remains deployment-neutral. No production multisig, timelock, oracle
+operator key or onchain ownership is created by these modules.

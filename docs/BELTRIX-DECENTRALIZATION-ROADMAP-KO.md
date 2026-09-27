@@ -228,8 +228,8 @@ Native launch 전에 최소한 다음이 필요합니다.
 Stage 0  Product Bootstrap        ✅
 Stage 1  BELTRIX Control Plane    ✅
 Stage 2  HIP-3 Hybrid Plan        🟡 Research / Validation
-Stage 3  Decentralized Ownership  ⬜
-Stage 4  Oracle Network           ⬜
+Stage 3  Decentralized Ownership  🟡 Phase 8 Core
+Stage 4  Oracle Network           🟡 Phase 8 Core
 Stage 5  Margin / Liquidation     ⬜
 Stage 6  Native Settlement        ⬜
 Stage 7  Native Launch            ⬜
@@ -246,3 +246,69 @@ Stage 7  Native Launch            ⬜
 
 > **Hyperliquid가 없어도 BELTRIX Protocol 자체가 시장 상태와 settlement를
 > 유지할 수 있는 decentralized derivatives infrastructure.**
+
+
+---
+
+# Phase 8 — Oracle Operators & Protocol Ownership
+
+Phase 8에서는 BELTRIX 자체 정책을 한 명의 개발자 서버가 결정하지 않도록
+두 개의 탈중앙화 기반을 코드로 추가합니다.
+
+## Signed Oracle Operator Quorum
+
+각 Oracle Operator는 자신의 EVM key로 다음 observation에 서명합니다.
+
+- BELTRIX market id
+- price
+- timestamp
+- nonce
+- operator address
+
+BELTRIX Oracle Network는:
+
+- 등록된 operator인지 확인
+- EVM signature를 복구해 signer 검증
+- operator별 최신 nonce만 사용
+- stale observation 제거
+- 최소 quorum 확인
+- source간 deviation 검사
+- median price consensus
+
+를 거칩니다.
+
+현재 구현은 operator network의 **offchain verification core**이며,
+실제 운영 operator와 key custody는 아직 배포하지 않습니다.
+
+## Multisig / Timelock Ownership Transition
+
+BELTRIX protocol config를 developer key에서 직접 관리하지 않고 다음으로
+이전할 수 있도록 ownership transition plan을 정의합니다.
+
+```text
+Developer owner
+      ↓
+Reviewed Multisig
+      ↓
+Timelock policy
+      ↓
+Scoped protocol roles
+      ↓
+Direct developer permission revocation
+      ↓
+Public config disclosure
+```
+
+이 plan은 실제 chain ownership을 변경하지 않는 **unsigned / research-only**
+계획입니다.
+
+현재 실제 배포 전에 남은 evidence:
+
+- production multisig address
+- signer identity / separation review
+- timelock duration
+- emergency guardian
+- least-privilege role map
+- ownership transition dry-run
+- recovery runbook
+- public configuration disclosure
