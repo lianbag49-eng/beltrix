@@ -38,6 +38,34 @@ export function normalizeHyperliquidMarkets(meta,marketType='perp'){
  })).filter(x=>!x.raw?.isDelisted);
 }
 
+
+export function normalizeHyperliquidAllPerpMarkets(allMetas,perpDexs){
+ const metas=Array.isArray(allMetas)?allMetas:[];
+ const dexs=Array.isArray(perpDexs)?perpDexs:[];
+ const out=[];
+ metas.forEach((meta,dexIndex)=>{
+  const dex=dexIndex===0?'':String(dexs[dexIndex]?.name||'').trim();
+  for(const [marketIndex,row] of (meta?.universe||[]).entries()){
+   if(row?.isDelisted)continue;
+   let symbol=String(row?.name||'').trim();
+   if(!symbol)continue;
+   if(dex&& !symbol.includes(':'))symbol=dex+':'+symbol;
+   const nativeId=dexIndex===0?marketIndex:100000+dexIndex*10000+marketIndex;
+   out.push(normalizeVenueMarket({
+    venue:'hyperliquid',
+    symbol,
+    base:symbol,
+    quote:'USDC',
+    marketType:'perp',
+    nativeId,
+    maxLeverage:row.maxLeverage,
+    raw:{...row,dex,dexIndex,marketIndex,collateralToken:meta?.collateralToken??null}
+   }));
+  }
+ });
+ return out;
+}
+
 export const hyperliquidVenue=defineVenueAdapter({
  id:'hyperliquid',
  label:'Hyperliquid',
