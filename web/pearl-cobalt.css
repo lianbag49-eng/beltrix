@@ -135,7 +135,7 @@ html[data-beltrix-ui="pearl-cobalt"] .chart-heading,html[data-beltrix-ui="pearl-
 html[data-beltrix-ui="pearl-cobalt"] .chart-heading-actions button,html[data-beltrix-ui="pearl-cobalt"] #chartSettingsToggle,html[data-beltrix-ui="pearl-cobalt"] .chart-controls button,html[data-beltrix-ui="pearl-cobalt"] .chart-indicator-settings{background:var(--card2)!important;border-color:var(--line)!important;color:var(--text)!important}
 html[data-beltrix-ui="pearl-cobalt"] .chart-indicator-chips [aria-pressed="true"],html[data-beltrix-ui="pearl-cobalt"] .chart-intervals [aria-pressed="true"]{background:var(--pc-accent-soft)!important;border-color:var(--pc-accent-border)!important;color:var(--pc-accent)!important}
 html[data-beltrix-ui="pearl-cobalt"] .bottom-nav{background:var(--pc-header)!important;border-color:var(--line)!important;backdrop-filter:blur(18px)}
-@media(min-width:901px){html[data-beltrix-ui="pearl-cobalt"] .bottom-nav{display:none!important}}
+@media(min-width:901px){html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .bottom-nav,html[data-beltrix-ui="pearl-cobalt"] body[data-page="swap"] .bottom-nav,html[data-beltrix-ui="pearl-cobalt"] body[data-page="settings"] .bottom-nav{display:none!important}}
 html[data-beltrix-ui="pearl-cobalt"] .bottom-nav button.active{color:var(--pc-accent)!important}
 html[data-beltrix-ui="pearl-cobalt"] dialog{background:var(--card);border-color:var(--line);color:var(--text)}
 html[data-beltrix-ui="pearl-cobalt"] .toast{background:var(--card);border-color:var(--line);color:var(--text);box-shadow:var(--pc-shadow)}
