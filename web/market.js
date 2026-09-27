@@ -9,7 +9,7 @@ const $=id=>document.getElementById(id);
 const marketPicker=createMarketPicker($('marketSymbol'));
 const intervals={'1m':60000,'5m':300000,'15m':900000,'1h':3600000,'4h':14400000,'1d':86400000};
 let generation=0,controller,socket,retry,heartbeat,lastUpdate=0,candles=[],book=null,trades=[],lastTradeTime=0,streamReceived=0,dirty=false;
-let marketMeta=[],assetContext=null,contextReceived=0,contextTimer,candleFeed='snapshot';
+let marketMeta=[],assetContext=null,contextReceived=0,contextTimer,candleFeed='snapshot',catalogSignature='';
 function endpoint(){return hyperliquidNetwork($('marketNetwork').value).http}
 function selection(){return marketMeta.find(x=>x.value===$('marketSymbol').value)}
 function emit(){window.dispatchEvent(new CustomEvent('beltrix:market',{detail:{network:$('marketNetwork').value,market:selection(),book,received:streamReceived,context:assetContext,contextReceived}}))}
@@ -70,19 +70,42 @@ async function selectMarket(){
  socket.onerror=()=>status('Live connection error');
  }catch(e){if(token===generation)status('Market request failed · Refresh to retry')}finally{clearTimeout(timeout)}
 }
+function buildMarketRows(meta,mode){
+ return normalizeHyperliquidMarkets(meta,mode).map(m=>{
+  const base=m.base||m.symbol,quote=m.quote||'USDC',displaySymbol=hyperliquidDisplaySymbol(base);
+  return {value:m.symbol,label:mode==='spot'?displaySymbol+'/'+quote:displaySymbol+' / '+quote+' PERP',base,quote,displaySymbol,fullName:m.raw?.baseToken?.fullName||m.raw?.baseToken?.name||displaySymbol,logo:hyperliquidLogoUrl(m),asset:m.nativeId,szDecimals:m.raw?.szDecimals,spot:m.marketType==='spot',maxLeverage:m.maxLeverage,onlyIsolated:m.raw?.onlyIsolated,delisted:m.raw?.isDelisted};
+ });
+}
+function catalogKey(rows){return rows.map(x=>x.value+'|'+x.label+'|'+(x.maxLeverage??'')).join(';')}
+function applyCatalog(rows,{preserve=true}={}){
+ const select=$('marketSymbol'),previous=preserve?select.value:'';
+ marketMeta=rows;select.replaceChildren();rows.forEach(r=>select.add(new Option(r.label,r.value)));
+ if(previous&&rows.some(x=>x.value===previous))select.value=previous;
+ else if($('marketType').value!=='spot'&&rows.some(x=>x.value==='ETH'))select.value='ETH';
+ else if($('marketType').value==='spot'&&rows.some(x=>x.displaySymbol==='HYPE'))select.value=rows.find(x=>x.displaySymbol==='HYPE').value;
+ else if(rows[0])select.value=rows[0].value;
+ catalogSignature=catalogKey(rows);marketPicker.update(rows);
+ return !!previous&&previous===select.value;
+}
+async function refreshCatalog(){
+ if(document.hidden)return;
+ const mode=$('marketType').value,network=$('marketNetwork').value;
+ const abort=new AbortController(),timeout=setTimeout(()=>abort.abort(),10000);
+ try{
+  const meta=await info({type:mode==='spot'?'spotMeta':'meta'},abort.signal);
+  if(network!==$('marketNetwork').value||mode!==$('marketType').value)return;
+  const rows=buildMarketRows(meta,mode),signature=catalogKey(rows);
+  if(signature===catalogSignature)return;
+  const kept=applyCatalog(rows,{preserve:true});
+  if(!kept)await selectMarket();
+ }finally{clearTimeout(timeout)}
+}
 async function loadSymbols(){
  ++generation;cleanup();marketMeta=[];book=null;assetContext=null;contextReceived=0;paintContext();streamReceived=0;trades=[];lastTradeTime=0;lastUpdate=0;candleFeed='snapshot';$('marketPrice').textContent='—';$('marketSymbol').replaceChildren();emit();paintBook();candles=[];draw();status('Loading markets');
  const mode=$('marketType').value,token=generation;const abort=new AbortController(),timeout=setTimeout(()=>abort.abort(),15000);
- try{const meta=await info({type:mode==='spot'?'spotMeta':'meta'},abort.signal);if(token!==generation)return;
- const rows=normalizeHyperliquidMarkets(meta,mode).map(m=>{
-  const base=m.base||m.symbol,quote=m.quote||'USDC',displaySymbol=hyperliquidDisplaySymbol(base);
-  return {value:m.symbol,label:mode==='spot'?`${displaySymbol}/${quote}`:`${displaySymbol} / ${quote} PERP`,base,quote,displaySymbol,fullName:m.raw?.baseToken?.fullName||m.raw?.baseToken?.name||displaySymbol,logo:hyperliquidLogoUrl(m),asset:m.nativeId,szDecimals:m.raw?.szDecimals,spot:m.marketType==='spot',maxLeverage:m.maxLeverage,onlyIsolated:m.raw?.onlyIsolated,delisted:m.raw?.isDelisted};
- });
- marketMeta=rows;rows.forEach(r=>$('marketSymbol').add(new Option(r.label,r.value)));
- if(mode!=='spot'&&rows.some(x=>x.value==='ETH'))$('marketSymbol').value='ETH';
- else if(mode==='spot'&&rows.some(x=>x.displaySymbol==='HYPE'))$('marketSymbol').value=rows.find(x=>x.displaySymbol==='HYPE').value;
- else if(rows[0])$('marketSymbol').value=rows[0].value;
- marketPicker.update(rows);await selectMarket();
+ try{
+  const meta=await info({type:mode==='spot'?'spotMeta':'meta'},abort.signal);if(token!==generation)return;
+  applyCatalog(buildMarketRows(meta,mode),{preserve:false});await selectMarket();
  }catch{if(token===generation)status('Market list failed · Refresh to retry')}finally{clearTimeout(timeout)}
 }
 $('bookDepth').onchange=selectMarket;$('marketNetwork').onchange=loadSymbols;$('marketType').onchange=loadSymbols;$('marketSymbol').onchange=()=>{marketPicker.sync();selectMarket()};$('marketInterval').onchange=selectMarket;$('marketRefresh').onclick=()=> $('marketSymbol').options.length?selectMarket():loadSymbols();
@@ -96,4 +119,4 @@ setInterval(()=>{
  else if(streamReceived)status('Stale order book · Orders locked');
  if(streamReceived)emit();
 },1000);
-window.addEventListener('pagehide',()=>{++generation;cleanup()});window.addEventListener('pageshow',e=>{if(e.persisted)loadSymbols()});loadSymbols();
+window.addEventListener('pagehide',()=>{++generation;cleanup()});window.addEventListener('pageshow',e=>{if(e.persisted)loadSymbols()});setInterval(()=>refreshCatalog().catch(()=>{}),300000);loadSymbols();
