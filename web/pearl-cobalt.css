@@ -506,3 +506,22 @@ html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] #boost.page.active{
 @media(max-width:900px){
  html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav{display:none!important}
 }
+
+
+/* Single desktop Wallet workspace navigation. */
+@media(min-width:901px){
+ html[data-beltrix-ui="pearl-cobalt"] #pcWalletSurfaceNav:not([hidden]){
+  display:flex!important;grid-column:1/-1!important;grid-row:2!important;
+  width:min(100%,1180px)!important;margin:0 auto 12px!important;
+  position:sticky!important;top:88px!important;z-index:30!important;
+ }
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="wallet"] #wallet.page.active,
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="explore"] #explore.page.active,
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] #defi.page.active,
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] #boost.page.active{
+  grid-column:1/-1!important;grid-row:3!important;margin-top:0!important;
+ }
+}
+@media(max-width:900px){
+ html[data-beltrix-ui="pearl-cobalt"] #pcWalletSurfaceNav{display:none!important}
+}
