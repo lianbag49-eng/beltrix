@@ -1,3 +1,4 @@
+const style=document.createElement('link');style.rel='stylesheet';style.href=new URL('./hyperliquid-market-picker.css',import.meta.url).href;document.head.append(style);
 import {hyperliquidFallbackText} from './hyperliquid-market-catalog.js';
 
 const $=id=>document.getElementById(id);
