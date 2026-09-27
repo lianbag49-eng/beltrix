@@ -157,3 +157,53 @@ optional auto-snapshot timer is active.
 
 The history module is intentionally storage-agnostic so the same normalized
 snapshot format can later be moved to a database-backed collector.
+
+
+## Phase 5 — alerts, trend analysis and server persistence readiness
+
+Phase 5 adds operational monitoring and separates collection from storage.
+
+### Venue health alerts
+
+The internal alert engine can surface:
+
+- collector unavailability
+- stale data
+- elevated / critical API latency
+- degraded API success ratio
+- simulated partial fills
+- material ±25 bps depth drops
+
+These alerts are descriptive operational conditions. They do not rank venues
+and do not automatically switch execution.
+
+### Trend views
+
+The internal Admin can chart locally stored history for:
+
+- funding
+- normalized open-interest USD where available
+- normalized 24h-volume USD where available
+- API latency
+- spread
+- ±25 bps depth
+
+Venue-native metrics that are not safely normalized remain excluded from USD
+trend charts rather than being mislabeled.
+
+### BD event bridge
+
+Warning and critical Market Intelligence alerts can be translated into internal
+BD follow-up events. This creates a single workflow between technical health and
+partnership/infrastructure review without claiming that external outreach
+occurred.
+
+### Server persistence readiness
+
+A PostgreSQL schema, storage repository contract, injected Postgres adapter and
+reusable collector runner are included under the internal module.
+
+They are **deployment-ready building blocks, not a claim that a production
+database or 24/7 collector is already active**.
+
+See `SERVER-COLLECTOR.md` for the intended Neon/PostgreSQL deployment path.
