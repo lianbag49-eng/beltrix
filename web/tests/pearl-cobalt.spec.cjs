@@ -199,3 +199,23 @@ test('Wallet and USDT surfaces inherit Pearl Cobalt light and dark tokens',async
  }));
  expect(dark.background).not.toBe(light.background);
 });
+
+
+test('USDT wallet opens inside the Pearl Cobalt theme system',async({page})=>{
+ await page.goto('/web/#wallet');
+ await expect(page.locator('#walletUsdtEntry')).toBeVisible();
+ await page.locator('#walletUsdtEntry').click();
+ await expect(page.locator('#usdtDialog')).toBeVisible();
+ const light=await page.locator('#usdtDialog').evaluate(el=>({
+  bg:getComputedStyle(el).backgroundColor,
+  color:getComputedStyle(el).color,
+  border:getComputedStyle(el).borderColor
+ }));
+ expect(light.bg).not.toBe('rgb(22, 21, 19)');
+ await page.locator('#usdtClose').click();
+ await page.locator('#pcThemeToggle').click();
+ await page.locator('#walletUsdtEntry').click();
+ await expect(page.locator('#usdtDialog')).toBeVisible();
+ const dark=await page.locator('#usdtDialog').evaluate(el=>getComputedStyle(el).backgroundColor);
+ expect(dark).not.toBe(light.bg);
+});
