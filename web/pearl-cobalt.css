@@ -476,3 +476,21 @@ html[data-beltrix-ui="pearl-cobalt"] .w-inline-status.error{color:var(--red)}
  html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] #defi.page.active,
  html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] #boost.page.active{margin-top:0}
 }
+
+
+/* Final theme precedence over legacy wallet shorthand backgrounds. */
+html[data-beltrix-ui="pearl-cobalt"] .w-action-circle{
+ background:var(--card)!important;
+ border-color:var(--line)!important;
+ color:var(--pc-accent)!important;
+}
+html[data-beltrix-ui="pearl-cobalt"][data-theme="dark"] .w-action-circle{
+ background:var(--card2)!important;
+ border-color:var(--line)!important;
+}
+html[data-beltrix-ui="pearl-cobalt"] .wallet-modal,
+html[data-beltrix-ui="pearl-cobalt"] .usdt-modal{
+ background:var(--card)!important;
+ color:var(--text)!important;
+ border-color:var(--line)!important;
+}
