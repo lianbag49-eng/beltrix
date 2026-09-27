@@ -476,3 +476,5 @@ html[data-beltrix-ui="pearl-cobalt"] .w-inline-status.error{color:var(--red)}
  html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] #defi.page.active,
  html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] #boost.page.active{margin-top:0}
 }
+
+/* Pearl Cobalt wallet surface validation sync. */
