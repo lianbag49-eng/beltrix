@@ -2,7 +2,7 @@ import {fundingView,finite} from './terminal-core.js';
 import {createMarketChart} from './chart-ui.js';
 import './terminal-clean.js';
 import {validCandle,normalizeCandles} from './chart-core.js';
-import {hyperliquidNetwork,normalizeHyperliquidMarkets} from './hyperliquid-venue.js';
+import {hyperliquidNetwork,normalizeHyperliquidMarkets,normalizeHyperliquidAllPerpMarkets} from './hyperliquid-venue.js';
 import {createMarketPicker} from './market-picker.js';
 import {hyperliquidDisplaySymbol,hyperliquidLogoUrl} from './asset-logo.js';
 const $=id=>document.getElementById(id);
@@ -34,8 +34,12 @@ function paintContext(){
  $('marketContextStatus').textContent=stale?'Market statistics unavailable or stale. Funding is not assumed to be zero.':`${spot?'Spot market · No funding or leverage':'Perpetual funding settles hourly · Current rate is indicative'} · Statistics updated ${Math.floor((Date.now()-contextReceived)/1000)}s ago`;
 }
 async function refreshContext(token,coin){
- try{const rows=await info({type:selection()?.spot?'spotMetaAndAssetCtxs':'metaAndAssetCtxs'},AbortSignal.timeout(10000));if(token!==generation||coin!==selection()?.value)return;
- const i=rows?.[0]?.universe?.findIndex(x=>x.name===coin);if(i>=0&&rows[1]?.[i]&&finite(rows[1][i].markPx)){assetContext=rows[1][i];contextReceived=Date.now();paintContext();emit()}
+ try{
+  const selected=selection(),body=selected?.spot?{type:'spotMetaAndAssetCtxs'}:{type:'metaAndAssetCtxs',...(selected?.dex?{dex:selected.dex}:{})};
+  const rows=await info(body,AbortSignal.timeout(10000));if(token!==generation||coin!==selection()?.value)return;
+  const local=selected?.dex&&coin.startsWith(selected.dex+':')?coin.slice(selected.dex.length+1):coin;
+  const i=rows?.[0]?.universe?.findIndex(x=>x.name===coin||x.name===local);
+  if(i>=0&&rows[1]?.[i]&&finite(rows[1][i].markPx)){assetContext=rows[1][i];contextReceived=Date.now();paintContext();emit()}
  }catch{if(token===generation)paintContext()}
 }
 const canvas=$('marketCanvas'),chart=createMarketChart(canvas);
@@ -70,11 +74,37 @@ async function selectMarket(){
  socket.onerror=()=>status('Live connection error');
  }catch(e){if(token===generation)status('Market request failed · Refresh to retry')}finally{clearTimeout(timeout)}
 }
-function buildMarketRows(meta,mode){
- return normalizeHyperliquidMarkets(meta,mode).map(m=>{
-  const base=m.base||m.symbol,quote=m.quote||'USDC',displaySymbol=hyperliquidDisplaySymbol(base);
-  return {value:m.symbol,label:mode==='spot'?displaySymbol+'/'+quote:displaySymbol+' / '+quote+' PERP',base,quote,displaySymbol,fullName:m.raw?.baseToken?.fullName||m.raw?.baseToken?.name||displaySymbol,logo:hyperliquidLogoUrl(m),asset:m.nativeId,szDecimals:m.raw?.szDecimals,spot:m.marketType==='spot',maxLeverage:m.maxLeverage,onlyIsolated:m.raw?.onlyIsolated,delisted:m.raw?.isDelisted};
+function buildMarketRows(payload,mode){
+ const normalized=mode==='spot'
+  ? normalizeHyperliquidMarkets(payload,'spot')
+  : normalizeHyperliquidAllPerpMarkets(payload?.allMetas,payload?.perpDexs);
+ return normalized.map(m=>{
+  const base=m.base||m.symbol,quote=m.quote||'USDC',displaySymbol=hyperliquidDisplaySymbol(base),dex=m.raw?.dex||'';
+  return {
+   value:m.symbol,
+   label:mode==='spot'?displaySymbol+'/'+quote:displaySymbol+' / '+quote+' PERP',
+   base,quote,displaySymbol,
+   fullName:m.raw?.baseToken?.fullName||m.raw?.baseToken?.name||displaySymbol,
+   logo:hyperliquidLogoUrl(m),
+   asset:m.nativeId,
+   szDecimals:m.raw?.szDecimals,
+   spot:m.marketType==='spot',
+   maxLeverage:m.maxLeverage,
+   onlyIsolated:m.raw?.onlyIsolated,
+   delisted:m.raw?.isDelisted,
+   dex,
+   dexFullName:m.raw?.dexFullName||'Hyperliquid',
+   hip3:!!dex
+  };
  });
+}
+async function fetchCatalog(mode,signal){
+ if(mode==='spot')return info({type:'spotMeta'},signal);
+ const [perpDexs,allMetas]=await Promise.all([
+  info({type:'perpDexs'},signal),
+  info({type:'allPerpMetas'},signal)
+ ]);
+ return {perpDexs,allMetas};
 }
 function catalogKey(rows){return rows.map(x=>x.value+'|'+x.label+'|'+(x.maxLeverage??'')).join(';')}
 function applyCatalog(rows,{preserve=true}={}){
@@ -92,9 +122,9 @@ async function refreshCatalog(){
  const mode=$('marketType').value,network=$('marketNetwork').value;
  const abort=new AbortController(),timeout=setTimeout(()=>abort.abort(),10000);
  try{
-  const meta=await info({type:mode==='spot'?'spotMeta':'meta'},abort.signal);
+  const catalog=await fetchCatalog(mode,abort.signal);
   if(network!==$('marketNetwork').value||mode!==$('marketType').value)return;
-  const rows=buildMarketRows(meta,mode),signature=catalogKey(rows);
+  const rows=buildMarketRows(catalog,mode),signature=catalogKey(rows);
   if(signature===catalogSignature)return;
   const kept=applyCatalog(rows,{preserve:true});
   if(!kept)await selectMarket();
@@ -104,8 +134,8 @@ async function loadSymbols(){
  ++generation;cleanup();marketMeta=[];book=null;assetContext=null;contextReceived=0;paintContext();streamReceived=0;trades=[];lastTradeTime=0;lastUpdate=0;candleFeed='snapshot';$('marketPrice').textContent='—';$('marketSymbol').replaceChildren();emit();paintBook();candles=[];draw();status('Loading markets');
  const mode=$('marketType').value,token=generation;const abort=new AbortController(),timeout=setTimeout(()=>abort.abort(),15000);
  try{
-  const meta=await info({type:mode==='spot'?'spotMeta':'meta'},abort.signal);if(token!==generation)return;
-  applyCatalog(buildMarketRows(meta,mode),{preserve:false});await selectMarket();
+  const catalog=await fetchCatalog(mode,abort.signal);if(token!==generation)return;
+  applyCatalog(buildMarketRows(catalog,mode),{preserve:false});await selectMarket();
  }catch{if(token===generation)status('Market list failed · Refresh to retry')}finally{clearTimeout(timeout)}
 }
 $('bookDepth').onchange=selectMarket;$('marketNetwork').onchange=loadSymbols;$('marketType').onchange=loadSymbols;$('marketSymbol').onchange=()=>{marketPicker.sync();selectMarket()};$('marketInterval').onchange=selectMarket;$('marketRefresh').onclick=()=> $('marketSymbol').options.length?selectMarket():loadSymbols();
