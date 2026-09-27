@@ -5,6 +5,21 @@ const json=async(url,options={},fetchImpl=fetch)=>{
 };
 
 const unwrap=data=>data?.data&&typeof data.data==='object'?data.data:data;
+const GMX_NETWORKS=Object.freeze(['arbitrum','avalanche','megaeth']);
+const USD30=10n**30n;
+
+export function usd30ToNumber(value){
+ if(value===null||value===undefined||value==='')return null;
+ try{
+  const raw=BigInt(String(value));
+  const whole=raw/USD30;
+  const rem=raw%USD30;
+  const micro=rem/(10n**24n);
+  return Number(whole)+Number(micro)/1e6;
+ }catch{
+  return null;
+ }
+}
 
 export async function hyperliquidBook(symbol,{fetchImpl=fetch}={}){
  const data=await json('https://api.hyperliquid.xyz/info',{
@@ -85,10 +100,50 @@ export async function gmxMarketsInfo({chain='arbitrum',fetchImpl=fetch}={}){
  return json('https://'+network+'-api.gmxinfra.io/markets/info',{},fetchImpl);
 }
 
+async function gmxApiJson(path,{chain='arbitrum',fetchImpl=fetch}={}){
+ const network=String(chain||'arbitrum').toLowerCase();
+ if(!GMX_NETWORKS.includes(network))throw Error('Unsupported GMX API network: '+network);
+ const peers=[
+  'https://'+network+'.gmxapi.io/v1',
+  'https://'+network+'.gmxapi.ai/v1'
+ ];
+ let lastError;
+ for(const base of peers){
+  try{return await json(base+path,{},fetchImpl)}
+  catch(error){lastError=error}
+ }
+ throw lastError||Error('GMX API peers unavailable');
+}
+
+export async function gmxTradingCapacity(symbol,{direction='long',chain='arbitrum',fetchImpl=fetch}={}){
+ const side=String(direction||'').toLowerCase();
+ if(!['long','short'].includes(side))throw Error('Invalid GMX trading-capacity direction: '+side);
+ const data=await gmxApiJson(
+  '/markets/trading-capacity?symbol='+encodeURIComponent(symbol)+'&direction='+side,
+  {chain,fetchImpl}
+ );
+ const root=unwrap(data);
+ return Object.freeze({
+  venue:'gmx',
+  symbol:String(symbol),
+  direction:side,
+  availableLiquidityRaw:root?.availableLiquidity==null?null:String(root.availableLiquidity),
+  baseAvailableLiquidityRaw:root?.baseAvailableLiquidity==null?null:String(root.baseAvailableLiquidity),
+  jitAvailableLiquidityRaw:root?.jitAvailableLiquidity==null?null:String(root.jitAvailableLiquidity),
+  availableLiquidityUsd:usd30ToNumber(root?.availableLiquidity),
+  baseAvailableLiquidityUsd:usd30ToNumber(root?.baseAvailableLiquidity),
+  jitAvailableLiquidityUsd:usd30ToNumber(root?.jitAvailableLiquidity),
+  limitingFactor:root?.limitingFactor||null,
+  jitDataStatus:root?.jitDataStatus||null,
+  marketDataStatus:root?.marketDataStatus||null,
+  receivedAt:Date.now()
+ });
+}
+
 export const READ_ONLY_COLLECTORS=Object.freeze({
  hyperliquid:Object.freeze({book:hyperliquidBook,markets:hyperliquidContexts}),
  orderly:Object.freeze({book:orderlyBook,markets:orderlyMarkets}),
  paradex:Object.freeze({book:paradexBook,markets:paradexMarkets}),
  dydx:Object.freeze({book:dydxBook,markets:dydxMarkets}),
- gmx:Object.freeze({markets:gmxMarketsInfo})
+ gmx:Object.freeze({markets:gmxMarketsInfo,capacity:gmxTradingCapacity})
 });
