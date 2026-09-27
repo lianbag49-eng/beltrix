@@ -90,6 +90,7 @@ async function loadSymbols(){
    try{
     const all=await info({type:'allPerpMetas'},abort.signal);
     rows=normalizeAllPerpMetas(all);
+    if(!rows.length)throw Error('allPerpMetas unavailable');
    }catch{
     const meta=await info({type:'meta'},abort.signal);
     rows=normalizeHyperliquidMarkets(meta,'perp').map(m=>enrichHyperliquidRow({
