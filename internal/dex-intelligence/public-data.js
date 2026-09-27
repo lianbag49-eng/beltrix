@@ -4,6 +4,8 @@ const json=async(url,options={},fetchImpl=fetch)=>{
  return response.json();
 };
 
+const unwrap=data=>data?.data&&typeof data.data==='object'?data.data:data;
+
 export async function hyperliquidBook(symbol,{fetchImpl=fetch}={}){
  const data=await json('https://api.hyperliquid.xyz/info',{
   method:'POST',
@@ -19,12 +21,28 @@ export async function hyperliquidBook(symbol,{fetchImpl=fetch}={}){
  };
 }
 
+export async function orderlyBook(symbol,{maxLevel=100,fetchImpl=fetch}={}){
+ const data=await json(
+  'https://api.orderly.org/v1/orderbook/'+encodeURIComponent(symbol)+'?max_level='+Math.max(1,Math.min(500,Number(maxLevel)||100)),
+  {},
+  fetchImpl
+ );
+ const root=unwrap(data);
+ return {
+  venue:'orderly',
+  symbol,
+  receivedAt:Number(root?.timestamp??root?.ts??data?.timestamp)||Date.now(),
+  bids:root?.bids||[],
+  asks:root?.asks||[]
+ };
+}
+
 export async function paradexBook(symbol,{depth=20,fetchImpl=fetch}={}){
  const data=await json('https://api.prod.paradex.trade/v1/orderbook/'+encodeURIComponent(symbol)+'?depth='+Number(depth),{},fetchImpl);
  return {
   venue:'paradex',
   symbol,
-  receivedAt:Date.now(),
+  receivedAt:Number(data?.last_updated_at)||Date.now(),
   bids:data?.bids||data?.results?.bids||[],
   asks:data?.asks||data?.results?.asks||[]
  };
@@ -61,9 +79,16 @@ export async function hyperliquidContexts({fetchImpl=fetch}={}){
  },fetchImpl);
 }
 
+export async function gmxMarketsInfo({chain='arbitrum',fetchImpl=fetch}={}){
+ const network=String(chain||'arbitrum').toLowerCase();
+ if(!['arbitrum','avalanche'].includes(network))throw Error('Unsupported GMX oracle network: '+network);
+ return json('https://'+network+'-api.gmxinfra.io/markets/info',{},fetchImpl);
+}
+
 export const READ_ONLY_COLLECTORS=Object.freeze({
  hyperliquid:Object.freeze({book:hyperliquidBook,markets:hyperliquidContexts}),
- orderly:Object.freeze({markets:orderlyMarkets}),
+ orderly:Object.freeze({book:orderlyBook,markets:orderlyMarkets}),
  paradex:Object.freeze({book:paradexBook,markets:paradexMarkets}),
- dydx:Object.freeze({book:dydxBook,markets:dydxMarkets})
+ dydx:Object.freeze({book:dydxBook,markets:dydxMarkets}),
+ gmx:Object.freeze({markets:gmxMarketsInfo})
 });
