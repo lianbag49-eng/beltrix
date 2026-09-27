@@ -45,6 +45,7 @@ export function normalizeHyperliquidAllPerpMarkets(allMetas,perpDexs){
  const out=[];
  metas.forEach((meta,dexIndex)=>{
   const dex=dexIndex===0?'':String(dexs[dexIndex]?.name||'').trim();
+  const dexFullName=dexIndex===0?'Hyperliquid':String(dexs[dexIndex]?.fullName||dexs[dexIndex]?.name||'').trim();
   for(const [marketIndex,row] of (meta?.universe||[]).entries()){
    if(row?.isDelisted)continue;
    let symbol=String(row?.name||'').trim();
@@ -59,7 +60,7 @@ export function normalizeHyperliquidAllPerpMarkets(allMetas,perpDexs){
     marketType:'perp',
     nativeId,
     maxLeverage:row.maxLeverage,
-    raw:{...row,dex,dexIndex,marketIndex,collateralToken:meta?.collateralToken??null}
+    raw:{...row,dex,dexFullName,dexIndex,marketIndex,collateralToken:meta?.collateralToken??null}
    }));
   }
  });
