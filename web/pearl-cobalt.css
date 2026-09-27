@@ -168,3 +168,42 @@ html[data-beltrix-ui="pearl-cobalt"] .terminal-venue a{color:var(--pc-accent)}
  html[data-beltrix-ui="pearl-cobalt"] #walletProvider{display:none}
  html[data-beltrix-ui="pearl-cobalt"] #markets .market-card{padding:9px;border-radius:12px}
 }
+
+/* Override legacy compact Black/Gold presentation while retaining its safe DOM behavior. */
+html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets[data-trade-layout="simple"]{max-width:none;margin-inline:0}
+html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .select,
+html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .futures-leverage>summary,
+html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .funding-bar button{
+ background:var(--card2);border-color:var(--line);color:var(--text)
+}
+html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .funding-bar button{color:var(--pc-accent)}
+html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] .clean-icon-button,
+html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] .clean-more-dialog,
+html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] .clean-more-dialog>[data-clean-route]{
+ background:var(--card);border-color:var(--line);color:var(--text)
+}
+html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] .clean-icon-button{color:var(--pc-accent)}
+html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] .gold-directions{background:var(--card2)}
+html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] .gold-directions [aria-pressed="true"]{
+ background:var(--pc-accent);border-color:var(--pc-accent);color:#fff
+}
+html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] .gold-directions [data-gold-direction="sell"][aria-pressed="true"]{
+ background:var(--card);border-color:var(--pc-accent);color:var(--pc-accent)
+}
+html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets[data-trade-layout="simple"] .futures-actions button{
+ background:var(--pc-accent);border-color:var(--pc-accent);color:#fff
+}
+html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets[data-trade-layout="simple"] .futures-actions .futures-short{
+ background:var(--card2);border-color:var(--line);color:var(--text)
+}
+html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets[data-trade-layout="simple"] .fast-open-close [aria-pressed="true"]{
+ border-bottom-color:var(--pc-accent);color:var(--pc-accent)
+}
+html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets[data-trade-layout="simple"] #simpleMark,
+html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .futures-book-mid strong,
+html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #chartDrawerState{color:var(--pc-accent)}
+html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] .chart-studio,
+html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] .chart-fullscreen,
+html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] .chart-fullscreen .chart-heading{
+ background:var(--pc-canvas);color:var(--text)
+}
