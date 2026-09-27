@@ -9,6 +9,8 @@ for(const file of [
  'venue-registry.js',
  'market-normalizer.js',
  'market-snapshot.js',
+ 'market-intelligence.js',
+ 'venue-research.js',
  'liquidity.js',
  'bd-matrix.js',
  'bd-pipeline.js',
