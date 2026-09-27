@@ -70,15 +70,17 @@ function mountHeader(){
  const top=document.querySelector('.top');
  const brand=top?.querySelector('.brand');
  if(!top||!brand)return;
+ const brandSub=brand.querySelector('small');
+ if(brandSub)brandSub.textContent='DECENTRALIZED DERIVATIVES';
 
  const nav=node('div','pc-header-nav');
  nav.setAttribute('role','group');nav.setAttribute('aria-label','Pearl Cobalt product shortcuts');
  const items=[
-  ['Trade',()=>scrollToElement($('markets'))],
+  ['Trade',()=>scrollToElement(document.querySelector('.chart-panel'))],
   ['Markets',openMarketPicker],
   ['Portfolio',()=>scrollToElement(document.querySelector('.terminal-account'))],
-  ['Analytics',()=>scrollToElement($('pcMarketIntel'))],
-  ['Protocol',()=>scrollToElement($('pcProtocolCard'))]
+  ['Protocol',()=>scrollToElement($('pcProtocolCard'))],
+  ['Intelligence',()=>scrollToElement($('pcIntelligenceStrip'))]
  ];
  for(const item of items){
   const b=node('button','pc-header-link',item[0]);b.type='button';b.setAttribute('aria-label','Open '+item[0]+' section');b.onclick=item[1];nav.append(b);
@@ -126,15 +128,70 @@ function renderWatchlist(sidebar){
  if(!rows.length)list.innerHTML='<p class="pc-empty">Markets are loading…</p>';
 }
 
+function marketBase(label){
+ return String(label||'').replace(/\s*\/.*$/,'').replace(/-PERP$/i,'').split(':').pop()||'MKT';
+}
+function renderMarketRibbon(){
+ const ribbon=$('pcMarketRibbon');if(!ribbon)return;
+ const rows=marketOptions().slice(0,3),active=$('marketSymbol')?.value;
+ const currentMark=safeText('marketMark');
+ const currentChange=safeText('marketChange');
+ const cards=rows.map((row,index)=>{
+  const selected=row.value===active;
+  const base=marketBase(row.label);
+  const metric=selected
+   ?'<strong>'+currentMark+'</strong><small class="'+($('marketChange')?.className||'')+'">'+currentChange+'</small>'
+   :'<strong>'+row.label+'</strong><small>Open market</small>';
+  return '<button type="button" class="pc-ribbon-market" data-pc-market="'+row.value+'" aria-current="'+String(selected)+'"><span class="pc-ribbon-coin">'+base.slice(0,3)+'</span><span>'+metric+'</span><span class="pc-ribbon-arrow">↗</span></button>';
+ }).join('');
+ ribbon.innerHTML=cards+'<button type="button" class="pc-ribbon-add" data-pc-ribbon-add><span>＋</span><strong>Add market</strong><small>Browse all markets</small></button>';
+ for(const button of ribbon.querySelectorAll('[data-pc-market]'))button.onclick=()=>activateMarket(button.dataset.pcMarket);
+ ribbon.querySelector('[data-pc-ribbon-add]')?.addEventListener('click',openMarketPicker);
+}
+function mountMarketRibbon(){
+ if($('pcMarketRibbon'))return;
+ const root=$('markets'),card=root?.querySelector('.market-card');
+ if(!root||!card)return;
+ const ribbon=node('section','pc-market-ribbon');ribbon.id='pcMarketRibbon';
+ card.before(ribbon);renderMarketRibbon();
+}
+function mountIntelligenceStrip(){
+ if($('pcIntelligenceStrip'))return;
+ const account=document.querySelector('.terminal-account');
+ if(!account)return;
+ const strip=node('section','pc-intelligence-strip',[
+  '<div class="pc-strip-head"><span class="pc-icon">▧</span><strong>Protocol &amp; Market Intelligence</strong><span>Live market telemetry</span></div>',
+  '<div class="pc-strip-grid">',
+  '<article><small>Funding rate</small><strong data-pc-strip="funding">—</strong><span>Current market</span></article>',
+  '<article><small>Open interest</small><strong data-pc-strip="oi">—</strong><span>Venue-reported</span></article>',
+  '<article><small>24h volume</small><strong data-pc-strip="volume">—</strong><span>Notional activity</span></article>',
+  '<article><small>Oracle status</small><strong class="green">Healthy</strong><span>Live market feed</span></article>',
+  '<article><small>Protocol risk</small><strong>Guarded</strong><span>Wallet review required</span></article>',
+  '</div>'
+ ].join(''));
+ strip.id='pcIntelligenceStrip';account.before(strip);
+}
+function syncIntelligenceStrip(){
+ const strip=$('pcIntelligenceStrip');if(!strip)return;
+ const map={funding:'marketFunding',oi:'marketOI',volume:'marketVolume'};
+ for(const [key,id] of Object.entries(map)){
+  const target=strip.querySelector('[data-pc-strip="'+key+'"]');
+  if(target)target.textContent=safeText(id);
+ }
+}
+
 function mountSidebar(){
  if($('pcSidebar'))return;
  const sidebarHtml=[
   '<div class="pc-rail-nav">',
-  '<button type="button" data-pc-action="trade" class="active" aria-label="Open trading workspace"><span>⌁</span>Trade</button>',
+  '<button type="button" data-pc-action="dashboard" class="active" aria-label="Open dashboard"><span>⌂</span>Dashboard</button>',
   '<button type="button" data-pc-action="markets" aria-label="Open market selector"><span>◈</span>Markets</button>',
-  '<button type="button" data-pc-action="portfolio" aria-label="Open trading portfolio"><span>▣</span>Portfolio</button>',
-  '<button type="button" data-pc-action="analytics" aria-label="Open market intelligence"><span>▥</span>Analytics</button>',
+  '<button type="button" data-pc-action="trade" aria-label="Open trading workspace"><span>⇄</span>Trade</button>',
   '<button type="button" data-pc-action="protocol" aria-label="Open protocol overview"><span>⬡</span>Protocol</button>',
+  '<button type="button" data-pc-action="analytics" aria-label="Open market intelligence"><span>⌁</span>Intelligence</button>',
+  '<button type="button" data-pc-action="portfolio" aria-label="Open trading portfolio"><span>▣</span>Portfolio</button>',
+  '<button type="button" data-pc-action="governance" aria-label="Open governance overview"><span>◇</span>Governance</button>',
+  '<button type="button" data-pc-action="settings" aria-label="Open settings"><span>⚙</span>Settings</button>',
   '</div>',
   '<section class="pc-watchlist">',
   '<header><div><small>MARKETS</small><strong>Watchlist</strong></div><button type="button" data-pc-add-market aria-label="Open market selector">+</button></header>',
@@ -147,11 +204,14 @@ function mountSidebar(){
  const top=document.querySelector('.top');
  top.after(sidebar);
  sidebar.querySelector('[data-pc-add-market]').onclick=openMarketPicker;
- sidebar.querySelector('[data-pc-action="trade"]').onclick=()=>scrollToElement($('markets'));
+ sidebar.querySelector('[data-pc-action="dashboard"]').onclick=()=>scrollToElement($('pcMarketRibbon'));
+ sidebar.querySelector('[data-pc-action="trade"]').onclick=()=>scrollToElement(document.querySelector('.chart-panel'));
  sidebar.querySelector('[data-pc-action="markets"]').onclick=openMarketPicker;
  sidebar.querySelector('[data-pc-action="portfolio"]').onclick=()=>scrollToElement(document.querySelector('.terminal-account'));
- sidebar.querySelector('[data-pc-action="analytics"]').onclick=()=>scrollToElement($('pcMarketIntel'));
+ sidebar.querySelector('[data-pc-action="analytics"]').onclick=()=>scrollToElement($('pcIntelligenceStrip'));
  sidebar.querySelector('[data-pc-action="protocol"]').onclick=()=>scrollToElement($('pcProtocolCard'));
+ sidebar.querySelector('[data-pc-action="governance"]').onclick=()=>scrollToElement($('pcProtocolCard'));
+ sidebar.querySelector('[data-pc-action="settings"]').onclick=()=>window.openPage?.('settings');
  renderWatchlist(sidebar);
 }
 
@@ -169,16 +229,16 @@ function mountRightRail(){
   '<div><small>Native layer</small><strong>Research</strong></div>',
   '</div></section>',
   '<section class="pc-insight-card" id="pcMarketIntel">',
-  '<div class="pc-card-kicker"><span class="pc-icon">▥</span><span>Market Intelligence</span><span class="pc-status-dot">Live</span></div>',
+  '<div class="pc-card-kicker"><span class="pc-icon">◎</span><span>Protocol Status</span><span class="pc-status-dot">Live</span></div>',
   '<div class="pc-intel-grid">',
-  '<div><small>Market</small><strong data-pc-intel="market">—</strong></div>',
-  '<div><small>Mark price</small><strong data-pc-intel="mark">—</strong></div>',
-  '<div><small>Open interest</small><strong data-pc-intel="oi">—</strong></div>',
-  '<div><small>24h volume</small><strong data-pc-intel="volume">—</strong></div>',
-  '<div><small>Funding</small><strong data-pc-intel="funding">—</strong></div>',
-  '<div><small>24h change</small><strong data-pc-intel="change">—</strong></div>',
+  '<div><small>Custody</small><strong>Self-custody</strong></div>',
+  '<div><small>Signing</small><strong>User wallet</strong></div>',
+  '<div><small>Oracle</small><strong>Multi-source policy</strong></div>',
+  '<div><small>Risk</small><strong>Pre-settlement guard</strong></div>',
+  '<div><small>Settlement</small><strong>Hyperliquid</strong></div>',
+  '<div><small>Native layer</small><strong>Research</strong></div>',
   '</div>',
-  '<p class="pc-intel-note">Read-only telemetry. Execution remains behind wallet review and protocol safety checks.</p>',
+  '<p class="pc-intel-note">BELTRIX owns the intent, market, oracle and risk control layers while settlement remains modular.</p>',
   '</section>'
  ].join('');
  const rail=node('aside','pc-right-rail',railHtml);
@@ -188,25 +248,12 @@ function mountRightRail(){
 }
 
 function syncIntel(){
- const rail=$('pcRightRail');if(!rail)return;
- const values={
-  market:currentSymbol(),
-  mark:safeText('marketMark'),
-  oi:safeText('marketOI'),
-  volume:safeText('marketVolume'),
-  funding:safeText('marketFunding'),
-  change:safeText('marketChange')
- };
- for(const entry of Object.entries(values)){
-  const el=rail.querySelector('[data-pc-intel="'+entry[0]+'"]');if(el)el.textContent=entry[1];
- }
- const change=rail.querySelector('[data-pc-intel="change"]');
- const source=$('marketChange');
- if(change&&source)change.className=source.className;
+ renderMarketRibbon();
+ syncIntelligenceStrip();
 }
 
 function mount(){
- mountHeader();mountSidebar();mountRightRail();
+ mountHeader();mountSidebar();mountRightRail();mountMarketRibbon();mountIntelligenceStrip();
  renderWatchlist($('pcSidebar'));syncIntel();
 
  const select=$('marketSymbol');
