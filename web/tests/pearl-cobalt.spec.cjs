@@ -110,7 +110,7 @@ test('Wallet, Explore, DeFi and Boost use the Pearl Cobalt desktop shell',async(
   await page.goto('/web/#'+route);
   await expect(page.locator('body')).toHaveAttribute('data-page',route);
   await expect(page.locator('#'+route)).toHaveClass(/active/);
-  await expect(page.locator('.pc-wallet-surface-nav')).toBeVisible();
+  await expect(page.locator('#'+route+' .pc-wallet-surface-nav')).toBeVisible();
   await expect(page.locator('.bottom-nav')).toBeHidden();
   await expect(page.locator('#pcSidebar')).toBeHidden();
   await expect(page.locator('#pcRightRail')).toBeHidden();
@@ -140,9 +140,9 @@ test('Wallet surfaces follow light and dark Pearl Cobalt theme tokens',async({pa
 test('Desktop Wallet workspace navigation reaches DeFi and returns to Trade',async({page})=>{
  await page.setViewportSize({width:1280,height:900});
  await page.goto('/web/#wallet');
- await page.locator('.pc-wallet-surface-nav [data-pc-wallet-route="defi"]').click();
+ await page.locator('#wallet .pc-wallet-surface-nav [data-pc-wallet-route="defi"]').click();
  await expect(page.locator('body')).toHaveAttribute('data-page','defi');
- await page.locator('.pc-wallet-surface-nav [data-pc-wallet-route="markets"]').click();
+ await page.locator('#defi .pc-wallet-surface-nav [data-pc-wallet-route="markets"]').click();
  await expect(page.locator('body')).toHaveAttribute('data-page','markets');
  await expect(page.locator('.order-ticket')).toBeVisible();
 });
