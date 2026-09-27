@@ -9,15 +9,15 @@ test('BELTRIX operating roles map to narrowly scoped HIP-3 variants',()=>{
 
 test('role grants normalize and deduplicate sub-deployer permissions',()=>{
  const rows=expandSubDeployerPermissions([
-  {role:'oracle-updater',account:'Alice'},
-  {role:'oracle-updater',account:'alice'},
-  {role:'emergency-guardian',account:'Bob'}
+  {role:'oracle-updater',account:'0x1111111111111111111111111111111111111111'},
+  {role:'oracle-updater',account:'0x1111111111111111111111111111111111111111'},
+  {role:'emergency-guardian',account:'0x2222222222222222222222222222222222222222'}
  ]);
  assert.equal(rows.length,2);
- assert.equal(rows[0].user,'alice');
+ assert.equal(rows[0].user,'0x1111111111111111111111111111111111111111');
  assert.equal(rows[1].variant,'haltTrading');
 });
 
 test('unknown roles are rejected',()=>{
- assert.throws(()=>normalizeRoleGrant({role:'root',account:'x'}),/Unknown BELTRIX protocol role/);
+ assert.throws(()=>normalizeRoleGrant({role:'root',account:'0x1111111111111111111111111111111111111111'}),/Unknown BELTRIX protocol role/);
 });
