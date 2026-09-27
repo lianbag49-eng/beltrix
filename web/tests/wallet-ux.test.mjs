@@ -2,16 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { resolveWalletRoute, walletAssetMatches } from '../wallet-ux.js';
 
-test('wallet is the default; known pages and legacy links stay valid', () => {
-  assert.equal(resolveWalletRoute(''), 'wallet');
+test('trading is the default; known wallet pages and legacy links stay valid', () => {
+  assert.equal(resolveWalletRoute(''), 'markets');
   assert.equal(resolveWalletRoute('#assets'), 'wallet');
   assert.equal(resolveWalletRoute('#discover'), 'explore');
   for (const page of ['wallet', 'markets', 'swap', 'settings', 'explore', 'defi', 'boost']) assert.equal(resolveWalletRoute('#' + page), page);
 });
 test('untrusted hashes cannot target dialogs, prototypes or external addresses', () => {
-  for (const hash of ['#wDialog', '#__proto__', '#constructor', '#https://example.test', '#<script>', null]) assert.equal(resolveWalletRoute(hash), 'wallet');
+  for (const hash of ['#wDialog', '#__proto__', '#constructor', '#https://example.test', '#<script>', null]) assert.equal(resolveWalletRoute(hash), 'markets');
   assert.equal(resolveWalletRoute('#bad', 'markets'), 'markets');
-  assert.equal(resolveWalletRoute('#bad', 'constructor'), 'wallet');
+  assert.equal(resolveWalletRoute('#bad', 'constructor'), 'markets');
 });
 test('asset filtering handles blank, Unicode and case-insensitive symbols', () => {
   assert.equal(walletAssetMatches(' ', 'ETH', 'native'), true);
