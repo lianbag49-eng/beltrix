@@ -211,3 +211,52 @@ Do not currently describe BELTRIX as:
 11. deploy multisig + timelock ownership for protocol configuration
 12. activate independent oracle operators
 13. research BELTRIX-native margin / liquidation / settlement prototype
+
+
+## Phase 8 — Signed oracle quorum / ownership transition
+Completed in code:
+
+- signed EVM oracle observations
+- operator-set quorum verification
+- stale/deviation failure handling
+- multisig/timelock ownership transition planning
+- developer-control revocation step
+- Phase 8 readiness gates
+
+## Phase 9 — Operational readiness
+Completed in code:
+
+- ownership transition dry-run
+- incident recovery model
+- overlap-safe oracle rotation
+- public config disclosure / SHA-256 fingerprint
+- HIP-3 testnet dry-run planner
+- Phase 9 structural readiness gates
+
+Still external:
+
+- production multisig/timelock/guardian
+- production oracle operator addresses
+- ownership rehearsal
+- HIP-3 testnet deploy/trading
+- public config publication
+
+## Phase 10 — Native isolated risk simulation
+Completed in code:
+
+- isolated margin model
+- initial / maintenance margin checks
+- long / short liquidation prices
+- funding cashflow
+- liquidation fee / insurance draw
+- residual deficit detection
+- price-shock stress simulation
+
+Still research:
+
+- cross margin
+- portfolio netting
+- partial liquidation
+- ADL
+- bad-debt policy
+- external risk review
