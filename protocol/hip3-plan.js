@@ -8,6 +8,12 @@ function requiredText(value,name){
  return s;
 }
 
+function requiredAddress(value,name){
+ const s=requiredText(value,name).toLowerCase();
+ if(!/^0x[0-9a-f]{40}$/.test(s))throw Error(name+' must be a 20-byte EVM address');
+ return s;
+}
+
 function operation(variant,purpose,config){
  return Object.freeze({
   hyperliquidActionType:'perpDeploy',
@@ -35,8 +41,8 @@ export function buildBeltrixHip3Plan({
 }={}){
  if(!market?.id||!market?.riskPolicy||!market?.oraclePolicy)throw Error('BELTRIX protocol market is required');
  const dex=requiredText(dexName,'HIP-3 dexName');
- const fee=requiredText(feeRecipient,'HIP-3 feeRecipient');
- const oracle=requiredText(oracleUpdater,'HIP-3 oracleUpdater');
+ const fee=requiredAddress(feeRecipient,'HIP-3 feeRecipient');
+ const oracle=requiredAddress(oracleUpdater,'HIP-3 oracleUpdater');
  const marginId=Number(marginTableId);
  if(!Number.isInteger(marginId)||marginId<=0)throw Error('HIP-3 marginTableId must be a positive integer');
  const oiCap=Number(openInterestCapUsd);
