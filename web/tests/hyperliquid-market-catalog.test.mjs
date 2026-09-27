@@ -22,6 +22,7 @@ test('allPerpMetas normalizes validator and HIP-3 markets with correct asset ids
  assert.equal(rows[1].asset,110000);
  assert.equal(rows[1].value,'xyz:XYZ100');
  assert.equal(rows[1].onlyIsolated,true);
+ assert.equal(rows[1].tradeSupported,false);
 });
 
 
