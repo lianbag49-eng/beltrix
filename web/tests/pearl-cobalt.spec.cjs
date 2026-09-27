@@ -140,9 +140,9 @@ test('Wallet surfaces follow light and dark Pearl Cobalt theme tokens',async({pa
 test('Desktop Wallet workspace navigation reaches DeFi and returns to Trade',async({page})=>{
  await page.setViewportSize({width:1280,height:900});
  await page.goto('/web/#wallet');
- await page.locator('#wallet .pc-wallet-surface-nav [data-pc-wallet-route="defi"]').click();
+ await page.locator('#pcWalletSurfaceNav [data-pc-wallet-route="defi"]').click();
  await expect(page.locator('body')).toHaveAttribute('data-page','defi');
- await page.locator('#defi .pc-wallet-surface-nav [data-pc-wallet-route="markets"]').click();
+ await page.locator('#pcWalletSurfaceNav [data-pc-wallet-route="markets"]').click();
  await expect(page.locator('body')).toHaveAttribute('data-page','markets');
  await expect(page.locator('.order-ticket')).toBeVisible();
 });
@@ -243,15 +243,15 @@ test('Pearl Cobalt desktop wallet surfaces use the full workspace and unified na
  await expect(page.locator('body')).toHaveAttribute('data-page','explore');
  await expect(page.locator('#explore')).toBeVisible();
 
- await page.locator('#explore .pc-wallet-surface-nav [data-pc-wallet-route="defi"]').click();
+ await page.locator('#pcWalletSurfaceNav [data-pc-wallet-route="defi"]').click();
  await expect(page.locator('body')).toHaveAttribute('data-page','defi');
  await expect(page.locator('#defi')).toBeVisible();
 
- await page.locator('#defi .pc-wallet-surface-nav [data-pc-wallet-route="boost"]').click();
+ await page.locator('#pcWalletSurfaceNav [data-pc-wallet-route="boost"]').click();
  await expect(page.locator('body')).toHaveAttribute('data-page','boost');
  await expect(page.locator('#boost')).toBeVisible();
 
- await page.locator('#boost .pc-wallet-surface-nav [data-pc-wallet-route="markets"]').click();
+ await page.locator('#pcWalletSurfaceNav [data-pc-wallet-route="markets"]').click();
  await expect(page.locator('body')).toHaveAttribute('data-page','markets');
  await expect(page.locator('.order-ticket')).toBeVisible();
 });
