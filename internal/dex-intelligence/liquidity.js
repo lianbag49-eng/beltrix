@@ -1,4 +1,4 @@
-const finite=n=>Number.isFinite(Number(n));
+const finite=n=>n!==null&&n!==undefined&&n!==''&&Number.isFinite(Number(n));
 
 export function normalizeLevels(levels,side){
  const rows=(Array.isArray(levels)?levels:[]).map(row=>{
