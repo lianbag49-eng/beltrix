@@ -168,8 +168,11 @@ html[data-beltrix-ui="pearl-cobalt"] .terminal-venue a{color:var(--pc-accent)}
  html[data-beltrix-ui="pearl-cobalt"] .pc-theme-toggle{min-width:36px;padding:6px;justify-content:center}
  html[data-beltrix-ui="pearl-cobalt"] .brand b{font-size:13px;letter-spacing:2.2px}
  html[data-beltrix-ui="pearl-cobalt"] .logo{width:31px;height:31px}
- html[data-beltrix-ui="pearl-cobalt"] #tradeConnect{font-size:9px;padding:6px 7px;max-width:96px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 96px}
- html[data-beltrix-ui="pearl-cobalt"] #walletProvider{display:none}
+ html[data-beltrix-ui="pearl-cobalt"] #tradeConnect{font-size:8px;padding:6px 5px;max-width:82px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 82px}
+ html[data-beltrix-ui="pearl-cobalt"] #walletProvider{display:block;max-width:68px;min-width:0;flex:0 1 68px;font-size:8px;padding:5px 3px}
+ html[data-beltrix-ui="pearl-cobalt"] .brand{max-width:92px}
+ html[data-beltrix-ui="pearl-cobalt"] .brand b{white-space:nowrap;overflow:hidden;text-overflow:clip}
+ html[data-beltrix-ui="pearl-cobalt"] #cleanMore{flex:0 0 34px}
  html[data-beltrix-ui="pearl-cobalt"] #markets .market-card{padding:9px;border-radius:12px}
 }
 
