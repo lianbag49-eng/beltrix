@@ -1,4 +1,4 @@
-import {mkdir,copyFile,rm} from 'node:fs/promises';
+import {mkdir,copyFile,rm,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 
 const src='internal/dex-intelligence',out='internal-preview';
@@ -17,3 +17,5 @@ for(const file of [
 
 for(const file of ['index.html','app.js','style.css'])
  await copyFile(join(src,'admin',file),join(out,'admin',file));
+
+await writeFile(join(out,'index.html'),'<!doctype html><meta charset="utf-8"><title>BELTRIX DEX Intelligence</title><script>location.replace("./admin/")</script><a href="./admin/">Open DEX Intelligence</a>');
