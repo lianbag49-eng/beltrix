@@ -103,7 +103,7 @@ async function loadSymbols(){
   marketMeta=rows.filter(r=>!r.delisted);
   const select=$('marketSymbol');
   for(const row of marketMeta)select.add(new Option(row.label,row.value));
-  const preferred=marketMeta.find(x=>x.value==='BTC')||marketMeta.find(x=>x.value==='ETH')||marketMeta[0];
+  const preferred=mode==='perp'?(marketMeta.find(x=>x.value==='ETH')||marketMeta.find(x=>x.value==='BTC')||marketMeta[0]):marketMeta[0];
   if(preferred)select.value=preferred.value;
   setHyperliquidMarketRows(marketMeta);
   await selectMarket();
