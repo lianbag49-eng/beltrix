@@ -73,7 +73,9 @@ test('unknown routes cannot activate dialogs and legacy asset links still work',
   expect(await page.evaluate(() => window.openPage('__proto__'))).toBe(false);
   await expect(page.locator('#wallet')).toBeVisible();
   await page.evaluate(() => { location.hash = 'not-a-page'; });
-  await expect(page.locator('#wallet')).toBeVisible();
+  await expect(page.locator('body')).toHaveAttribute('data-page','markets');
+  await expect(page.locator('#markets')).toBeVisible();
+  await expect(page.locator('#wallet')).toBeHidden();
   await expect(page.locator('#wDialog')).not.toBeVisible();
 });
 
