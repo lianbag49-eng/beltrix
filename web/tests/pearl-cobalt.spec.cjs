@@ -92,7 +92,7 @@ test('Pearl Cobalt wallet remains readable in dark mode and USDT modal follows t
  await page.locator('#pcThemeToggle').click();
  await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
  expect(await page.evaluate(()=>getComputedStyle(document.querySelector('#wallet')).color===getComputedStyle(document.body).color)).toBe(true);
- await page.evaluate(()=>window.openUsdt?.('receive'));
+ await page.locator('#walletUsdtEntry').click();
  await expect(page.locator('#usdtDialog')).toBeVisible();
  expect(await page.evaluate(()=>{
   const modal=getComputedStyle(document.querySelector('#usdtDialog'));
