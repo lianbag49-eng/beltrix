@@ -44,10 +44,14 @@ https://lianbag49-eng.github.io/beltrix/
 - Open Interest
 - 24h Volume
 - API Health / Latency
+- Venue Health Alerts
+- Funding / OI / Volume Trend Analytics
 - GMX Long / Short Trading Capacity
 - Venue별 Execution Qualification
 - 수수료 및 Revenue Model
 - White-label / BD 가능성
+
+내부 history는 현재 브라우저 local storage 기반으로 운용되며, 서버형 수집으로 전환할 수 있도록 PostgreSQL 저장 스키마와 collector/storage adapter까지 준비되어 있습니다. 실제 24/7 서버 수집은 전용 backend/database 배포 이후 단계입니다.
 
 ### 3. Execution Adapter Architecture
 각 DEX를 BELTRIX UI에 직접 하드코딩하지 않고 venue adapter 구조로 분리해 향후 새로운 execution venue를 추가할 수 있도록 설계하고 있습니다.
