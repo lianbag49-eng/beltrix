@@ -1,7 +1,7 @@
 # BELTRIX Project Status
 
 **Updated:** 2026-09-27  
-**Positioning:** Hyperliquid-first decentralized derivatives trading terminal evolving into multi-venue market intelligence, execution and white-label infrastructure.
+**Positioning:** BELTRIX decentralized derivatives protocol in bootstrap stage; Hyperliquid is the current settlement substrate, not the protocol identity.
 
 ## Public product
 
@@ -79,6 +79,35 @@ Completed:
 - storage repository contract
 - injected Postgres adapter
 - server collector deployment documentation
+
+## Phase 6 — BELTRIX Protocol Core
+Completed:
+
+- venue-independent BELTRIX Trade Intent
+- BELTRIX canonical Market Registry
+- multi-source Oracle Consensus
+- BELTRIX Risk Policy
+- user-controlled Settlement Preferences
+- Settlement Adapter Registry
+- Hyperliquid bootstrap settlement adapter
+- disabled BELTRIX-native research adapter
+- governance-ready signer / quorum / timelock proposals
+- decentralization maturity state
+- protocol-specific unit and regression validation
+
+## Phase 7 — BELTRIX HIP-3 Hybrid planning
+Implemented in code and under validation:
+
+- BELTRIX protocol operating roles
+- scoped oracle / risk / emergency / fee / market admin permissions
+- unsigned HIP-3 deploy plan
+- market definition derived from BELTRIX Market Registry
+- Oracle updater policy
+- Margin / OI cap / fee recipient planning
+- Sub-deployer permission expansion
+- Hybrid launch readiness gates
+
+This is not a live HIP-3 deployment and does not yet enable user funds.
 
 ## Current execution boundary
 
@@ -159,7 +188,7 @@ Database credentials must never be embedded into the static public frontend.
 
 BELTRIX should currently be introduced as:
 
-> A Hyperliquid-first decentralized derivatives trading terminal evolving into multi-venue market intelligence, execution and white-label infrastructure.
+> A decentralized derivatives protocol in bootstrap stage, using Hyperliquid as the current settlement substrate while BELTRIX owns the market, intent, oracle, risk, governance and settlement-abstraction layers.
 
 Do not currently describe BELTRIX as:
 
@@ -178,3 +207,7 @@ Do not currently describe BELTRIX as:
 7. implement isolated competitor testnet adapters
 8. complete execution qualification one venue at a time
 9. prepare first commercial white-label deployment
+10. validate BELTRIX HIP-3 plan on testnet / isolated environment
+11. deploy multisig + timelock ownership for protocol configuration
+12. activate independent oracle operators
+13. research BELTRIX-native margin / liquidation / settlement prototype

@@ -219,8 +219,7 @@ BELTRIX Native
 이 단계는 보안 감사와 상당한 protocol engineering이 필요한 별도 프로젝트로
 취급합니다.
 
-현재 Phase 6는 이를 위한 **control-plane semantics와 adapter boundary를 먼저
-고정하는 단계**입니다.
+Phase 6에서 **control-plane semantics와 adapter boundary**를 고정했고, Phase 7에서는 BELTRIX Market Registry를 HIP-3 운영 계획으로 변환하는 hybrid control path까지 추가했습니다.
 
 ---
 
@@ -286,10 +285,48 @@ Phase 6 코드에는 signer / quorum / timelock / proposal / approval semantics�
 6. Settlement Adapter ✅
 7. Governance-ready Config ✅
 8. Hyperliquid Bootstrap Adapter ✅
-9. BELTRIX HIP-3 deployer research / testnet
-10. Protocol config multisig + timelock
-11. Independent oracle service
-12. Testnet liquidation / margin engine research
-13. BELTRIX-native settlement prototype
-14. Security audit
-15. Native protocol launch review
+9. BELTRIX HIP-3 unsigned deploy plan ✅
+10. HIP-3 scoped operating roles ✅
+11. Hybrid readiness gates ✅
+12. HIP-3 testnet / isolated deploy E2E
+13. Protocol config multisig + timelock
+14. Independent oracle service
+15. HIP-3 trading / incident-recovery E2E
+16. Testnet liquidation / margin engine research
+17. BELTRIX-native settlement prototype
+18. Security audit
+19. Native protocol launch review
+
+
+---
+
+# 12. Phase 7 — HIP-3 Hybrid Control Plane
+
+Phase 7에서는 Hyperliquid raw deploy action을 바로 보내는 대신 BELTRIX 자체
+market/risk/oracle 정책에서 **unsigned deployment plan**을 생성합니다.
+
+현재 plan이 표현하는 운영 범위:
+
+- registerAsset
+- setOracle
+- setMarginTableIds
+- setOpenInterestCaps
+- setFeeRecipient
+- setSubDeployers
+- optional funding/growth/annotation operations
+
+운영 권한도 역할별로 분리합니다.
+
+- Oracle Updater
+- Risk Manager
+- Emergency Guardian
+- Fee Admin
+- Market Admin
+
+중요한 점은 이 plan이 실제 서명 가능한 broadcast payload라고 가장하지 않는
+것입니다. 실제 Hyperliquid deployer schema validation, wallet signature,
+stake/capital, testnet E2E와 incident recovery 검증이 모두 끝나기 전에는
+researchOnly=true, executionEnabled=false 상태를 유지합니다.
+
+이 hybrid 단계의 목적은 **HyperCore를 사용하더라도 BELTRIX가 market policy와
+운영권을 소유하는 것**입니다.

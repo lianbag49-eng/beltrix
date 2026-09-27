@@ -14,7 +14,7 @@ validated user-authorized action.**
 
 This keeps the product from becoming a thin exchange skin.
 
-## Current Phase 6 components
+## Current Phase 6-7 components
 
 - venue-neutral user trade intents
 - protocol market registry
@@ -26,6 +26,9 @@ This keeps the product from becoming a thin exchange skin.
 - explicit BELTRIX-native settlement research boundary
 - governance-ready configuration proposals
 - decentralization maturity state
+- scoped BELTRIX operating roles
+- unsigned HIP-3 hybrid deployment plan
+- hybrid launch readiness gates
 
 ## Current execution path
 
@@ -123,3 +126,19 @@ BELTRIX owns the complete onchain state / settlement layer and all required
 decentralization components are live.
 
 The current code intentionally reports **bootstrap**, not native.
+
+
+## Phase 7 hybrid path
+
+BELTRIX can now derive an **unsigned HIP-3 deployment plan** from its own market
+registry and protocol policy.
+
+The plan covers market definition, oracle updater, margin table, open-interest
+cap, fee recipient and scoped sub-deployer permissions.
+
+This does not make the HIP-3 DEX live. The current readiness matrix remains
+blocked on independent oracle operation, multisig/timelock ownership, incident
+recovery, testnet deploy/trading E2E, liquidation review and fee reconciliation.
+
+The goal is to make Hyperliquid a replaceable / inherited settlement substrate,
+not the owner of BELTRIX market semantics.
