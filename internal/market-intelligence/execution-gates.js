@@ -22,6 +22,7 @@ export const CURRENT_RESEARCH_STATE=Object.freeze({
  gmx:Object.freeze({telemetry:true,api:true,testnet:true,reconcile:false,fees:false,risk:false,legal:false,security:false,e2e:false}),
  dydx:Object.freeze({telemetry:true,api:true,testnet:false,reconcile:false,fees:false,risk:false,legal:false,security:false,e2e:false}),
  paradex:Object.freeze({telemetry:false,api:true,testnet:false,reconcile:false,fees:true,risk:false,legal:false,security:false,e2e:false}),
+ aster:Object.freeze({telemetry:false,api:true,testnet:true,reconcile:false,fees:false,risk:false,legal:false,security:false,e2e:false}),
  drift:Object.freeze({telemetry:false,api:true,testnet:false,reconcile:false,fees:false,risk:false,legal:false,security:false,e2e:false}),
  aevo:Object.freeze({telemetry:true,api:true,testnet:false,reconcile:false,fees:false,risk:false,legal:false,security:false,e2e:false})
 });
