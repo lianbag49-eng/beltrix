@@ -23,10 +23,10 @@ export const VENUES=Object.freeze([
  },
  {
   id:'orderly',name:'Orderly',category:'Omnichain CLOB Infrastructure',chains:['Orderly Network','Multi-chain builder distribution'],
-  metrics:{perpVolume30d:1257000000,openInterest:42300000,source:'DefiLlama',retrieved:'2026-09-27'},
+  metrics:{perpVolume30d:1257000000,openInterest:42300000,source:'DefiLlama + Orderly official dashboards',retrieved:'2026-09-27',official24hVolume:38620000,officialOpenInterest:40340000,officialTvl:32240000,warning:'Orderly public surfaces report different builder counts depending on definition (e.g. active/production vs registered). Store the exact source and timestamp instead of treating one count as canonical.'},
   fees:{makerBasePct:null,takerBasePct:null,notes:'Builders set user-facing rates; base fees are tier-based. Builder onboarding gives a default example of 0.03% maker / 0.06% taker.'},
   economics:{
-   referral:'Builder stack supports referral systems and growth programs.',
+   referral:'Builder stack supports referral systems and growth programs; Orderly also operates a distributor program that attributes referred builders and pays recurring USDC based on their volume.',
    frontendRevenue:'Builder earns the difference between configured user-facing fees and Orderly base fees, subject to current builder terms.',
    whiteLabel:'Strong direct white-label candidate: DEX Creator API, broker creation, hosted/custom frontend and fee configuration.'
   },
@@ -44,7 +44,7 @@ export const VENUES=Object.freeze([
  {
   id:'gmx',name:'GMX',category:'Onchain Perps / Liquidity Pools',chains:['Arbitrum','Avalanche','MegaETH'],
   metrics:{perpVolume30d:2607000000,openInterest:21530000,source:'DefiLlama GMX V2',retrieved:'2026-09-27'},
-  fees:{makerBasePct:null,takerBasePct:null,notes:'Protocol fees are action/market dependent; integrations may configure an additional UI fee within protocol caps.'},
+  fees:{makerBasePct:null,takerBasePct:null,notes:'Most leveraged markets charge 0.04% or 0.06% position fees depending on whether the trade reduces or increases OI imbalance; UI fees may be configured separately within protocol caps.'},
   economics:{
    referral:'Public affiliate tiers document 5%-15% affiliate rewards and 5%-10% trader discounts on position fees.',
    frontendRevenue:'Custom frontends can pass uiFeeReceiver and claim UI fees; position orders can also carry referral attribution.',
@@ -53,7 +53,7 @@ export const VENUES=Object.freeze([
   integration:{publicApi:true,websocket:false,customFrontend:true,turnkeyDexCreator:false,orderRouting:true},
   bd:{path:'GMX Partners / onchain referral registration / custom frontend integration.',status:'review'},
   useCases:['Alternative onchain execution','UI-fee revenue','Referral partnership','Liquidity-model benchmark'],
-  cautions:['Execution model differs materially from CLOB venues.','Gas/execution fee and market-specific pricing need normalization.'],
+  cautions:['Execution model differs materially from CLOB venues.','Gas/execution fee and market-specific pricing need normalization.','Standard public referral tiers currently document 5%-15% affiliate rewards; partner tiers can differ.'],
   sources:[
    {label:'Frontend integration',url:'https://docs.gmx.io/docs/api/frontend-integration/'},
    {label:'Fees',url:'https://docs.gmx.io/docs/api/contracts/fees/'},
@@ -85,19 +85,38 @@ export const VENUES=Object.freeze([
   metrics:{perpVolume30d:301590000,openInterest:8650000,source:'DefiLlama protocol page',retrieved:'2026-09-27',warning:'Public aggregator pages have shown materially different OI snapshots; verify directly before a commercial decision.'},
   fees:{makerBasePct:0,takerBasePct:0,notes:'Current docs state retail maker/taker fees are 0% for perps/spot; Pro API maker fee is documented separately (0.003%).'},
   economics:{
-   referral:'Onboarding API accepts referral_code, marketing_code and UTM fields. Standard referral program is XP-based.',
+   referral:'Onboarding API accepts referral_code, marketing_code and UTM fields. Standard referral program is XP-based; the prior TAP campaign ended in 2026 and is not modeled as current recurring cash revenue.',
    frontendRevenue:'Strong attribution surfaces; direct frontend fee-share is not established by the current public docs reviewed.',
    whiteLabel:'API-friendly but no turnkey white-label creator product identified in this review.'
   },
   integration:{publicApi:true,websocket:true,customFrontend:true,turnkeyDexCreator:false,orderRouting:true},
   bd:{path:'Paradex affiliate/referral + API onboarding/marketing attribution.',status:'watch'},
   useCases:['Marketing attribution benchmark','Portfolio-margin benchmark','Starknet execution research'],
-  cautions:['Historical TAP affiliate campaign ended in 2026; do not model it as a current recurring payout.','Verify OI/liquidity directly because aggregator snapshots disagree.'],
+  cautions:['Historical TAP affiliate campaign ended in 2026; do not model it as a current recurring payout.','Verify OI/liquidity directly because aggregator snapshots disagree.','Public WebSocket channels require SBE payloads as of 2026-09-21.'],
   sources:[
    {label:'Onboarding',url:'https://docs.paradex.trade/api/prod/authentication/onboarding'},
    {label:'Trading fees',url:'https://docs.paradex.trade/trading/trading-fees'},
    {label:'Affiliate/referrals',url:'https://docs.paradex.trade/docs/xp-referrals/affiliate-referrals'},
    {label:'Market metrics',url:'https://defillama.com/protocol/paradex-perps'}
+  ]
+ },
+ {
+  id:'aster',name:'Aster',category:'Perps + Spot / Builder & Agent API',chains:['Aster ecosystem'],
+  metrics:{perpVolume30d:null,openInterest:null,source:'Direct collector pending first stored snapshot',retrieved:'2026-09-27',warning:'Use Aster public V3 telemetry directly before any liquidity ranking. Static market-size figures are intentionally not guessed.'},
+  fees:{makerBasePct:null,takerBasePct:null,notes:'V3 exposes current symbol commission rates; builder orders support builder + feeRate after user approval. Query current commissionRate per market instead of hard-coding a universal base fee.'},
+  economics:{
+   referral:'Public referral commercial terms were not treated as verified in this review; keep as BD diligence.',
+   frontendRevenue:'V3 builder endpoints support approved users, builder fee fields on trades, and builder/feeRate order parameters.',
+   whiteLabel:'Strong custom-integration candidate because Builder and Agent Wallet APIs are explicit, but no Orderly-style turnkey DEX Creator product is confirmed.'
+  },
+  integration:{publicApi:true,websocket:true,customFrontend:true,turnkeyDexCreator:false,orderRouting:true},
+  bd:{path:'Aster Builder / Agent API ecosystem; commercial terms and builder onboarding require direct confirmation.',status:'technical-review'},
+  useCases:['Builder-economics comparison','Chinese-language API ecosystem benchmark','Potential future execution venue','Agent-wallet architecture benchmark'],
+  cautions:['V3 is recommended for new integrations.','Authenticated Spot/Futures V3 endpoints require the main wallet to have completed a deposit as of 2026-09-01; Builder, Agent Wallet and public market data endpoints are documented as unaffected.','Do not enable funded routing until reconciliation, fees, risk and E2E gates pass.'],
+  sources:[
+   {label:'Official API docs',url:'https://github.com/asterdex/api-docs'},
+   {label:'V3 futures API',url:'https://github.com/asterdex/api-docs/blob/master/V3(Recommended)/EN/aster-finance-futures-api-v3.md'},
+   {label:'Changelog',url:'https://github.com/asterdex/api-docs/blob/master/CHANGELOG.md'}
   ]
  },
  {
