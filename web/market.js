@@ -100,11 +100,15 @@ function buildMarketRows(payload,mode){
 }
 async function fetchCatalog(mode,signal){
  if(mode==='spot')return info({type:'spotMeta'},signal);
- const [perpDexs,allMetas]=await Promise.all([
-  info({type:'perpDexs'},signal),
-  info({type:'allPerpMetas'},signal)
- ]);
- return {perpDexs,allMetas};
+ try{
+  const [perpDexs,allMetas]=await Promise.all([
+   info({type:'perpDexs'},signal),
+   info({type:'allPerpMetas'},signal)
+  ]);
+  if(Array.isArray(perpDexs)&&Array.isArray(allMetas)&&allMetas.length&&perpDexs.length===allMetas.length)return {perpDexs,allMetas};
+ }catch(e){if(signal?.aborted)throw e}
+ const meta=await info({type:'meta'},signal);
+ return {perpDexs:[null],allMetas:[meta]};
 }
 function catalogKey(rows){return rows.map(x=>x.value+'|'+x.label+'|'+(x.maxLeverage??'')).join(';')}
 function applyCatalog(rows,{preserve=true}={}){
