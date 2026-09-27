@@ -10,6 +10,8 @@ for(const file of [
  'market-normalizer.js',
  'market-snapshot.js',
  'market-intelligence.js',
+ 'market-metrics.js',
+ 'telemetry-history.js',
  'venue-research.js',
  'liquidity.js',
  'bd-matrix.js',
