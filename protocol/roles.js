@@ -19,7 +19,7 @@ export function normalizeRoleGrant(input={}){
  const role=String(input.role||'').trim();
  const account=String(input.account||'').trim().toLowerCase();
  if(!BELTRIX_PROTOCOL_ROLES[role])throw Error('Unknown BELTRIX protocol role: '+role);
- if(!account)throw Error('Role grant account is required');
+ if(!/^0x[0-9a-f]{40}$/.test(account))throw Error('Role grant account must be a 20-byte EVM address');
  return Object.freeze({
   role,
   account,
