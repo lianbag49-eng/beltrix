@@ -1,9 +1,9 @@
-import {mkdir,copyFile,writeFile} from 'node:fs/promises';
+import {mkdir,copyFile,writeFile,readFile,access} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {dirname,join} from 'node:path';
 const source=dirname(fileURLToPath(import.meta.url)),root=process.argv.includes('--root'),out=root?'public':'public/beltrix';
 await mkdir(out,{recursive:true});
-for(const name of [
+const assets=[
  'index.html',
  'app.js',
  'paper.js',
@@ -43,5 +43,20 @@ for(const name of [
  'beltrix-symbol.svg',
  'beltrix-icon.png',
  'manifest.webmanifest'
-])await copyFile(join(source,name),join(out,name));
+];
+for(const name of assets)await copyFile(join(source,name),join(out,name));
+
+// Validate the exact static artifact, not just the source tree. Any relative module
+// import omitted from the publish bundle must fail the build before deployment.
+for(const name of assets.filter(x=>x.endsWith('.js'))){
+ const body=await readFile(join(out,name),'utf8');
+ const specs=[];
+ for(const re of [/\bfrom\s*['"]\.\/([^'"]+)['"]/g,/\bimport\s*['"]\.\/([^'"]+)['"]/g,/\bimport\(\s*['"]\.\/([^'"]+)['"]\s*\)/g]){
+  for(const match of body.matchAll(re))specs.push(match[1]);
+ }
+ for(const spec of specs){
+  const target=join(out,spec);
+  try{await access(target)}catch{throw Error(`Static publish is missing ${spec}, imported by ${name}`)}
+ }
+}
 if(!root){await mkdir('public/web',{recursive:true});await writeFile('public/web/index.html','<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BELTRIX</title><body style="background:#08090b;color:#e6be72;font:18px system-ui;padding:40px"><p>BELTRIX has a new address.</p><a style="color:inherit" href="../beltrix/">Open BELTRIX</a><script>location.replace("../beltrix/"+location.search+location.hash)</script></body></html>');}
