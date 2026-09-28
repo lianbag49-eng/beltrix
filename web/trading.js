@@ -15,6 +15,44 @@ const infos=Object.fromEntries(Object.entries(transports).map(([n,t])=>[n,new In
 let info=infos.mainnet,connectedNetwork=null;
 let account=null,provider=null,market=null,client=null,busy=false,pending=null,epoch=0,active=null,positions=[],activeAt=0,refreshing=false,builderApproval=0;
 const builderConfig=validateBuilderConfig(BELTRIX_BUILDER);
+
+const tradingWalletProviders=new Map();
+const tradingWalletProviderRefs=new WeakSet();
+function walletProviderName(p,fallback='Browser wallet'){
+ if(p?.isRabby)return 'Rabby Wallet';
+ if(p?.isMetaMask)return 'MetaMask';
+ if(p?.isOkxWallet||p?.isOKExWallet)return 'OKX Wallet';
+ if(p?.isCoinbaseWallet)return 'Coinbase Wallet';
+ return fallback;
+}
+function registerTradingWalletProvider(p,name,id){
+ if(!p?.request||tradingWalletProviderRefs.has(p))return;
+ tradingWalletProviderRefs.add(p);
+ const base=String(id||name||'wallet').toLowerCase().replace(/[^a-z0-9_-]+/g,'-').replace(/^-+|-+$/g,'')||'wallet';
+ let key=base,n=2;while(tradingWalletProviders.has(key))key=base+'-'+n++;
+ tradingWalletProviders.set(key,{provider:p,name:String(name||walletProviderName(p)).slice(0,60)});
+ syncTradingWalletProviderSelect();
+}
+function discoverTradingWalletProviders(){
+ registerTradingWalletProvider(window.okxwallet,'OKX Wallet','okx');
+ for(const p of window.ethereum?.providers||[])registerTradingWalletProvider(p,walletProviderName(p));
+ registerTradingWalletProvider(window.ethereum,walletProviderName(window.ethereum),'browser');
+ window.dispatchEvent(new Event('eip6963:requestProvider'));
+}
+function syncTradingWalletProviderSelect(){
+ const select=$('walletProvider');if(!select)return;
+ const previous=select.value||'auto';
+ const options=[['auto','Auto detect'],...Array.from(tradingWalletProviders.entries()).map(([id,x])=>[id,x.name])];
+ select.replaceChildren(...options.map(([value,label])=>{const o=document.createElement('option');o.value=value;o.textContent=label;return o}));
+ select.value=options.some(([v])=>v===previous)?previous:'auto';
+}
+window.addEventListener('eip6963:announceProvider',e=>registerTradingWalletProvider(e.detail?.provider,e.detail?.info?.name,e.detail?.info?.uuid));
+function selectedTradingWalletProvider(){
+ discoverTradingWalletProviders();
+ const id=$('walletProvider')?.value||'auto';
+ if(id!=='auto'&&tradingWalletProviders.has(id))return tradingWalletProviders.get(id).provider;
+ return window.beltrixWallet?.provider||tradingWalletProviders.values().next().value?.provider||window.ethereum||window.okxwallet||null;
+}
 const JOURNAL='beltrix-trade-submissions-v1',TWAPS='beltrix-twaps-v1';
 let knownTwaps=[];try{const a=JSON.parse(localStorage.getItem(TWAPS)||'[]');if(Array.isArray(a))knownTwaps=a.filter(x=>Number.isSafeInteger(x.id)&&['mainnet','testnet'].includes(x.network)).slice(-100)}catch{}
 let twapHistory=[];
@@ -95,8 +133,8 @@ async function guard(requireFresh=true){
 }
 $('tradeConnect').onclick=async()=>{if(busy)return;window.openPage?.('markets');if(client){disconnect();status('Wallet disconnected');return}busy=true;availability();try{
  const net=$('marketNetwork').value,config=networks[net];if(!config)throw Error('Unknown network');
- const chosen=$('walletProvider').value==='okx'?window.okxwallet:(window.beltrixWallet?.provider||window.ethereum);
- if(!chosen?.request)throw Error($('walletProvider').value==='okx'?'Open this page in the OKX Wallet browser or install the OKX Wallet extension.':'Open this page in a compatible wallet browser.');
+ const chosen=selectedTradingWalletProvider();
+ if(!chosen?.request)throw Error('No compatible wallet was detected. Install or open BELTRIX inside MetaMask, Rabby, OKX Wallet, Coinbase Wallet, or another EIP-1193 compatible wallet.');
  if(provider){provider.removeListener?.('accountsChanged',disconnect);provider.removeListener?.('chainChanged',disconnect);provider.removeListener?.('disconnect',disconnect)}
  disconnect();provider=chosen;const accounts=await provider.request({method:'eth_requestAccounts'});const selected=accounts[0];if(!/^0x[0-9a-f]{40}$/i.test(selected))throw Error('Unable to verify wallet address');
  try{await provider.request({method:'wallet_switchEthereumChain',params:[{chainId:config.hex}]})}catch(e){if(e.code!==4902)throw e;await provider.request({method:'wallet_addEthereumChain',params:[{chainId:config.hex,chainName:config.chain.name,nativeCurrency:config.chain.nativeCurrency,rpcUrls:config.chain.rpcUrls.default.http,blockExplorerUrls:[config.chain.blockExplorers.default.url]}]})}
@@ -193,6 +231,7 @@ async function refresh(){
  }finally{refreshing=false}
 }
 $('tradeRefresh').onclick=()=>refresh().catch(e=>status(errorText(e)));setInterval(()=>{if(account&&!busy&&!document.hidden)refresh().catch(()=>{$('tradeAccountStatus').textContent='Account refresh failed. Shown data may be stale.'})},15000);
+discoverTradingWalletProviders();
 $('walletProvider').onchange=()=>{if(busy)return;disconnect();status('Wallet provider changed. Connect to continue.')};
 for(const tab of document.querySelectorAll('[data-account-tab]'))tab.onclick=()=>{for(const b of document.querySelectorAll('[data-account-tab]')){const selected=b===tab;b.setAttribute('aria-selected',String(selected));$('account-'+b.dataset.accountTab).hidden=!selected}};
 updateTicket();
