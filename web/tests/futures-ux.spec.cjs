@@ -36,5 +36,16 @@ test('connected futures ticket shows current position entry liquidation and PnL'
  await expect(page.locator('#futuresPositionState')).toContainText('Long 2 ETH');
  await expect(page.locator('[data-position-metric="entry"]')).toHaveText('2,450');
  await expect(page.locator('[data-position-metric="liq"]')).toHaveText('2,200');
+ await expect(page.locator('[data-position-metric="liqDistance"]')).toHaveText('12.00%');
  await expect(page.locator('[data-position-metric="pnl"]')).toHaveText('+100 USDC');
+});
+
+
+test('mobile trading controls keep 44px tap targets and wallet state is readable',async({page})=>{
+ await setup(page);await page.setViewportSize({width:320,height:740});await connect(page);
+ for(const selector of ['#tradeConnect','#walletProvider','[data-fast-type="Market"]','#futuresLong']){
+  const box=await page.locator(selector).boundingBox();expect(box.height,selector).toBeGreaterThanOrEqual(44);
+ }
+ await expect(page.locator('#tradeAccount')).toContainText('Browser wallet');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
