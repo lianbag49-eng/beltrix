@@ -42,9 +42,18 @@ test('postgres export resolves all prior alerts when the current asset has no al
 
 test('postgres export uses policy-specific retention windows instead of one hard-coded age',()=>{
  const finishedAt=Date.UTC(2026,8,28);
- const sql=batchToPostgresSql({version:1,startedAt:finishedAt-1000,finishedAt,successful:0,failed:0,rows:[]});
+ const sql=batchToPostgresSql({version:1,startedAt:finishedAt-1000,finishedAt,successful:0,failed:0,rows:[]},{includeRetention:true});
  assert.match(sql,/2026-08-29T00:00:00\.000Z/);
  assert.match(sql,/2026-06-30T00:00:00\.000Z/);
  assert.match(sql,/2026-04-01T00:00:00\.000Z/);
  assert.doesNotMatch(sql,/interval '90 days'/);
+});
+
+
+test('retention is disabled by default until explicitly enabled',()=>{
+ const finishedAt=Date.UTC(2026,8,28);
+ const sql=batchToPostgresSql({version:1,startedAt:finishedAt-1000,finishedAt,successful:0,failed:0,rows:[]});
+ assert.doesNotMatch(sql,/delete from mi_snapshots/);
+ assert.doesNotMatch(sql,/delete from mi_collector_runs/);
+ assert.doesNotMatch(sql,/delete from mi_bd_events/);
 });
