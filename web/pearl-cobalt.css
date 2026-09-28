@@ -694,3 +694,17 @@ html[data-beltrix-ui="pearl-cobalt"] .book-head,
 html[data-beltrix-ui="pearl-cobalt"] .order-estimate dt{
  font-weight:var(--pc-weight-regular)!important;
 }
+
+
+/* Final Phase-A interaction sizing and numeric typography guards. */
+html[data-beltrix-ui="pearl-cobalt"] .book-head{
+ font-weight:var(--pc-weight-medium)!important;
+}
+@media(max-width:680px){
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] #tradeConnect,
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] #walletProvider,
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .fast-row button,
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .futures-actions button{
+  min-height:44px!important;
+ }
+}
