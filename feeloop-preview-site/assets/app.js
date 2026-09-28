@@ -511,6 +511,45 @@ const FeeLoop = (() => {
     $("#logoutAll")?.addEventListener("click",async()=>{if(!confirm("Log out all sessions?"))return;try{await api("/api/auth/logout-all",{method:"POST"});currentUser=null;csrfToken=null;location.replace("login.html")}catch(err){toast(errorText(err))}});
   }
 
+  async function initAdminUser(){
+    if(!$("#adminUserRoot"))return;
+    const me=await guard("admin");if(!me)return;
+    const userId=query("id");
+    if(!userId){$("#adminUserRoot").innerHTML='<div class="notice">Member ID is missing.</div>';return}
+
+    async function load(){
+      try{
+        const d=await api("/api/admin/users/"+encodeURIComponent(userId));
+        $("#adminUserEmail").textContent=d.user.email;
+        $("#adminUserEligibility").textContent=d.user.eligibilityStatus||"active";
+        $("#eligibilityStatus").value=d.user.eligibilityStatus||"active";
+        setText("#adminUserFees",money(d.summary.totalFees));
+        setText("#adminUserCashback",money(d.summary.accrued));
+        setText("#adminUserAvailable",money(d.summary.available));
+        setText("#adminUserPaid",money(d.summary.paid));
+        $("#adminUserUids").innerHTML=d.accounts.length?d.accounts.map(x=>`<div class="step"><div class="step-no">${x.status==="verified"?"✓":"•"}</div><div><b>${escapeHtml(publicConfig.exchanges.find(e=>e.id===x.exchangeId)?.name||x.exchangeId)}</b><div class="meta">${escapeHtml(x.uid)} · ${escapeHtml(x.status)}${x.lastSyncAt?" · synced "+escapeHtml(new Date(x.lastSyncAt).toLocaleString()):""}</div></div></div>`).join(""):'<div class="empty">No UID connections.</div>';
+        $("#adminNotes").innerHTML=d.notes.length?d.notes.map(n=>`<div class="step"><div class="step-no">•</div><div><b>${escapeHtml(n.authorEmail||"operator")}</b><div class="meta">${escapeHtml(n.note)} · ${escapeHtml(new Date(n.createdAt).toLocaleString())}</div></div></div>`).join(""):'<div class="empty">No operator notes.</div>';
+        $("#adminUserFeesTable").innerHTML=d.fees.length?d.fees.map(x=>`<tr><td>${escapeHtml(new Date(x.occurredAt).toLocaleDateString())}</td><td>${escapeHtml(publicConfig.exchanges.find(e=>e.id===x.exchangeId)?.name||x.exchangeId)}</td><td>${escapeHtml(x.sourceRecordId)}</td><td>${money(x.feeAmount)}</td><td>${money(x.commissionAmount)}</td><td>${money(x.cashbackAmount)}</td></tr>`).join(""):'<tr><td colspan="6"><div class="empty">No fee records.</div></td></tr>';
+        $("#adminUserPayouts").innerHTML=d.payouts.length?d.payouts.map(x=>`<tr><td>${escapeHtml(new Date(x.createdAt).toLocaleDateString())}</td><td>${money(x.amount)}</td><td>${escapeHtml(x.method)}</td><td>${statusPill(x.status)}</td><td>${escapeHtml(x.paymentRef||"—")}</td></tr>`).join(""):'<tr><td colspan="5"><div class="empty">No payouts.</div></td></tr>';
+        $("#adminUserAdjustments").innerHTML=d.adjustments.length?d.adjustments.map(x=>`<tr><td>${escapeHtml(new Date(x.createdAt).toLocaleDateString())}</td><td>${money(x.amount)}</td><td>${escapeHtml(x.reason)}</td><td>${escapeHtml(x.source)}</td></tr>`).join(""):'<tr><td colspan="4"><div class="empty">No adjustments.</div></td></tr>';
+      }catch(err){toast(errorText(err))}
+    }
+    await load();
+
+    $("#eligibilityForm")?.addEventListener("submit",async e=>{
+      e.preventDefault();
+      try{await api("/api/admin/users/"+encodeURIComponent(userId)+"/eligibility",{method:"PATCH",body:{status:$("#eligibilityStatus").value}});toast("Eligibility updated");await load()}catch(err){toast(errorText(err))}
+    });
+    $("#adjustmentForm")?.addEventListener("submit",async e=>{
+      e.preventDefault();
+      try{await api("/api/admin/users/"+encodeURIComponent(userId)+"/adjustments",{method:"POST",body:{amount:Number($("#adjustmentAmount").value),reason:$("#adjustmentReason").value.trim()}});e.currentTarget.reset();toast("Adjustment applied");await load()}catch(err){toast(errorText(err))}
+    });
+    $("#adminNoteForm")?.addEventListener("submit",async e=>{
+      e.preventDefault();
+      try{await api("/api/admin/users/"+encodeURIComponent(userId)+"/notes",{method:"POST",body:{note:$("#adminNote").value.trim()}});e.currentTarget.reset();toast("Note added");await load()}catch(err){toast(errorText(err))}
+    });
+  }
+
   async function initAdminSetup(){
     const form=$("#adminSetupForm");if(!form)return;
     try{
@@ -546,6 +585,7 @@ const FeeLoop = (() => {
     await initResetPassword();
     await initConfirmEmailChange();
     await initAccount();
+    await initAdminUser();
     await initAdminSetup();
     await renderEvents("[data-events]",3);
     $$("[data-logout]").forEach(x=>x.addEventListener("click",logout));
