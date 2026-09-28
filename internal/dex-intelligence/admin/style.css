@@ -6,3 +6,6 @@
 .server-history-config[hidden]{display:none!important}.server-history-config label{display:grid;gap:5px;font-size:11px;color:#9eabb9}.server-history-config input,.server-history-config select{min-width:0}
 .server-history-config button{min-height:40px}.server-history-config .note{grid-column:1/-1;margin:0}
 @media(max-width:760px){.server-history-config{grid-template-columns:1fr}.server-history-config .note{grid-column:1}}
+
+
+.alert-actions{display:flex;gap:6px;flex-wrap:wrap}.alert-actions button{min-height:34px;padding:6px 9px;border:1px solid #344255;border-radius:7px;background:#18212d;color:#dce7f2;font-size:10px}.alert-actions button:hover{border-color:#6a87aa}.alert-actions button[data-alert-status="resolved"]{border-color:#6f4b51;color:#ffc2c8}.alert-actions button:disabled{opacity:.45;cursor:not-allowed}
