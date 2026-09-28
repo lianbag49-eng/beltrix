@@ -449,3 +449,12 @@ html[data-beltrix-ui="pearl-cobalt"] .usdt-modal .w-link{color:var(--pc-accent)!
  html[data-beltrix-ui="pearl-cobalt"] .bottom-nav .dex-circle{border-color:var(--pc-header)!important}
 }
 
+
+
+/* WebKit theme repaint guard for wallet quick actions. */
+html[data-beltrix-ui="pearl-cobalt"][data-theme="light"] .w-action-circle{
+ background-color:#ffffff!important;background-image:none!important;
+}
+html[data-beltrix-ui="pearl-cobalt"][data-theme="dark"] .w-action-circle{
+ background-color:#0f1d30!important;background-image:none!important;
+}
