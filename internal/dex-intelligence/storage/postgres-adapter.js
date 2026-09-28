@@ -70,6 +70,21 @@ export function createPostgresTelemetryAdapter(client){
     [Math.max(1,Math.min(1000,Number(limit)||200))]
    );
    return result.rows;
+  },
+
+  async updateAlertStatus({id,status}={}){
+   if(!Number.isInteger(Number(id))||Number(id)<=0)throw Error('Invalid alert id');
+   if(!['acknowledged','resolved'].includes(status))throw Error('Invalid alert status');
+   const result=await client.query(
+    `update mi_alert_events
+        set status=$2,
+            resolved_at=case when $2='resolved' then now() else resolved_at end,
+            last_seen_at=greatest(last_seen_at,now())
+      where id=$1 and status in ('open','acknowledged')
+      returning id,asset,venue,alert_key,severity,status,message,evidence,opened_at,last_seen_at,resolved_at`,
+    [Number(id),status]
+   );
+   return result.rows[0]||null;
   }
  });
 }
