@@ -49,3 +49,12 @@ test('mobile trading controls keep 44px tap targets and wallet state is readable
  await expect(page.locator('#tradeAccount')).toContainText('Browser wallet');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
+
+
+test('position and draft prices publish chart marker state',async({page})=>{
+ await setup(page);await connect(page);
+ await expect(page.locator('#marketCanvas')).toHaveAttribute('data-position-marker','2450');
+ await page.locator('[data-fast-type=Stop]').click();
+ await page.locator('#tradeTrigger').fill('2400');
+ await expect(page.locator('#marketCanvas')).toHaveAttribute('data-order-draft','2400');
+});
