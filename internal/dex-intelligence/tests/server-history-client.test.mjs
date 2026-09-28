@@ -63,3 +63,19 @@ test('collector health and alert reads use authenticated GET endpoints',async()=
  assert.equal(calls[0].init.headers.authorization,'Bearer secret');
  assert.equal(calls[1].init.headers.authorization,'Bearer secret');
 });
+
+
+test('alert status client sends authenticated PATCH without persisting credentials',async()=>{
+ let call=null;
+ const client=createServerHistoryClient({
+  baseUrl:'https://internal.example',
+  getToken:()=> 'session-token',
+  fetchImpl:async(url,init)=>{call={url,init};return {ok:true,status:200,async json(){return {alert:{id:9,status:'acknowledged'}}}}}
+ });
+ const out=await client.updateAlertStatus(9,'acknowledged');
+ assert.equal(call.url,'https://internal.example/v1/alerts/9');
+ assert.equal(call.init.method,'PATCH');
+ assert.equal(call.init.headers.authorization,'Bearer session-token');
+ assert.deepEqual(JSON.parse(call.init.body),{status:'acknowledged'});
+ assert.equal(out.alert.status,'acknowledged');
+});
