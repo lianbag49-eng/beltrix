@@ -525,3 +525,20 @@ html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] #boost.page.active{
 @media(max-width:900px){
  html[data-beltrix-ui="pearl-cobalt"] #pcWalletSurfaceNav{display:none!important}
 }
+
+
+/* Explicit theme-state surfaces: beat legacy wallet gradient shorthands after theme toggles. */
+html[data-beltrix-ui="pearl-cobalt"][data-theme="light"] .w-action-circle{
+ background-color:#ffffff!important;background-image:none!important;
+}
+html[data-beltrix-ui="pearl-cobalt"][data-theme="dark"] .w-action-circle{
+ background-color:#0f1d30!important;background-image:none!important;
+}
+html[data-beltrix-ui="pearl-cobalt"][data-theme="light"] .wallet-modal,
+html[data-beltrix-ui="pearl-cobalt"][data-theme="light"] .usdt-modal{
+ background-color:#ffffff!important;
+}
+html[data-beltrix-ui="pearl-cobalt"][data-theme="dark"] .wallet-modal,
+html[data-beltrix-ui="pearl-cobalt"][data-theme="dark"] .usdt-modal{
+ background-color:#0b1728!important;
+}
