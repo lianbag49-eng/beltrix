@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Account — FEELOOP</title><link rel="stylesheet" href="assets/style.css?v=12"></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Account — FEELOOP</title><link rel="stylesheet" href="assets/style.css?v=14"></head>
 <body>
 <div class="sidebar-layout">
   <aside class="sidebar">
@@ -24,7 +24,47 @@
         <p class="meta">Review active sessions and revoke anything you do not recognize.</p>
         <div style="margin-top:16px"><button class="btn danger" id="logoutAll">Log out all sessions</button></div>
       </section>
+      <section class="card">
+        <div class="eyebrow">Password</div><h3 style="margin-top:8px">Change password</h3>
+        <form class="stack" id="changePasswordForm" style="margin-top:14px">
+          <div class="field"><label>Current password</label><input id="currentPassword" type="password" required></div>
+          <div class="field"><label>New password</label><input id="newAccountPassword" type="password" minlength="10" required></div>
+          <button class="btn primary">Update password</button>
+        </form>
+      </section>
+      <section class="card">
+        <div class="eyebrow">Email</div><h3 style="margin-top:8px">Change email</h3>
+        <form class="stack" id="changeEmailForm" style="margin-top:14px">
+          <div class="field"><label>New email</label><input id="newEmail" type="email" required></div>
+          <div class="field"><label>Current password</label><input id="emailChangePassword" type="password" required></div>
+          <button class="btn">Send confirmation</button>
+        </form>
+      </section>
     </div>
+
+    <section class="section">
+      <div class="section-head"><div><div class="eyebrow">Preferences</div><h2>Language</h2></div></div>
+      <div class="card"><div class="field"><label>Preferred language</label><select id="preferredLanguage"><option value="en">English</option><option value="ko">한국어</option><option value="zh">中文</option><option value="ru">Русский</option></select></div></div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><div><div class="eyebrow">Payout</div><h2>Saved destinations</h2><p class="lead">Store frequently used exchange UIDs or wallet addresses.</p></div></div>
+      <div class="grid-2">
+        <form class="card stack" id="destinationForm">
+          <div class="field"><label>Label</label><input id="destinationLabel" required placeholder="Main USDT wallet"></div>
+          <div class="field"><label>Method</label><select id="destinationMethod"><option value="exchange_uid">Exchange UID</option><option value="wallet">Wallet</option></select></div>
+          <div class="field"><label>Destination</label><input id="destinationValue" required></div>
+          <label style="display:flex;gap:8px;align-items:center"><input id="destinationDefault" type="checkbox" style="width:auto"> Set as default</label>
+          <button class="btn primary">Save destination</button>
+        </form>
+        <div class="card"><div id="destinationList" class="flow"></div></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><div><div class="eyebrow">Notifications</div><h2>Recent activity</h2></div></div>
+      <div class="card"><div id="notificationList" class="flow"></div></div>
+    </section>
 
     <section class="section">
       <div class="section-head"><div><div class="eyebrow">Sessions</div><h2>Active sign-ins</h2><p class="lead">Server-side sessions remain valid across deploys until revoked or expired.</p></div></div>
@@ -32,4 +72,4 @@
     </section>
   </main>
 </div>
-<div id="toast" class="toast"></div><script src="assets/app.js?v=12"></script></body></html>
+<div id="toast" class="toast"></div><script src="assets/app.js?v=14"></script></body></html>
