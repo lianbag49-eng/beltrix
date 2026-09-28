@@ -10,6 +10,9 @@ test('scheduled batch isolates one asset failure and keeps successful snapshots'
    alerts:[],
    bdEvents:[],
    intelligence:{rows:[]},
+   bookRows:asset==='BTC'?[{venue:'orderly',ok:false,error:'HTTP 503',latencyMs:12}]:[],
+   metricRows:[],
+   gmxState:null,
    persistence:null
   };
  };
@@ -19,6 +22,7 @@ test('scheduled batch isolates one asset failure and keeps successful snapshots'
  assert.equal(result.failed,1);
  assert.equal(result.rows.find(x=>x.asset==='ETH').ok,false);
  assert.equal(result.rows.find(x=>x.asset==='BTC').snapshot.asset,'BTC');
+ assert.deepEqual(result.rows.find(x=>x.asset==='BTC').collectorErrors,[{venue:'orderly',source:'book',error:'HTTP 503',latencyMs:12}]);
 });
 
 test('scheduled batch reports failure when every asset fails',async()=>{
