@@ -33,6 +33,19 @@ export function createServerHistoryClient({baseUrl,fetchImpl=fetch,getToken=()=>
   openAlerts(limit=200){
    const q=new URLSearchParams({limit:String(limit)});
    return request('/v1/open-alerts?'+q);
+  },
+  async updateAlertStatus(id,status){
+   const token=String(await getToken()||'').trim();
+   if(!token)throw Error('Market Intelligence server token is not available');
+   const response=await fetchImpl(base+'/v1/alerts/'+Number(id),{
+    method:'PATCH',
+    credentials:'omit',
+    headers:{accept:'application/json','content-type':'application/json',authorization:'Bearer '+token},
+    body:JSON.stringify({status})
+   });
+   let data=null;try{data=await response.json()}catch{}
+   if(!response.ok)throw Error(data?.error||('Market Intelligence API '+response.status));
+   return data;
   }
  });
 }
