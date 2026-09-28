@@ -19,6 +19,7 @@ const builderConfig=validateBuilderConfig(BELTRIX_BUILDER);
 const tradingWalletProviders=new Map();
 const tradingWalletProviderRefs=new WeakSet();
 function walletProviderName(p,fallback='Browser wallet'){
+ if(p?.isBeltrixWallet)return 'BELTRIX Wallet';
  if(p?.isRabby)return 'Rabby Wallet';
  if(p?.isMetaMask)return 'MetaMask';
  if(p?.isOkxWallet||p?.isOKExWallet)return 'OKX Wallet';
