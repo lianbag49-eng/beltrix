@@ -13,6 +13,12 @@ import {evaluateMarketAlerts,dedupeAlerts} from '../alert-engine.js';
 import {alertsToBdEvents} from '../bd-events.js';
 import {venueTrendSeries,seriesStats,TREND_METRICS} from '../trend-series.js';
 import {createServerHistoryClient} from '../server-history-client.js';
+import {buildOperationsSummary} from '../operations-health.js';
+import {evaluateSnapshotQuality} from '../data-quality.js';
+import {buildVenueComparison} from '../venue-comparison.js';
+import {buildBdDiligence} from '../bd-intelligence.js';
+import {normalizeTradeIntent,buildExecutionPlan} from '../execution-router.js';
+import {protocolArchitectureSnapshot} from '../protocol-core.js';
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -34,6 +40,7 @@ let historySource='local';
 let serverHistoryClient=null;
 let latestAlerts=[];
 let latestBdEvents=[];
+let latestCollectorRuns=[];
 
 function table(headers,rows){
  return '<div class="table-wrap"><table><thead><tr>'+headers.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
@@ -73,11 +80,14 @@ async function loadServerHistory(){
   })):[];
   historySource='server';
   const healthRows=Array.isArray(healthResult?.rows)?healthResult.rows:[];
+  latestCollectorRuns=healthRows;
   const latestRun=healthRows[0]||null;
   status.textContent=`Loaded ${latestHistory.length} persisted ${asset} snapshots`+(latestRun? ` · last collector run ${new Date(latestRun.finished_at||latestRun.finishedAt).toLocaleString()}`:'')+'.';
   renderAlerts();
   renderHistory();
   renderCollectorStatus();
+  renderOperations();
+  renderVenueCompare();
  }catch(error){
   status.textContent='Server history unavailable: '+String(error?.message||error);
  }
@@ -98,6 +108,100 @@ function renderOverview(){
   const research=researchCoverage(v.id);
   return '<article class="card '+(v.role==='baseline'?'baseline':'')+'"><small>'+esc(v.role.toUpperCase())+'</small><h2>'+esc(v.name)+'</h2><p>'+esc(v.marketModel)+'</p><div>'+v.integration.map(x=>'<span class="tag">'+esc(x)+'</span>').join('')+'</div><p>'+esc(route.asset)+' mapping: <code>'+esc(symbol)+'</code></p><p>White-label: '+(v.whiteLabel?'Yes':'No')+' · Execution candidate: '+(v.executionCandidate?'Yes':'No')+'</p><p>Research coverage: '+pct(research.knownRatio)+'</p></article>';
  }).join('')+'</div>';
+}
+
+
+function latestAssetHistory(){
+ return telemetryForAsset(latestHistory,currentAsset());
+}
+function latestSnapshot(){
+ const rows=latestAssetHistory();
+ return rows.at(-1)||null;
+}
+function localCollectorRows(){
+ if(latestCollectorRuns.length)return latestCollectorRuns;
+ const latest=latestSnapshot();
+ if(!latest?.timestamp)return [];
+ const states=Object.values(latest.venues||{});
+ return [{
+  finished_at:new Date(Number(latest.timestamp)).toISOString(),
+  successful_assets:states.filter(v=>v?.ok!==false).length,
+  failed_assets:states.filter(v=>v?.ok===false).length
+ }];
+}
+function renderOperations(){
+ if(!$('opsSummary'))return;
+ const history=latestAssetHistory(),latest=history.at(-1)||null,previous=history.length>1?history.at(-2):null;
+ const ops=buildOperationsSummary({collectorRuns:localCollectorRows(),latestSnapshot:latest,alerts:latestAlerts,now:Date.now()});
+ const quality=latest?evaluateSnapshotQuality(latest,previous,{now:Date.now()}):null;
+ $('opsSummary').innerHTML=[
+  ['Overall',ops.overall],
+  ['Collector',ops.collector.status],
+  ['Last run',ops.collector.lastRunAt?new Date(ops.collector.lastRunAt).toLocaleString():'N/A'],
+  ['Down venues',ops.counts.down],
+  ['Degraded venues',ops.counts.degraded]
+ ].map(([label,value])=>'<article class="summary-card"><strong>'+esc(value)+'</strong><span>'+esc(label)+'</span></article>').join('');
+ $('opsVenueTable').innerHTML=ops.venues.length?table(['Venue','State','Critical','Warnings','Reasons'],ops.venues.map(v=>[
+  esc(v.venue),'<span class="'+(v.status==='healthy'?'ok':v.status==='degraded'?'warn':'bad')+'">'+esc(v.status)+'</span>',
+  String(v.critical),String(v.warning),esc(v.reasons.join(', ')||'none')
+ ])):'<p class="note">No persisted venue state is available yet.</p>';
+ $('qualitySummary').innerHTML=quality?[
+  ['Quality',quality.status],['Score',quality.score],['Critical',quality.critical],['Warnings',quality.warnings],['Age',quality.ageMs===null?'N/A':fmt(quality.ageMs/60000)+' min']
+ ].map(([label,value])=>'<article class="summary-card"><strong>'+esc(value)+'</strong><span>'+esc(label)+'</span></article>').join(''):'';
+ $('qualityTable').innerHTML=quality?.venues?.length?table(['Venue','Quality','Score','Critical','Warnings','Issues'],quality.venues.map(v=>[
+  esc(v.venue),'<span class="'+(v.status==='valid'?'ok':v.status==='degraded'?'warn':'bad')+'">'+esc(v.status)+'</span>',
+  String(v.score),String(v.critical),String(v.warnings),esc(v.issues.map(x=>x.code).join(', ')||'none')
+ ])):'<p class="note">No snapshot available for quality evaluation.</p>';
+}
+function renderVenueCompare(){
+ if(!$('venueCompareTable'))return;
+ const history=latestAssetHistory(),latest=history.at(-1)||null;
+ const rows=buildVenueComparison({asset:currentAsset(),latestSnapshot:latest,history});
+ $('venueCompareTable').innerHTML=table(
+  ['Venue','Model','Data','Availability','Latency','Funding','OI USD','24h Vol USD','Spread','Depth ±25bps','Long cap','Short cap','White-label','Shared liquidity','Execution','Integration / Settlement'],
+  rows.map(v=>[
+   esc(v.name),esc(v.marketModel),health(v.dataStatus),pct(v.availabilityRatio),finite(v.latencyMs)?fmt(v.latencyMs)+' ms':'N/A',
+   rate(v.fundingRate),usd(v.openInterestUsd),usd(v.volume24hUsd),bps(v.spreadBps),usd(v.depth25Usd),usd(v.capacityLongUsd),usd(v.capacityShortUsd),
+   yn(v.whiteLabel),yn(v.sharedLiquidity),v.executionQualified?'<span class="ok">Qualified</span>':'<span class="na">Research only</span>',
+   esc((v.integrationModel||'N/A')+' · '+(v.custodySettlement||'N/A'))
+  ])
+ );
+}
+function renderProtocol(){
+ if(!$('protocolSummary'))return;
+ const snap=protocolArchitectureSnapshot();
+ $('protocolSummary').innerHTML=[
+  ['Protocol version',snap.version],
+  ['Markets',snap.markets.length],
+  ['Execution adapters',snap.executionAdapters.length],
+  ['Native settlement',snap.nativeSettlementStatus],
+  ['Bootstrap settlement',snap.bootstrapSettlement]
+ ].map(([label,value])=>'<article class="summary-card"><strong>'+esc(value)+'</strong><span>'+esc(label)+'</span></article>').join('');
+ $('protocolLayers').innerHTML=table(['Layer','Responsibility'],snap.layers.map(x=>[esc(x.name),esc(x.responsibility)]));
+ $('protocolMarkets').innerHTML=table(['Market','Product','Quote','Oracle policy','Risk policy','Settlement policy','Bootstrap'],snap.markets.map(x=>[
+  esc(x.id),esc(x.product),esc(x.quoteAsset),esc(x.oraclePolicy),esc(x.riskPolicy),esc(x.settlementPolicy),esc(x.bootstrapSettlement)
+ ]));
+ $('settlementAdapters').innerHTML=table(['Adapter','Status','Model','Execution adapter'],snap.settlementAdapters.map(x=>[
+  esc(x.id),'<span class="'+(x.status==='bootstrap-active'?'ok':'na')+'">'+esc(x.status)+'</span>',esc(x.model),esc(x.executionAdapter)
+ ]));
+}
+function renderRoutePlan(){
+ if(!$('routePlanResult'))return;
+ const intent=normalizeTradeIntent({
+  asset:currentAsset(),
+  side:$('planSide')?.value||'buy',
+  orderType:$('planOrderType')?.value||'market',
+  notionalUsd:Number($('planNotional')?.value)||currentNotional(),
+  maxSlippageBps:Number($('planSlippage')?.value)
+ });
+ const plan=buildExecutionPlan(intent,{venueStates:latestSnapshot()?.venues||{}});
+ const route=plan.route;
+ $('routePlanResult').innerHTML='<div class="pool-state">'+
+  '<strong>Plan status: <span class="'+(plan.status==='ready'?'ok':'bad')+'">'+esc(plan.status)+'</span></strong>'+
+  '<br>Mode: <code>'+esc(plan.executionMode)+'</code>'+
+  '<br>Reason: '+esc(plan.reason)+
+  (route?'<br>Route: <strong>'+esc(route.venue)+'</strong> · <code>'+esc(route.symbol)+'</code> · adapter '+esc(route.adapterKey)+' · settlement '+esc(route.settlementKey):'')+
+  '<br><span class="note">No order was submitted.</span></div>';
 }
 
 function renderBdEvents(){
@@ -130,6 +234,11 @@ function renderBD(){
 
  const rows=bdMatrix().map(v=>[esc(v.name),esc(v.marketModel),esc(v.integration),esc(v.revenue),yn(v.whiteLabel),yn(v.sharedLiquidity),yn(v.executionCandidate)]);
  $('bdTable').innerHTML=table(['Venue','Market model','Integration','Revenue modes','White-label','Shared liquidity','Execution candidate'],rows);
+ const diligence=buildBdDiligence();
+ $('bdDiligenceTable').innerHTML=table(['Venue','Stage','White-label','Shared liquidity','Revenue','Fee control','Custody / settlement','Portability','Research','Unresolved'],diligence.map(v=>[
+  esc(v.name),esc(v.stage),yn(v.whiteLabel),yn(v.sharedLiquidity),esc(v.revenueModes.join(', ')||'N/A'),esc(v.feeControl||'N/A'),
+  esc(v.custodySettlement||'N/A'),esc(v.portability||'N/A'),pct(v.researchCoverage),esc(v.unresolved.join(', ')||'none')
+ ]));
  renderBdEvents();
 }
 
@@ -420,6 +529,7 @@ $('serverHistoryHours').onchange=()=>{if(historySource==='server')loadServerHist
 $('autoRefresh').onchange=setAutoRefresh;
 $('trendVenue').onchange=renderTrend;
 $('trendMetric').onchange=renderTrend;
+if($('buildRoutePlan'))$('buildRoutePlan').onclick=renderRoutePlan;
 $('clearHistory').onclick=()=>{
  localStorage.removeItem(DEFAULT_HISTORY_KEY);
  latestHistory=[];
@@ -432,6 +542,7 @@ renderBD();
 renderFees();
 renderExecution();
 renderIntegration();
+renderProtocol();
 renderAlerts();
 renderBdEvents();
 syncHistorySource();
