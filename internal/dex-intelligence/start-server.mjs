@@ -23,7 +23,7 @@ export async function startMarketIntelligenceServer(){
  const config=validateMarketIntelligenceRuntimeEnv(process.env);
  if(!config.ready)throw envError(config.issues.join('; '));
  const queryClient=await loadQueryClient();
- const service=createMarketIntelligenceService({queryClient,apiToken:process.env.MI_API_TOKEN});
+ const service=createMarketIntelligenceService({queryClient,apiToken:process.env.MI_API_TOKEN,allowedOrigin:config.adminOrigin});
  const server=service.createServer();
  const address=await listen(server,{port:config.port,host:config.host});
  const shutdown=async signal=>{
