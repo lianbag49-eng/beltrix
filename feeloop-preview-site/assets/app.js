@@ -335,7 +335,7 @@ const FeeLoop = (() => {
     async function renderUsers(q=""){
       try{
         const d=await api("/api/admin/users"+(q?"?q="+encodeURIComponent(q):""));
-        $("#userTable").innerHTML=d.users.length?d.users.map(u=>`<tr><td><strong>${escapeHtml(u.email)}</strong></td><td>${escapeHtml(u.country||"—")}</td><td>${money(u.summary.totalFees)}</td><td>${money(u.summary.accrued)}</td><td>${money(u.summary.available)}</td><td>${escapeHtml(new Date(u.createdAt).toLocaleDateString())}</td></tr>`).join(""):'<tr><td colspan="6"><div class="empty">No members found.</div></td></tr>';
+        $("#userTable").innerHTML=d.users.length?d.users.map(u=>`<tr><td><strong>${escapeHtml(u.email)}</strong></td><td>${escapeHtml(u.country||"—")}</td><td>${statusPill(u.eligibilityStatus||"active")}</td><td>${money(u.summary.totalFees)}</td><td>${money(u.summary.accrued)}</td><td>${money(u.summary.available)}</td><td><a class="btn sm" href="admin-user.html?id=${encodeURIComponent(u.id)}">Open</a></td></tr>`).join(""):'<tr><td colspan="7"><div class="empty">No members found.</div></td></tr>';
       }catch(err){$("#userTable").innerHTML='<tr><td colspan="6"><div class="empty">Unable to load members.</div></td></tr>'}
     }
     await renderUsers();
@@ -371,6 +371,21 @@ const FeeLoop = (() => {
       }catch(err){$("#countryRules").innerHTML='<tr><td colspan="3"><div class="empty">Unable to load country rules.</div></td></tr>'}
     }
     await loadCountryRules();
+
+    try{
+      const ready=await api("/api/admin/readiness");
+      setText("#readyMfa",ready.mfaEncryptionConfigured?"OK":"Missing");
+      setText("#readyGeo",ready.trustedGeoConfigured?"OK":"Pending");
+      setText("#readyEmail",ready.emailProviderConfigured?"OK":"Pending");
+      setText("#readyConnectors",String(ready.activeConnectors)+"/"+String(ready.totalConnectors));
+      const [connectors,countries,errors]=await Promise.all([
+        api("/api/admin/connectors"),api("/api/admin/analytics/countries"),api("/api/admin/system-errors")
+      ]);
+      if($("#connectorHealth")) $("#connectorHealth").innerHTML=connectors.connectors.length?connectors.connectors.map(c=>`<div class="step"><div class="step-no">${c.status==="active"?"✓":"•"}</div><div><b>${escapeHtml(publicConfig.exchanges.find(x=>x.id===c.exchangeId)?.name||c.exchangeId)}</b><div class="meta">${escapeHtml(c.status)} · UID ${c.capabilities.uidVerification?"on":"off"} · fee sync ${c.capabilities.feeSync?"on":"off"}</div></div></div>`).join(""):'<div class="empty">No connectors configured.</div>';
+      if($("#countryAnalytics")) $("#countryAnalytics").innerHTML=countries.countries.length?countries.countries.map(c=>`<tr><td><strong>${escapeHtml(c.country||"—")}</strong></td><td>${escapeHtml(c.users)}</td><td>${money(c.fees)}</td><td>${money(c.cashback)}</td></tr>`).join(""):'<tr><td colspan="4"><div class="empty">No member analytics yet.</div></td></tr>';
+      if($("#systemErrors")) $("#systemErrors").innerHTML=errors.errors.length?errors.errors.slice(0,20).map(e=>`<div class="step"><div class="step-no">!</div><div><b>${escapeHtml(e.area)}</b><div class="meta">${escapeHtml(e.message)} · ${escapeHtml(new Date(e.createdAt).toLocaleString())}</div></div></div>`).join(""):'<div class="empty">No recent system errors.</div>';
+    }catch(err){toast(errorText(err))}
+
     $("#countryRuleForm")?.addEventListener("submit",async e=>{
       e.preventDefault();
       const code=$("#countryCode").value.trim().toUpperCase();
