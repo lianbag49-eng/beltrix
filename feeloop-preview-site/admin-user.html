@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Member Operations — FEELOOP</title><link rel="stylesheet" href="assets/style.css?v=14"></head>
+<body>
+<div class="sidebar-layout">
+  <aside class="sidebar">
+    <div class="side-brand"><a class="brand" href="index.html"><span class="mark"></span><span>FEE<span class="word-grad">LOOP</span></span></a></div>
+    <nav class="side-nav"><a href="admin.html">← <span>Back to admin</span></a><a class="active" href="#">♙ <span>Member detail</span></a></nav>
+    <div class="side-foot"><button class="btn sm" data-logout>Log out</button></div>
+  </aside>
+  <main class="app-main" id="adminUserRoot">
+    <div class="app-top"><div><div class="meta">Operator workspace</div><h1 id="adminUserEmail">Member</h1></div><div class="actions"><span class="pill" id="adminUserEligibility">—</span><div class="avatar">A</div></div></div>
+    <div class="admin-grid">
+      <div class="card metric"><div class="meta">Eligible fees</div><div class="value" id="adminUserFees">$0.00</div></div>
+      <div class="card metric"><div class="meta">Cashback + adjustments</div><div class="value" id="adminUserCashback">$0.00</div></div>
+      <div class="card metric"><div class="meta">Available</div><div class="value" id="adminUserAvailable">$0.00</div></div>
+      <div class="card metric"><div class="meta">Paid</div><div class="value" id="adminUserPaid">$0.00</div></div>
+    </div>
+
+    <section class="section"><div class="grid-2">
+      <form class="card stack" id="eligibilityForm">
+        <div class="eyebrow">Eligibility</div><h3>Customer access</h3>
+        <div class="field"><label>Status</label><select id="eligibilityStatus"><option value="active">Active</option><option value="review">Review</option><option value="rejected">Rejected</option></select></div>
+        <button class="btn primary">Save status</button>
+      </form>
+      <form class="card stack" id="adjustmentForm">
+        <div class="eyebrow">Ledger</div><h3>Manual adjustment</h3>
+        <div class="field"><label>Amount (USDT)</label><input id="adjustmentAmount" type="number" step=".01" required placeholder="100 or -100"></div>
+        <div class="field"><label>Reason</label><input id="adjustmentReason" maxlength="500" required></div>
+        <button class="btn">Apply adjustment</button>
+      </form>
+    </div></section>
+
+    <section class="section"><div class="grid-2">
+      <div class="card"><div class="section-head"><div><h3>UID connections</h3></div></div><div id="adminUserUids" class="flow"></div></div>
+      <form class="card stack" id="adminNoteForm"><div class="eyebrow">Internal</div><h3>Operator note</h3><div class="field"><label>Note</label><textarea id="adminNote" rows="4" required></textarea></div><button class="btn">Add note</button><div id="adminNotes" class="flow"></div></form>
+    </div></section>
+
+    <section class="section"><div class="section-head"><div><div class="eyebrow">Financial</div><h2>Fee records</h2></div></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Exchange</th><th>Source</th><th>Fee</th><th>Commission</th><th>Cashback</th></tr></thead><tbody id="adminUserFeesTable"></tbody></table></div></section>
+    <section class="section"><div class="section-head"><div><div class="eyebrow">Settlement</div><h2>Payouts</h2></div></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Status</th><th>Reference</th></tr></thead><tbody id="adminUserPayouts"></tbody></table></div></section>
+    <section class="section"><div class="section-head"><div><div class="eyebrow">Ledger</div><h2>Adjustments</h2></div></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Amount</th><th>Reason</th><th>Source</th></tr></thead><tbody id="adminUserAdjustments"></tbody></table></div></section>
+  </main>
+</div>
+<div id="toast" class="toast"></div><script src="assets/app.js?v=14"></script></body></html>
