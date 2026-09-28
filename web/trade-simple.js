@@ -164,6 +164,16 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
   ticket.addEventListener('pointerdown', stableTicketFocus);
   ticket.addEventListener('focusin',()=>requestAnimationFrame(captureFocusAnchor));
   ticket.addEventListener('focusout',()=>{focusAnchor=null});
+  const restoreFocusedInputAfterLayout=()=>{
+    if(!focusAnchor)return;
+    requestAnimationFrame(restoreFocusAnchor);
+  };
+  new MutationObserver(restoreFocusedInputAfterLayout).observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','open','class']});
+  if(typeof ResizeObserver!=='undefined'){
+    const focusResizeObserver=new ResizeObserver(restoreFocusedInputAfterLayout);
+    focusResizeObserver.observe(root);
+    focusResizeObserver.observe(ticket);
+  }
 
   for (const event of ['input','change']) root.addEventListener(event, schedule);
   for (const event of ['beltrix:market','beltrix:wallet']) window.addEventListener(event, schedule);
