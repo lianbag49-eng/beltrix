@@ -88,3 +88,49 @@ create table if not exists mi_bd_events (
 
 create index if not exists mi_bd_events_venue_created_idx
   on mi_bd_events (venue, created_at desc);
+
+
+create or replace view mi_latest_venue_state as
+select distinct on (s.asset,o.venue)
+  s.asset,
+  o.venue,
+  s.captured_at,
+  o.ok,
+  o.health,
+  o.latency_ms,
+  o.spread_bps,
+  o.depth_25_usd,
+  o.min_fill_ratio,
+  o.funding_rate,
+  o.open_interest,
+  o.open_interest_usd,
+  o.open_interest_unit,
+  o.volume_24h,
+  o.volume_24h_usd,
+  o.volume_24h_unit,
+  o.capacity_long_usd,
+  o.capacity_short_usd,
+  o.flags
+from mi_snapshots s
+join mi_venue_observations o on o.snapshot_id=s.id
+order by s.asset,o.venue,s.captured_at desc;
+
+create or replace view mi_collector_health_recent as
+select
+  finished_at,
+  successful_assets,
+  failed_assets,
+  (failed_assets=0) as healthy
+from mi_collector_runs
+order by finished_at desc
+limit 200;
+
+create or replace view mi_open_alerts as
+select
+  id,asset,venue,alert_key,severity,status,message,evidence,
+  opened_at,last_seen_at
+from mi_alert_events
+where status in ('open','acknowledged')
+order by
+  case severity when 'critical' then 0 when 'warning' then 1 else 2 end,
+  last_seen_at desc;
