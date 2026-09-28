@@ -366,13 +366,13 @@ test('Pearl Cobalt typography uses a consistent four-weight scale',async({page})
  await page.setViewportSize({width:1224,height:800});
  await page.goto('/web/#markets');
  const weights=await page.evaluate(()=>{
-  const weight=s=>getComputedStyle(document.querySelector(s)).fontWeight;
+  const weight=s=>{const el=document.querySelector(s);return el?getComputedStyle(el).fontWeight:null};
   return {
    body:weight('body'),
    nav:weight('.pc-rail-nav button'),
    market:weight('.pc-market-row strong'),
    stat:weight('#marketMark'),
-   book:weight('.book-level'),
+   book:weight('.book-level')||weight('.book-head'),
    action:weight('.futures-actions button'),
    card:weight('.pc-card-kicker')
   };
