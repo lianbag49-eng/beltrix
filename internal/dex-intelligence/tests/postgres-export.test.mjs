@@ -10,6 +10,7 @@ test('postgres export persists snapshots observations and deduplicated alerts',(
   }},
   alerts:[{venue:'orderly',key:'collector-unavailable',severity:'critical',message:"can't fetch",evidence:{code:503}}]
  }]});
+ assert.match(sql,/insert into mi_collector_runs/);
  assert.match(sql,/insert into mi_snapshots/);
  assert.match(sql,/insert into mi_venue_observations/);
  assert.match(sql,/insert into mi_alert_events/);
