@@ -176,7 +176,16 @@ const FeeLoop = (() => {
           mfaToken=data.mfaToken;$("#loginFields").style.display="none";$("#mfaFields").style.display="grid";$("#loginButton").textContent="Verify code";$("#mfaCode").focus();return;
         }
         location.replace(data.user.role==="admin"?"admin.html":"dashboard.html");
-      }catch(err){$("#loginError").textContent=errorText(err)}
+      }catch(err){
+        $("#loginError").textContent=errorText(err);
+        if($("#resendVerification")) $("#resendVerification").style.display=err.message==="EMAIL_NOT_VERIFIED"?"inline-flex":"none";
+      }
+    });
+    $("#resendVerification")?.addEventListener("click",async()=>{
+      try{
+        const d=await api("/api/auth/resend-verification",{method:"POST",body:{email:$("#email").value.trim()}});
+        toast(d.emailProviderConfigured?"Verification email sent":"Email provider is not configured yet");
+      }catch(err){toast(errorText(err))}
     });
   }
 
