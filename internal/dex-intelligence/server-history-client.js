@@ -25,6 +25,14 @@ export function createServerHistoryClient({baseUrl,fetchImpl=fetch,getToken=()=>
   async latest(asset){
    const q=new URLSearchParams({asset:String(asset||'').toUpperCase()});
    return request('/v1/latest?'+q);
+  },
+  collectorHealth(limit=100){
+   const q=new URLSearchParams({limit:String(limit)});
+   return request('/v1/collector-health?'+q);
+  },
+  openAlerts(limit=200){
+   const q=new URLSearchParams({limit:String(limit)});
+   return request('/v1/open-alerts?'+q);
   }
  });
 }
