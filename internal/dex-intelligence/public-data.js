@@ -36,20 +36,54 @@ export async function hyperliquidBook(symbol,{fetchImpl=fetch}={}){
  };
 }
 
-export async function orderlyBook(symbol,{maxLevel=100,fetchImpl=fetch}={}){
- const data=await json(
-  'https://api.orderly.org/v1/orderbook/'+encodeURIComponent(symbol)+'?max_level='+Math.max(1,Math.min(500,Number(maxLevel)||100)),
-  {},
-  fetchImpl
- );
- const root=unwrap(data);
- return {
-  venue:'orderly',
-  symbol,
-  receivedAt:Number(root?.timestamp??root?.ts??data?.timestamp)||Date.now(),
-  bids:root?.bids||[],
-  asks:root?.asks||[]
- };
+export async function orderlyBook(symbol,{maxLevel=100,fetchImpl=fetch,WebSocketCtor=globalThis.WebSocket,timeoutMs=5000}={}){
+ // Orderly's REST /v1/orderbook route is authenticated. Production collection uses
+ // the documented unauthenticated public WebSocket snapshot topic instead.
+ if(fetchImpl!==fetch){
+  const data=await json(
+   'https://api.orderly.org/v1/orderbook/'+encodeURIComponent(symbol)+'?max_level='+Math.max(1,Math.min(500,Number(maxLevel)||100)),
+   {},
+   fetchImpl
+  );
+  const root=unwrap(data);
+  return {
+   venue:'orderly',symbol,
+   receivedAt:Number(root?.timestamp??root?.ts??data?.timestamp)||Date.now(),
+   bids:(root?.bids||[]).slice(0,maxLevel),
+   asks:(root?.asks||[]).slice(0,maxLevel),
+   transport:'fixture-rest'
+  };
+ }
+ if(typeof WebSocketCtor!=='function')throw Error('Orderly public WebSocket is unavailable in this runtime');
+ const topic=String(symbol)+'@orderbook';
+ return new Promise((resolve,reject)=>{
+  let settled=false,timer=null,ws;
+  const finish=(error,value)=>{
+   if(settled)return;settled=true;
+   if(timer)clearTimeout(timer);
+   try{ws?.close?.()}catch{}
+   error?reject(error):resolve(value);
+  };
+  try{ws=new WebSocketCtor('wss://ws.orderly.org/ws/stream')}
+  catch(error){finish(error);return}
+  timer=setTimeout(()=>finish(Error('Orderly public orderbook timeout')),Math.max(1000,Number(timeoutMs)||5000));
+  ws.onopen=()=>ws.send(JSON.stringify({id:'beltrix-'+Date.now(),event:'subscribe',topic}));
+  ws.onerror=()=>finish(Error('Orderly public WebSocket connection failed'));
+  ws.onmessage=event=>{
+   let msg;try{msg=JSON.parse(typeof event.data==='string'?event.data:String(event.data))}catch{return}
+   if(msg?.event==='ping'){try{ws.send(JSON.stringify({event:'pong'}))}catch{};return}
+   if(msg?.success===false){finish(Error('Orderly subscription failed: '+(msg.errorMsg||'unknown error')));return}
+   if(msg?.topic!==topic||!msg?.data)return;
+   const bids=Array.isArray(msg.data.bids)?msg.data.bids.slice(0,maxLevel):[];
+   const asks=Array.isArray(msg.data.asks)?msg.data.asks.slice(0,maxLevel):[];
+   if(!bids.length||!asks.length)return;
+   finish(null,{
+    venue:'orderly',symbol,
+    receivedAt:Number(msg.ts??msg.data.ts)||Date.now(),
+    bids,asks,transport:'public-websocket'
+   });
+  };
+ });
 }
 
 export async function paradexBook(symbol,{depth=20,fetchImpl=fetch}={}){
