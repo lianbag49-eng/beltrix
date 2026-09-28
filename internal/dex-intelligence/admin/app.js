@@ -172,6 +172,29 @@ function renderAlerts(alerts=latestAlerts){
   :'<p class="ok">No current venue-health alerts for this snapshot.</p>';
 }
 
+function renderCollectorStatus(){
+ const asset=currentAsset(),history=telemetryForAsset(latestHistory,asset),latest=history.at(-1)||null;
+ const ageMin=latest?.timestamp?Math.max(0,(Date.now()-Number(latest.timestamp))/60000):null;
+ const freshness=ageMin===null?'No data':ageMin<=30?'Fresh':ageMin<=90?'Delayed':'Stale';
+ const open=(latestAlerts||[]).filter(x=>['warning','critical'].includes(x.severity));
+ const critical=open.filter(x=>x.severity==='critical').length;
+ const warning=open.filter(x=>x.severity==='warning').length;
+ const venueRows=latest?Object.entries(latest.venues||{}).map(([venue,v])=>[
+  esc(venue),health(v.health|| (v.ok?'healthy':'unavailable')),
+  finite(v.latencyMs)?fmt(v.latencyMs)+' ms':'N/A',
+  (v.flags||[]).map(x=>'<span class="tag">'+esc(x)+'</span>').join(' ')||'None'
+ ]):[];
+ $('collectorStatusCards').innerHTML=[
+  ['Collector',freshness],
+  ['Critical alerts',critical],
+  ['Warnings',warning],
+  ['Venues observed',venueRows.length]
+ ].map(([label,value])=>'<article class="summary-card"><strong>'+esc(value)+'</strong><span>'+esc(label)+'</span></article>').join('');
+ $('collectorStatusTable').innerHTML=venueRows.length
+  ?table(['Venue','Health','Latency','Flags'],venueRows)
+  :'<p class="note">No persisted collector snapshot is available for '+esc(asset)+'.</p>';
+}
+
 function renderMarketIntelligence(bookRows,gmx){
  const mi=buildMarketIntelligence({bookRows,gmxState:gmx});
  const s=mi.summary;
@@ -351,6 +374,7 @@ async function refreshLiquidity({record=true}={}){
  renderAlerts();
  renderBdEvents();
  renderHistory(metrics);
+ renderCollectorStatus();
 }
 
 for(const b of document.querySelectorAll('[data-tab]'))b.onclick=()=>{
