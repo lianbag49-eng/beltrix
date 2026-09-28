@@ -1,5 +1,5 @@
 import {INDICATORS, CHART_DEFAULTS, chartPreferences, calculateIndicators, visibleWindow} from './chart-core.js';
-for(const name of ['chart-studio.css','terminal-clean.css']){const link=document.createElement('link');link.rel='stylesheet';link.href=new URL('./'+name,import.meta.url).href;document.head.append(link);}
+for(const [name,id] of [['chart-studio.css','chartStudioStyles'],['terminal-clean.css','terminalCleanStyles']]){if(document.getElementById(id))continue;const link=document.createElement('link');link.id=id;link.rel='stylesheet';link.href=new URL('./'+name,import.meta.url).href;document.head.append(link);}
 const KEY='beltrix-chart-indicators-v1', OPEN_KEY='beltrix-chart-open-v1';
 const labels={volume:'VOL',rsi:'RSI',macd:'MACD',ma:'MA',ema:'EMA',boll:'BOLL'};
 function themeVar(name,fallback){
