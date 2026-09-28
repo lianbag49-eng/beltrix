@@ -1,3 +1,17 @@
+
+create table if not exists mi_collector_runs (
+  id bigserial primary key,
+  started_at timestamptz not null,
+  finished_at timestamptz not null,
+  successful_assets integer not null check (successful_assets >= 0),
+  failed_assets integer not null check (failed_assets >= 0),
+  payload jsonb not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists mi_collector_runs_finished_idx
+  on mi_collector_runs (finished_at desc);
+
 -- BELTRIX Market Intelligence Phase 5
 -- Server-side persistence schema for a future scheduled collector.
 -- This file is not applied automatically.
