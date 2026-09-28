@@ -8,7 +8,7 @@ async function setup(page){
  if(q.type==='meta')data=meta;else if(q.type==='spotMeta')data=spot;
  else if(q.type==='metaAndAssetCtxs')data=[meta,[ctx,ctx]];else if(q.type==='spotMetaAndAssetCtxs')data=[spot,[ctx]];
  else if(q.type==='activeAssetData'){if(state.fail)return r.fulfill({status:503,body:'Unavailable'});data={coin:q.coin,user:q.user,leverage:{type:'cross',value:5},maxTradeSzs:state.max,availableToTrade:['5000','4000'],markPx:'2500'};}
- else if(q.type==='clearinghouseState')data={marginSummary:{accountValue:'10000'},withdrawable:'5000',assetPositions:state.size==='0'?[]:[{position:{coin:'ETH',szi:state.size,entryPx:'2450',leverage:{type:'cross',value:5},marginUsed:'1000',unrealizedPnl:'100',cumFunding:{sinceOpen:'-0.1'}}}]};
+ else if(q.type==='clearinghouseState')data={marginSummary:{accountValue:'10000'},withdrawable:'5000',assetPositions:state.size==='0'?[]:[{position:{coin:'ETH',szi:state.size,entryPx:'2450',liquidationPx:'2200',leverage:{type:'cross',value:5},marginUsed:'1000',unrealizedPnl:'100',cumFunding:{sinceOpen:'-0.1'}}}]};
  else if(q.type==='spotClearinghouseState')data={balances:[]};
  else if(q.type==='candleSnapshot')data=Array.from({length:80},(_,i)=>({t:Date.now()-(80-i)*60000,o:'2490',h:'2510',l:'2480',c:String(2490+i%20),v:'100'}));
  await r.fulfill({json:data});});
@@ -29,3 +29,12 @@ test('stale book and wallet changes lock new buttons',async({page})=>{await setu
 test('counts, mark price, book ratio and mobile screenshot',async({page})=>{await setup(page);await connect(page);await page.setViewportSize({width:390,height:844});await page.locator('[data-fast-type=Market]').click();await expect(page.locator('[data-account-tab=positions]')).toHaveText('Positions (1)');await expect(page.locator('[data-account-tab=orders]')).toHaveText('Open orders (0)');await expect(page.locator('#futuresBookPrice')).toHaveText('2,500');await expect(page.locator('#futuresBidShare')).toContainText('%');await expect(page.locator('#marketBids .book-level')).toHaveCount(5);await expect(page.locator('#marketAsks .book-level')).toHaveCount(5);await page.screenshot({path:'test-results/futures-v2-mobile.png',fullPage:true});});
 
 test('background sizing refresh never closes or mutates an order review',async({page})=>{await setup(page);await connect(page);await page.locator('[data-fast-type=Market]').click();await page.locator('#tradeSize').fill('1');await page.locator('#futuresLong').click();await expect(page.locator('#tradeDialog')).toBeVisible();const summary=await page.locator('#tradeSummary').innerText();await page.evaluate(()=>document.getElementById('tradeRefresh').dispatchEvent(new Event('click')));await page.waitForTimeout(700);await expect(page.locator('#tradeDialog')).toBeVisible();await expect(page.locator('#tradeSummary')).toHaveText(summary);await expect(page.locator('#tradeSize')).toHaveValue('1');});
+
+
+test('connected futures ticket shows current position entry liquidation and PnL',async({page})=>{
+ await setup(page);await connect(page);
+ await expect(page.locator('#futuresPositionState')).toContainText('Long 2 ETH');
+ await expect(page.locator('[data-position-metric="entry"]')).toHaveText('2,450');
+ await expect(page.locator('[data-position-metric="liq"]')).toHaveText('2,200');
+ await expect(page.locator('[data-position-metric="pnl"]')).toHaveText('+100 USDC');
+});
