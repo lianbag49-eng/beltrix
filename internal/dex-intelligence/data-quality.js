@@ -64,3 +64,30 @@ export function evaluateSnapshotQuality(snapshot={},previousSnapshot=null,{
   venues:Object.freeze(venues)
  });
 }
+
+
+export function qualityAlerts(quality){
+ if(!quality)return Object.freeze([]);
+ const out=[];
+ for(const x of quality.snapshotIssues||[]){
+  out.push(Object.freeze({
+   venue:'collector',
+   key:'quality-'+x.code,
+   severity:x.severity,
+   message:x.detail,
+   evidence:Object.freeze({...x.evidence,qualityScore:quality.score})
+  }));
+ }
+ for(const venue of quality.venues||[]){
+  for(const x of venue.issues||[]){
+   out.push(Object.freeze({
+    venue:venue.venue,
+    key:'quality-'+x.code,
+    severity:x.severity,
+    message:x.detail,
+    evidence:Object.freeze({...x.evidence,qualityScore:venue.score})
+   }));
+  }
+ }
+ return Object.freeze(out);
+}
