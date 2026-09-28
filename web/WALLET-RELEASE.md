@@ -1,10 +1,11 @@
 # BELTRIX wallet workspace
 
-This adds an English wallet home inspired by the supplied layout while keeping the existing trading screen. BELTRIX is independent of OKX. It connects an existing EIP-1193 wallet; it does not create or custody private keys.
+This adds an English wallet home inspired by the supplied layout while keeping the existing trading screen. BELTRIX is independent of OKX. It supports both external EIP-1193 wallets and an optional BELTRIX Local Wallet. The Local Wallet generates an EVM recovery key in the browser, encrypts it with the user's wallet password, and stores only the encrypted vault in browser IndexedDB. BELTRIX servers do not receive or custody the recovery key.
 
 ## Implemented
 
 - Account selection, public watch-only accounts, network switching, native balances, indexed ERC-20 balances and manual token import.
+- BELTRIX Local Wallet creation, encrypted browser vault, unlock/lock, recovery-key backup and private-key import. The unlocked Local Wallet exposes an EIP-1193 provider so the existing transfer and Hyperliquid signing paths can use it without server-side custody.
 - Wallet-approved native and ERC-20 sends with exact integer arithmetic, current balance and contract simulation checks, buffered execution-gas review, explicit recipient acknowledgement, bound account/network/nonce and review expiry.
 - Chain-specific receive QR, address copy and native sharing.
 - Native, ERC-20 and internal-transfer history, send/receive/pending/failed filters, text/date search, earlier-page loading, details, explorer links and CSV export of loaded records.
@@ -17,6 +18,7 @@ This adds an English wallet home inspired by the supplied layout while keeping t
 ## Product boundaries
 
 - Supported signing networks: Ethereum, Arbitrum, Base, Optimism, BNB Chain, Polygon, Sepolia and Arbitrum Sepolia. Native Bitcoin and Solana transfers are not implemented. A familiar token symbol does not authenticate its contract.
+- BELTRIX Local Wallet currently uses an EVM recovery key rather than a BIP-39 seed phrase. Losing both the encrypted browser vault and the recovery key can permanently remove access. Reloading the app locks the Local Wallet; the password is never recoverable by BELTRIX.
 - This is an EVM wallet frontend, not the complete OKX Wallet ecosystem. It does not implement native stock custody/trading, fiat onramps, seed-phrase custody, OKX campaigns, a proprietary bridge or a universal DeFi position indexer.
 - Stock-tab products are equity-linked derivatives returned by Hyperliquid builder-market metadata. They are not stocks. They open at the venue for trading.
 - DeFi, swap and bridge execution opens official external applications. Displayed APY is provider-reported and variable, not a promised return.
@@ -30,7 +32,7 @@ This adds an English wallet home inspired by the supplied layout while keeping t
 
 ## Verification
 
-- Unit coverage: exact amount parsing, bad addresses, contract calldata, review binding/expiry, status normalization, deduplication and CSV formula escaping.
+- Unit coverage: exact amount parsing, bad addresses, contract calldata, review binding/expiry, status normalization, deduplication, CSV formula escaping, AES-GCM vault encryption/decryption, local EIP-1193 signing, chain switching and sender binding.
 - Browser fixtures: provider connection, receive QR, native/ERC-20 sends, token simulation rejection, insufficient gas, account/network/nonce changes, review expiry, ambiguous responses, explicit wallet rejection, history pagination/provider failure, allowance revocation, watch-only restrictions, navigation and data views.
 - Browser fixtures use invented addresses and funds. They do not prove settlement on a live chain.
 
