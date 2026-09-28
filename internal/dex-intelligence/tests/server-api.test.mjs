@@ -88,3 +88,23 @@ test('alert status update is authenticated bounded and delegated',async()=>{
  assert.deepEqual(seen,{id:7,status:'resolved'});
  assert.equal(parse(ok).alert.status,'resolved');
 });
+
+
+test('readiness is public but requires fresh successful persisted collector state',async()=>{
+ const freshRepo={
+  history:async()=>[],
+  collectorHealth:async()=>[{finished_at:'2026-09-28T05:00:00.000Z',successful_assets:3,failed_assets:0}]
+ };
+ const api=createMarketIntelligenceApi({repository:freshRepo,token:'secret',clock:()=>Date.parse('2026-09-28T05:20:00.000Z')});
+ const ready=await api.handle({url:'/ready'});
+ assert.equal(ready.status,200);
+ assert.equal(parse(ready).ok,true);
+
+ const staleApi=createMarketIntelligenceApi({repository:freshRepo,token:'secret',clock:()=>Date.parse('2026-09-28T07:00:01.000Z')});
+ const stale=await staleApi.handle({url:'/ready'});
+ assert.equal(stale.status,503);
+ assert.equal(parse(stale).ok,false);
+
+ const failedApi=createMarketIntelligenceApi({repository:{history:async()=>[],collectorHealth:async()=>[{finished_at:'2026-09-28T05:19:00.000Z',successful_assets:0,failed_assets:3}]},token:'secret',clock:()=>Date.parse('2026-09-28T05:20:00.000Z')});
+ assert.equal((await failedApi.handle({url:'/ready'})).status,503);
+});
