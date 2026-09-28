@@ -22,9 +22,12 @@ test('runtime environment fails closed until DB and token are configured',()=>{
  assert.ok(missing.issues.includes('MI_API_TOKEN missing'));
  const bad=validateMarketIntelligenceRuntimeEnv({MI_DATABASE_URL:'https://example.com',MI_API_TOKEN:'short'});
  assert.equal(bad.ready,false);
- const good=validateMarketIntelligenceRuntimeEnv({MI_DATABASE_URL:'postgresql://u:p@db.example/x',MI_API_TOKEN:'x'.repeat(32),PORT:'9000'});
+ const good=validateMarketIntelligenceRuntimeEnv({MI_DATABASE_URL:'postgresql://u:p@db.example/x',MI_API_TOKEN:'x'.repeat(32),MI_ADMIN_ORIGIN:'https://admin.example',PORT:'9000'});
  assert.equal(good.ready,true);
  assert.equal(good.port,9000);
+ assert.equal(good.adminOrigin,'https://admin.example');
+ const badOrigin=validateMarketIntelligenceRuntimeEnv({MI_DATABASE_URL:'postgresql://u:p@db.example/x',MI_API_TOKEN:'x'.repeat(32),MI_ADMIN_ORIGIN:'https://admin.example/path'});
+ assert.equal(badOrigin.ready,false);
 });
 
 test('dependency-free Node handler maps request and response without caching',async()=>{
