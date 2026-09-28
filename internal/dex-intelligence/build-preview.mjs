@@ -21,7 +21,8 @@ for(const file of [
  'bd-pipeline.js',
  'commercial-model.js',
  'execution-qualification.js',
- 'public-data.js'
+ 'public-data.js',
+ 'server-history-client.js'
 ])await copyFile(join(src,file),join(out,file));
 
 for(const file of ['index.html','app.js','style.css'])
