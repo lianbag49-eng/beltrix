@@ -1,5 +1,7 @@
 import {runMarketIntelligenceCycle} from './collector-runner.js';
 import {saveCollectorRun} from './collector-run-store.js';
+import {persistAlertState} from './alert-store.js';
+import {persistBdEvents} from './bd-event-store.js';
 
 export function createServerCollectorLoop({
  repository,
@@ -24,11 +26,15 @@ export function createServerCollectorLoop({
     const assetStarted=now();
     try{
      const result=await cycle(asset,{repository,now:assetStarted});
+     const alertPersistence=await persistAlertState(queryClient,{asset,alerts:result.alerts||[],timestamp:result.timestamp||now()});
+     const bdPersistence=await persistBdEvents(queryClient,result.bdEvents||[]);
      rows.push(Object.freeze({
       asset,ok:true,durationMs:Math.max(0,now()-assetStarted),
       alerts:(result.alerts||[]).length,
       bdEvents:(result.bdEvents||[]).length,
-      persistence:result.persistence||null
+      persistence:result.persistence||null,
+      alertPersistence,
+      bdPersistence
      }));
     }catch(error){
      rows.push(Object.freeze({asset,ok:false,durationMs:Math.max(0,now()-assetStarted),error:String(error?.message||error)}));
