@@ -83,7 +83,20 @@ async function refreshBuilderApproval(){
  }
  renderBuilder();return builderApproval
 }
-const errorText=e=>{for(let x=e;x;x=x.cause)if(x.code===4001)return 'Wallet request rejected. Nothing was submitted.';return String(e?.shortMessage||e?.message||'Request failed').slice(0,400)};
+const errorText=e=>{
+ for(let x=e;x;x=x.cause)if(x.code===4001)return 'Wallet request rejected. Nothing was submitted.';
+ const raw=String(e?.shortMessage||e?.message||'Request failed').slice(0,400);
+ const t=raw.toLowerCase();
+ if(t.includes('insufficient margin'))return 'Insufficient margin. Reduce order size, lower leverage usage, or add available margin.';
+ if(t.includes('no executable liquidity'))return 'No executable liquidity is available at the moment. Refresh the order book or use a smaller order.';
+ if(t.includes('network changed')||t.includes('account changed'))return 'Wallet account or network changed. Reconnect and review the order again.';
+ if(t.includes('slippage'))return 'The current slippage limit is too tight for this price. Increase the limit or wait for a better quote.';
+ if(t.includes('trigger price is on the wrong side'))return 'Trigger price is invalid for the selected TP/SL direction. Check it against the current mark price.';
+ if(t.includes('size')&&t.includes('reduce'))return 'Reduce-only size or side does not match the current position.';
+ if(t.includes('fresh order book')||t.includes('stale'))return 'Market data is stale. Refresh the market before reviewing a new order.';
+ if(t.includes('wallet did not switch'))return 'The wallet did not switch to the required network. Change the network in your wallet and try again.';
+ return raw;
+};
 const fmt=(v,d=4)=>finite(v)?Number(v).toLocaleString('en-US',{maximumFractionDigits:d}):'—';
 const key=(user=account,net=connectedNetwork||market?.network)=>`${net}:${user?.toLowerCase()}`;
 const netLabel=()=>networks[market?.network||'mainnet'].label;
@@ -100,7 +113,7 @@ function availability(){
 }
 function clearPending(){pending=null;$('tradeDialog').close()}
 function clearAccount(){active=null;activeAt=0;positions=[];window.dispatchEvent(new CustomEvent('beltrix:position',{detail:{position:null,coin:market?.market?.value||null}}));for(const id of ['tradeBalances','tradeOrders','tradePositions','tradeFills','tradeFundingHistory','tradeTwaps'])$(id).textContent='No account data loaded';$('tradeAccountStatus').textContent='Connect your trading wallet to load your account.';updateTicket()}
-function disconnect(){window.dispatchEvent(new CustomEvent('beltrix:wallet',{detail:{account:null}}));$('tradeConnect').textContent='Connect wallet';epoch++;account=null;client=null;connectedNetwork=null;builderApproval=0;clearPending();$('tradeAccount').textContent='Connect your wallet';clearAccount();availability();renderBuilder()}
+function disconnect(){window.dispatchEvent(new CustomEvent('beltrix:wallet',{detail:{account:null}}));$('tradeConnect').textContent='Connect wallet';epoch++;account=null;client=null;connectedNetwork=null;builderApproval=0;clearPending();$('tradeAccount').textContent='Connect your wallet';$('tradeAccount').dataset.connection='disconnected';clearAccount();availability();renderBuilder()}
 function currentPosition(){return positions.find(p=>p.coin===market?.market?.value)}
 function formKey(){return ['tradeType','tradeSide','tradeSize','tradePrice','tradeTrigger','tradeSlippage','tradeReduce','tradeTwapMinutes','tradeTwapRandom'].map(id=>$(id).type==='checkbox'?$(id).checked:$(id).value).join('|')}
 function updateTicket(reset=false){
@@ -143,7 +156,11 @@ $('tradeConnect').onclick=async()=>{if(busy)return;window.openPage?.('markets');
  const wallet=createWalletClient({account,chain:config.chain,transport:custom(provider)});
  client=new ExchangeClient({transport:transports[net],wallet:guardedWallet(wallet,()=>guard(false),()=>`${epoch}:${account}:${connectedNetwork}`),isTestnet:net==='testnet',defaultExpiresAfter:()=>Date.now()+30000});
  provider.on?.('accountsChanged',disconnect);provider.on?.('chainChanged',disconnect);provider.on?.('disconnect',disconnect);
- $('tradeConnect').textContent=account.slice(0,6)+'…'+account.slice(-4)+' ×';$('tradeAccount').textContent=account+' · Hyperliquid '+config.label;window.dispatchEvent(new CustomEvent('beltrix:wallet',{detail:{account,provider,chainId:config.chain.id}}));recordGrowthEvent('wallet_connected',{venue:'hyperliquid',network:net});status('Connected · '+config.label+' Hyperliquid account');await refreshBuilderApproval();await refresh();
+ const providerLabel=walletProviderName(provider);
+ $('tradeConnect').textContent=account.slice(0,6)+'…'+account.slice(-4)+' ×';
+ $('tradeAccount').textContent=providerLabel+' · '+account.slice(0,6)+'…'+account.slice(-4)+' · Hyperliquid '+config.label;
+ $('tradeAccount').dataset.connection='connected';
+ window.dispatchEvent(new CustomEvent('beltrix:wallet',{detail:{account,provider,providerName:providerLabel,chainId:config.chain.id}}));recordGrowthEvent('wallet_connected',{venue:'hyperliquid',network:net});status('Connected · '+config.label+' Hyperliquid account');await refreshBuilderApproval();await refresh();
  }catch(e){status(e.shortMessage||e.message||'Connection cancelled')}finally{busy=false;availability()}};
 function reviewDialog(p,text){pending={...p,account,network:connectedNetwork,coin:market.market.value,asset:market.market.asset,expires:Date.now()+30000,epoch,form:formKey()};$('tradeDialog').querySelector('h3').textContent=p.kind==='leverage'?'Confirm margin & leverage':'Confirm '+netLabel()+' order';$('tradeSummary').textContent=text+'\nHyperliquid '+netLabel().toUpperCase()+' · Review expires in 30 seconds';$('tradeLiveAck').checked=false;$('tradeLiveAckField').hidden=connectedNetwork!=='mainnet';$('tradeDialog').showModal();availability();}
 function selectedDex(){return market?.market?.spot?'':String(market?.market?.dex||'')}
