@@ -36,6 +36,8 @@ jobs:
           MI_OUTPUT: test-results/market-intelligence/latest.json
         run: node internal/dex-intelligence/scheduled-collector.mjs
       - name: Prepare Postgres persistence SQL
+        env:
+          MI_RETENTION_ENABLED: ${{ vars.MI_RETENTION_ENABLED }}
         run: node internal/dex-intelligence/postgres-export.mjs test-results/market-intelligence/latest.json test-results/market-intelligence/persist.sql
       - name: Persist to Neon/Postgres when configured
         env:
@@ -51,6 +53,24 @@ jobs:
           fi
           psql "$MI_DATABASE_URL" -v ON_ERROR_STOP=1 -f internal/dex-intelligence/storage/postgres-schema.sql
           psql "$MI_DATABASE_URL" -v ON_ERROR_STOP=1 -f test-results/market-intelligence/persist.sql
+      - name: Verify persisted collector state when configured
+        env:
+          MI_DATABASE_URL: ${{ secrets.MI_DATABASE_URL }}
+        run: |
+          if [ -z "$MI_DATABASE_URL" ]; then
+            echo "Persistence verification skipped: MI_DATABASE_URL is not configured."
+            exit 0
+          fi
+          psql "$MI_DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "
+            select json_build_object(
+              'snapshots',(select count(*) from mi_snapshots),
+              'collectorRuns',(select count(*) from mi_collector_runs),
+              'openAlerts',(select count(*) from mi_open_alerts),
+              'latestSnapshot',(select max(captured_at) from mi_snapshots),
+              'latestRun',(select max(finished_at) from mi_collector_runs)
+            );
+          " > test-results/market-intelligence/db-health.json
+          cat test-results/market-intelligence/db-health.json
       - name: Upload normalized telemetry evidence
         if: always()
         uses: actions/upload-artifact@v4
