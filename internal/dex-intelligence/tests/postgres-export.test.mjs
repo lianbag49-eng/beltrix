@@ -13,6 +13,7 @@ test('postgres export persists snapshots observations and deduplicated alerts',(
  assert.match(sql,/insert into mi_collector_runs/);
  assert.match(sql,/insert into mi_snapshots/);
  assert.match(sql,/insert into mi_venue_observations/);
+ assert.match(sql,/update mi_alert_events set status='resolved'/);
  assert.match(sql,/insert into mi_alert_events/);
  assert.match(sql,/on conflict \(asset,venue,alert_key\)/);
  assert.match(sql,/can''t fetch/);
@@ -21,4 +22,13 @@ test('postgres export persists snapshots observations and deduplicated alerts',(
 
 test('postgres export rejects malformed scheduled payloads',()=>{
  assert.throws(()=>batchToPostgresSql({version:2,rows:[]}),/Invalid scheduled collector batch/);
+});
+
+
+test('postgres export resolves all prior alerts when the current asset has no alerts',()=>{
+ const sql=batchToPostgresSql({
+  version:1,startedAt:1,finishedAt:2,successful:1,failed:0,
+  rows:[{ok:true,snapshot:{version:1,asset:'ETH',timestamp:1700000000000,venues:{}},alerts:[],intelligence:{rows:[]}}]
+ });
+ assert.match(sql,/where asset=E'ETH' and status in \('open','acknowledged'\);/);
 });
