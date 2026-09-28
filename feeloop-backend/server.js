@@ -539,8 +539,12 @@ app.post("/api/auth/mfa/enable",requireAdmin,async(req,res)=>{
 async function financials(userId,client=pool){
   const f=await client.query(
     `SELECT COALESCE(SUM(fee_amount),0)::float8 AS total_fees,
-            COALESCE(SUM(cashback_amount),0)::float8 AS accrued
+            COALESCE(SUM(cashback_amount),0)::float8 AS fee_cashback
      FROM feeloop.fee_records WHERE user_id=$1`,[userId]
+  );
+  const a=await client.query(
+    `SELECT COALESCE(SUM(amount),0)::float8 AS adjustments
+     FROM feeloop.ledger_adjustments WHERE user_id=$1`,[userId]
   );
   const p=await client.query(
     `SELECT
@@ -548,9 +552,12 @@ async function financials(userId,client=pool){
        COALESCE(SUM(amount) FILTER (WHERE status='paid'),0)::float8 AS paid
      FROM feeloop.payouts WHERE user_id=$1`,[userId]
   );
-  const totalFees=numeric(f.rows[0].total_fees),accrued=numeric(f.rows[0].accrued);
+  const totalFees=numeric(f.rows[0].total_fees);
+  const feeCashback=numeric(f.rows[0].fee_cashback);
+  const adjustments=numeric(a.rows[0].adjustments);
+  const accrued=feeCashback+adjustments;
   const reserved=numeric(p.rows[0].reserved),paid=numeric(p.rows[0].paid);
-  return {totalFees,accrued,reserved,paid,available:Math.max(0,accrued-reserved-paid)};
+  return {totalFees,feeCashback,adjustments,accrued,reserved,paid,available:Math.max(0,accrued-reserved-paid)};
 }
 
 app.get("/api/dashboard",requireAuth,async(req,res)=>{
