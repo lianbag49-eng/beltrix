@@ -286,6 +286,13 @@ test('Pearl Cobalt Wallet and USDT modal follow light and dark themes',async({pa
 test('Pearl Cobalt desktop Wallet workspace uses the full shell and desktop workspace nav',async({page})=>{
  await page.goto('/web/#wallet');
  await expect(page.locator('body')).toHaveAttribute('data-page','wallet');
+ const mobile=(page.viewportSize()?.width||1280)<=900;
+ if(mobile){
+  await expect(page.locator('#pcWalletSurfaceNav')).toBeHidden();
+  await expect(page.locator('.bottom-nav')).toBeVisible();
+  await expect(page.locator('#wallet')).toBeVisible();
+  return;
+ }
  await expect(page.locator('#pcWalletSurfaceNav')).toBeVisible();
  await expect(page.locator('.bottom-nav')).toBeHidden();
  await expect(page.locator('#pcSidebar')).toBeHidden();
