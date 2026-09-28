@@ -241,8 +241,9 @@ const FeeLoop = (() => {
     if(!isPreview){try{data=await api("/api/dashboard")}catch(err){toast(errorText(err));}}
     setText("#metricAvailable",money(data.summary.available));setText("#metricFees",money(data.summary.totalFees));setText("#metricCashback",money(data.summary.cashback));setText("#metricPaid",money(data.summary.paid));
     $("#dashboardLedger").innerHTML=data.ledger.length?data.ledger.map(r=>`<tr><td>${escapeHtml(new Date(r.occurredAt).toLocaleDateString())}</td><td><strong>${escapeHtml(publicConfig.exchanges.find(x=>x.id===r.exchangeId)?.name||r.exchangeId)}</strong></td><td>${escapeHtml(r.sourceRecordId)}</td><td>${money(r.feeAmount)}</td><td>${money(r.cashbackAmount)}</td><td>${statusPill(r.status)}</td></tr>`).join(""):'<tr><td colspan="6"><div class="empty">No fee records yet.</div></td></tr>';
-    $("#uidList").innerHTML=data.accounts.length?data.accounts.map(a=>`<div class="step"><div class="exlogo">${escapeHtml(publicConfig.exchanges.find(x=>x.id===a.exchangeId)?.short||a.exchangeId.slice(0,2).toUpperCase())}</div><div style="flex:1"><b>${escapeHtml(publicConfig.exchanges.find(x=>x.id===a.exchangeId)?.name||a.exchangeId)}</b><div class="meta">${escapeHtml(a.uid)} · ${escapeHtml(a.status)}</div></div><button class="btn sm danger" data-remove-uid="${a.id}">Remove</button></div>`).join(""):'<div class="empty">No exchange UID is connected yet.</div>';
-    $$("[data-remove-uid]").forEach(b=>b.addEventListener("click",async()=>{if(!confirm("Remove this UID connection?"))return;try{await api("/api/exchange-accounts/"+b.dataset.removeUid,{method:"DELETE"});toast("UID removed");initDashboard()}catch(e){toast(errorText(e))}}));
+    $("#uidList").innerHTML=data.accounts.length?data.accounts.map(a=>`<div class="step"><div class="exlogo">${escapeHtml(publicConfig.exchanges.find(x=>x.id===a.exchangeId)?.short||a.exchangeId.slice(0,2).toUpperCase())}</div><div style="flex:1"><b>${escapeHtml(publicConfig.exchanges.find(x=>x.id===a.exchangeId)?.name||a.exchangeId)}</b><div class="meta">${escapeHtml(a.uid)} · ${escapeHtml(a.status)}${a.lastSyncAt?" · synced "+escapeHtml(new Date(a.lastSyncAt).toLocaleString()):""}</div></div><button class="btn sm" data-edit-uid="${a.id}" data-uid-value="${escapeHtml(a.uid)}">Edit</button><button class="btn sm danger" data-remove-uid="${a.id}">Remove</button></div>`).join(""):'<div class="empty">No exchange UID is connected yet.</div>';
+    $("[data-remove-uid]").forEach(b=>b.addEventListener("click",async()=>{if(!confirm("Remove this UID connection?"))return;try{await api("/api/exchange-accounts/"+b.dataset.removeUid,{method:"DELETE"});toast("UID removed");setTimeout(()=>location.reload(),250)}catch(e){toast(errorText(e))}}));
+    $("[data-edit-uid]").forEach(b=>b.addEventListener("click",async()=>{const value=prompt("Update exchange UID",b.dataset.uidValue||"");if(!value||value===b.dataset.uidValue)return;try{await api("/api/exchange-accounts/"+b.dataset.editUid,{method:"PATCH",body:{uid:value.trim()}});toast("UID resubmitted for verification");setTimeout(()=>location.reload(),250)}catch(e){toast(errorText(e))}}));
     $("#payoutHistory").innerHTML=data.payouts.length?data.payouts.map(p=>`<tr><td>${escapeHtml(new Date(p.createdAt).toLocaleDateString())}</td><td>${money(p.amount)}</td><td>${escapeHtml(p.method)}</td><td>${statusPill(p.status)}</td><td>${escapeHtml(p.paymentRef||"—")}</td></tr>`).join(""):'<tr><td colspan="5"><div class="empty">No payout requests yet.</div></td></tr>';
     $("#dashboardEvents").innerHTML=data.events.length?data.events.map(e=>`<a href="event.html?id=${encodeURIComponent(e.id)}" class="step"><div class="step-no">↗</div><div><b>${escapeHtml(e.title)}</b><div class="meta">${escapeHtml(publicConfig.exchanges.find(x=>x.id===e.exchangeId)?.name||e.exchangeId)}</div></div></a>`).join(""):'<div class="empty">No verified exchange events yet.</div>';
 
@@ -253,7 +254,22 @@ const FeeLoop = (() => {
       e.preventDefault();try{await api("/api/exchange-accounts",{method:"POST",body:{exchangeId:$("#uidExchange").value,uid:$("#uidValue").value.trim()}});$("#uidModal").classList.remove("open");toast("UID submitted for verification");setTimeout(()=>location.reload(),500)}catch(err){toast(errorText(err))}
     });
 
-    $$("[data-open-payout]").forEach(b=>b.addEventListener("click",()=>{$("#payoutAmount").max=data.summary.available;$("#payoutAvailable").textContent=money(data.summary.available);$("#payoutModal").classList.add("open")}));
+    let savedDestinations=[];
+    if(!isPreview){
+      try{
+        savedDestinations=(await api("/api/payout-destinations")).destinations||[];
+        if($("#savedDestination")){
+          $("#savedDestination").innerHTML='<option value="">Manual entry</option>'+savedDestinations.map(x=>`<option value="${x.id}">${escapeHtml(x.label)} · ${escapeHtml(x.method)}</option>`).join("");
+          $("#savedDestination").addEventListener("change",e=>{
+            const item=savedDestinations.find(x=>x.id===e.target.value);
+            if(item){$("#payoutMethod").value=item.method;$("#payoutDestination").value=item.destination}
+          });
+          const def=savedDestinations.find(x=>x.isDefault);
+          if(def){$("#savedDestination").value=def.id;$("#payoutMethod").value=def.method;$("#payoutDestination").value=def.destination}
+        }
+      }catch{}
+    }
+    $("[data-open-payout]").forEach(b=>b.addEventListener("click",()=>{$("#payoutAmount").max=data.summary.available;$("#payoutAvailable").textContent=money(data.summary.available);$("#payoutModal").classList.add("open")}));
     $("#closePayout")?.addEventListener("click",()=>$("#payoutModal").classList.remove("open"));
     $("#payoutForm")?.addEventListener("submit",async e=>{
       e.preventDefault();try{await api("/api/payouts",{method:"POST",body:{amount:Number($("#payoutAmount").value),method:$("#payoutMethod").value,destination:$("#payoutDestination").value.trim()}});$("#payoutModal").classList.remove("open");toast("Payout request created");setTimeout(()=>location.reload(),500)}catch(err){toast(errorText(err))}
