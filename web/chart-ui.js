@@ -30,7 +30,7 @@ function element(tag,cls,html=''){const e=document.createElement(tag);e.classNam
 export function createMarketChart(canvas) {
  const ctx=canvas.getContext('2d'),panel=canvas.closest('.chart-panel'),drawer=$('futuresChart');
  let prefs={...CHART_DEFAULTS};try{prefs=chartPreferences(JSON.parse(localStorage.getItem(KEY)));}catch{}
- let candles=[],values={},meta={},marketKey='',count=60,offset=0,cross=-1,drawPending=false,geometry=null,sourceAt=0,feed='snapshot';
+ let candles=[],values={},meta={},marketKey='',count=60,offset=0,cross=-1,drawPending=false,geometry=null,sourceAt=0,feed='snapshot',positionMarker=null,draftMarker=null;
  let fullscreen=false,home=null,returnFocus=null,savedY=0,savedPage='',collapsed=false,drag=null,pinch=null;
  const pointers=new Map();
  panel.classList.add('chart-studio');
@@ -85,6 +85,9 @@ export function createMarketChart(canvas) {
   if(on('boll')){line(values.boll.upper,start,end,x,y,colors.blue);line(values.boll.lower,start,end,x,y,colors.blue);line(values.boll.middle,start,end,x,y,colors.muted,[3,3]);}
   for(let i=start;i<end;i++){const c=candles[i];ctx.strokeStyle=ctx.fillStyle=c.c>=c.o?colors.up:colors.down;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x(i),y(c.h));ctx.lineTo(x(i),y(c.l));ctx.stroke();ctx.fillRect(x(i)-step*.32,Math.min(y(c.o),y(c.c)),Math.max(1,step*.64),Math.max(1,Math.abs(y(c.o)-y(c.c))));}
   if(on('ma'))line(values.ma,start,end,x,y,colors.gold);if(on('ema'))line(values.ema,start,end,x,y,colors.purple);
+  const marker=(price,label,color,dash=[5,4])=>{const p=Number(price);if(!Number.isFinite(p)||p<low-pad||p>high+pad)return;const py=y(p);ctx.strokeStyle=color;ctx.lineWidth=1;ctx.setLineDash(dash);ctx.beginPath();ctx.moveTo(left,py);ctx.lineTo(right,py);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=color;ctx.fillText(label+' '+num(p,p<1?5:2),left+4,Math.max(10,py-4));};
+  if(positionMarker?.coin===meta.coin){marker(positionMarker.entryPx,'ENTRY',colors.blue);marker(positionMarker.liquidationPx,'LIQ',colors.down,[2,3]);}
+  if(draftMarker?.coin===meta.coin&&draftMarker.price)marker(draftMarker.price,draftMarker.trigger?(draftMarker.type==='Stop'?'SL':'TP'):'ORDER',colors.gold,[4,3]);
   const selected=cross>=start&&cross<end?cross:end-1,c=candles[selected];
   const legend=[on('ma')&&`MA(${prefs.maPeriod}) ${num(values.ma[selected])}`,on('ema')&&`EMA(${prefs.emaPeriod}) ${num(values.ema[selected])}`,on('boll')&&`BOLL(${prefs.bollPeriod},${prefs.bollWidth})`].filter(Boolean);
   ctx.fillStyle=colors.gold;ctx.fillText(legend.join('  '),left,14);
@@ -154,6 +157,8 @@ export function createMarketChart(canvas) {
  window.addEventListener('beltrix:chart-open',e=>{if(e.detail?.expanded){expand();return;}if(drawer&&!drawer.hidden)drawer.open=true;collapsed=false;content.hidden=false;schedule();});
  window.addEventListener('beltrix:page',()=>{if(fullscreen)modal.close();schedule();});document.addEventListener('visibilitychange',schedule);window.addEventListener('resize',schedule);
  window.addEventListener('beltrix:theme',schedule);
+ window.addEventListener('beltrix:position',e=>{const p=e.detail?.position;positionMarker=p?{coin:e.detail?.coin,entryPx:p.entryPx,liquidationPx:p.liquidationPx}:null;schedule();});
+ window.addEventListener('beltrix:order-draft',e=>{draftMarker=e.detail||null;schedule();});
  window.addEventListener('beltrix:market',sync);
  return {
   update(rows,next={}){
