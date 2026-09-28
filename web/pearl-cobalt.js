@@ -16,6 +16,13 @@ document.head.append(css);
 function readTheme(){
  try{return normalizeTheme(localStorage.getItem(THEME_STORAGE_KEY))}catch{return 'light'}
 }
+function syncWalletThemeSurfaces(theme){
+ const bg=theme==='dark'?'#0f1d30':'#ffffff';
+ document.querySelectorAll('.w-action-circle').forEach(el=>{
+  el.style.setProperty('background-color',bg,'important');
+  el.style.setProperty('background-image','none','important');
+ });
+}
 function applyTheme(theme,{persist=true}={}){
  const value=normalizeTheme(theme);
  root.dataset.theme=value;
@@ -31,6 +38,7 @@ function applyTheme(theme,{persist=true}={}){
    ?'<span aria-hidden="true">☀</span><span>Light</span>'
    :'<span aria-hidden="true">◐</span><span>Dark</span>';
  }
+ syncWalletThemeSurfaces(value);
  window.dispatchEvent(new CustomEvent('beltrix:theme',{detail:{theme:value}}));
  window.dispatchEvent(new Event('resize'));
 }
@@ -255,7 +263,7 @@ function syncIntel(){
 
 function mount(){
  mountHeader();mountWalletSurfaceNav();mountSidebar();mountRightRail();
- renderWatchlist($('pcSidebar'));syncIntel();syncPageShell();
+ renderWatchlist($('pcSidebar'));syncIntel();syncPageShell();syncWalletThemeSurfaces(root.dataset.theme||'light');
 
  const select=$('marketSymbol');
  if(select){
