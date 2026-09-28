@@ -1,6 +1,7 @@
-import {generatePrivateKey,privateKeyToAccount,generateMnemonic,mnemonicToAccount,english} from 'viem/accounts';
+import {privateKeyToAccount,generateMnemonic,mnemonicToAccount,english} from 'viem/accounts';
 import {encryptWalletMaterial,decryptWalletMaterial,putVault,getVault,listVaults,deleteVault} from './beltrix-wallet-vault.js';
 import {createBeltrixLocalProvider,announceBeltrixProvider} from './beltrix-local-provider.js';
+import {createBeltrixSolanaWallet} from './beltrix-solana-wallet.js';
 
 const cleanName=value=>String(value||'BELTRIX Wallet').replace(/[\u0000-\u001f\u007f]/g,'').trim().slice(0,40)||'BELTRIX Wallet';
 const keyOK=value=>/^0x[0-9a-fA-F]{64}$/.test(String(value||'').trim());
@@ -36,8 +37,10 @@ export function createBeltrixWalletManager({win=window,cryptoImpl=globalThis.cry
    name:active.record.name,
    address:active.record.address,
    chainId:active.provider.chainId,
+   solanaAddress:active.solana?.address||null,
    walletType:active.material.type,
-   backupConfirmed:Boolean(active.record.backupConfirmedAt)
+   backupConfirmed:Boolean(active.record.backupConfirmedAt),
+   chains:Object.freeze(active.solana?['evm','solana']:['evm'])
   }):null
  });
 
@@ -48,15 +51,32 @@ export function createBeltrixWalletManager({win=window,cryptoImpl=globalThis.cry
   if(rows.some(x=>x.address.toLowerCase()===address.toLowerCase()))throw Error('This wallet already exists in BELTRIX.');
  }
 
- function activate(record,material,chainId=1){
+ async function activate(record,material,chainId=1){
   active?.provider?.lock?.();
+  active?.solana?.provider?.lock?.();
   const account=accountFromMaterial(material);
   if(account.address.toLowerCase()!==record.address.toLowerCase())throw Error('Encrypted wallet address does not match its recovery material.');
   const provider=createBeltrixLocalProvider({account,initialChainId:chainId});
-  active={record,material,account,provider};
-  win.beltrixWallet={...win.beltrixWallet,provider,manager:api};
+  const solana=material.type==='mnemonic'?await createBeltrixSolanaWallet(material.secret,{cryptoImpl}):null;
+  if(record.solanaAddress&&solana&&record.solanaAddress!==solana.address)throw Error('Encrypted wallet Solana address does not match its recovery phrase.');
+  if(solana&&!record.solanaAddress){
+   record={...record,solanaAddress:solana.address,updatedAt:new Date().toISOString()};
+   await putVault(record);
+  }
+  active={record,material,account,provider,solana};
+  win.beltrixWallet={...win.beltrixWallet,provider,solanaProvider:solana?.provider||null,manager:api};
   announceBeltrixProvider(provider,win);
-  event(win,'beltrix:local-wallet-unlocked',{account:account.address,provider,providerName:'BELTRIX Wallet',chainId:provider.chainId,id:record.id,name:record.name,walletType:material.type});
+  event(win,'beltrix:local-wallet-unlocked',{
+   account:account.address,
+   solanaAccount:solana?.address||null,
+   provider,
+   solanaProvider:solana?.provider||null,
+   providerName:'BELTRIX Wallet',
+   chainId:provider.chainId,
+   id:record.id,
+   name:record.name,
+   walletType:material.type
+  });
   notify();
   return publicState();
  }
@@ -80,7 +100,7 @@ export function createBeltrixWalletManager({win=window,cryptoImpl=globalThis.cry
     encrypted:await encryptWalletMaterial(material,password,{cryptoImpl})
    };
    await putVault(record);
-   activate(record,material,chainId);
+   await activate(record,material,chainId);
    return Object.freeze({wallet:publicState().active,recoveryPhrase:mnemonic,recoveryKey:null});
   },
   async importRecovery({name='Imported BELTRIX Wallet',recovery,password,chainId=1}={}){
@@ -98,7 +118,7 @@ export function createBeltrixWalletManager({win=window,cryptoImpl=globalThis.cry
     encrypted:await encryptWalletMaterial(material,password,{cryptoImpl})
    };
    await putVault(record);
-   activate(record,material,chainId);
+   await activate(record,material,chainId);
    return publicState();
   },
   async importRecoveryKey({name='Imported BELTRIX Wallet',recoveryKey,password,chainId=1}={}){
@@ -108,14 +128,15 @@ export function createBeltrixWalletManager({win=window,cryptoImpl=globalThis.cry
    const record=await getVault(id);
    if(!record)throw Error('BELTRIX wallet was not found in this browser.');
    const material=await decryptWalletMaterial(record.encrypted,password,{cryptoImpl});
-   return activate(record,material,chainId);
+   return await activate(record,material,chainId);
   },
   lock(){
    if(active){
     const previous=active;
     active=null;
     previous.provider.lock();
-    if(win.beltrixWallet)win.beltrixWallet.provider=null;
+    previous.solana?.provider?.lock?.();
+    if(win.beltrixWallet){win.beltrixWallet.provider=null;win.beltrixWallet.solanaProvider=null;}
     event(win,'beltrix:local-wallet-locked',{address:previous.record.address,id:previous.record.id});
    }
    notify();
@@ -149,7 +170,7 @@ export function createBeltrixWalletManager({win=window,cryptoImpl=globalThis.cry
    return true;
   }
  };
- win.beltrixWallet={provider:null,manager:api};
+ win.beltrixWallet={provider:null,solanaProvider:null,manager:api};
  notify();
  return api;
 }
