@@ -46,7 +46,20 @@ function disconnectEvent(){disconnect();}
 function addProvider(provider,name,id){if(!provider?.request||providers.some(p=>p.provider===provider))return;providers.push({provider,name:cleanText(name||'Browser wallet',50),id:id||String(providers.length)});}
 window.addEventListener('eip6963:announceProvider',e=>addProvider(e.detail?.provider,e.detail?.info?.name,e.detail?.info?.uuid));
 window.dispatchEvent(new Event('eip6963:requestProvider'));
-function discover(){addProvider(window.okxwallet,'OKX Wallet','okx');for(const p of window.ethereum?.providers||[])addProvider(p,p.isMetaMask?'MetaMask':p.isOkxWallet?'OKX Wallet':'Browser wallet');addProvider(window.ethereum,window.ethereum?.isMetaMask?'MetaMask':window.ethereum?.isOkxWallet?'OKX Wallet':'Browser wallet');}
+function discover(){addProvider(window.beltrixWallet?.provider,'BELTRIX Wallet','beltrix-local');addProvider(window.okxwallet,'OKX Wallet','okx');for(const p of window.ethereum?.providers||[])addProvider(p,p.isMetaMask?'MetaMask':p.isOkxWallet?'OKX Wallet':'Browser wallet');addProvider(window.ethereum,window.ethereum?.isMetaMask?'MetaMask':window.ethereum?.isOkxWallet?'OKX Wallet':'Browser wallet');}
+window.addEventListener('beltrix:local-wallet-unlocked',e=>{
+ const detail=e.detail||{},provider=detail.provider;
+ const selected=NETWORKS.find(n=>n.chain.id===Number(detail.chainId));
+ if(!provider?.request||!selected||!detail.account)return;
+ try{
+  detachProvider();
+  addProvider(provider,'BELTRIX Wallet','beltrix-local');
+  s.provider=provider;s.providerName='BELTRIX Wallet';s.net=selected;prefs.network=selected.chain.id;
+  provider.on?.('accountsChanged',accountEvent);provider.on?.('chainChanged',chainEvent);provider.on?.('disconnect',disconnectEvent);
+  setAccount(detail.account,false,detail.name||'BELTRIX Wallet');
+  notify('BELTRIX Wallet unlocked.');
+ }catch(error){notify(errorText(error));}
+});
 async function connect(index){
  if(s.busy)throw Error('Complete the open wallet request first.');discover();const chosen=providers[index];if(!chosen)throw Error('No wallet provider is available.');
  const me=modalEpoch;s.busy=true;status('wFormStatus','Waiting for your wallet…');
