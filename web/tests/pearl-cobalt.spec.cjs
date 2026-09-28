@@ -322,3 +322,60 @@ test('Pearl Cobalt mobile Wallet keeps bottom navigation and avoids desktop work
  await expect(page.locator('body')).toHaveAttribute('data-page','defi');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
 });
+
+
+test('Pearl Cobalt wallet workspace is full-width, theme-aware, and route-complete on desktop',async({page})=>{
+ await page.setViewportSize({width:1440,height:1000});
+ await page.goto('/web/#wallet');
+ await expect(page.locator('body')).toHaveAttribute('data-page','wallet');
+ await expect(page.locator('#pcWalletSurfaceNav')).toBeVisible();
+ await expect(page.locator('.bottom-nav')).toBeHidden();
+ const walletBox=await page.locator('#wallet').boundingBox();
+ expect(walletBox.width).toBeGreaterThan(900);
+ await expect(page.locator('.w-account-button')).toBeVisible();
+ const lightColor=await page.locator('.w-account-button').evaluate(el=>getComputedStyle(el).color);
+ expect(lightColor).toBe('rgb(16, 32, 51)');
+ const lightCircle=await page.locator('.w-action-circle').first().evaluate(el=>getComputedStyle(el).backgroundColor);
+ expect(lightCircle).toBe('rgb(255, 255, 255)');
+ for(const route of ['explore','defi','boost','wallet']){
+  await page.locator('#pcWalletSurfaceNav [data-pc-wallet-route="'+route+'"]').click();
+  await expect(page.locator('body')).toHaveAttribute('data-page',route);
+  await expect(page.locator('#'+route)).toHaveClass(/active/);
+ }
+ await page.locator('#pcThemeToggle').click();
+ await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
+ const darkColor=await page.locator('.w-account-button').evaluate(el=>getComputedStyle(el).color);
+ expect(darkColor).toBe('rgb(237, 245, 255)');
+ const darkCircle=await page.locator('.w-action-circle').first().evaluate(el=>getComputedStyle(el).backgroundColor);
+ expect(darkCircle).not.toBe(lightCircle);
+});
+
+test('Pearl Cobalt wallet workspace keeps mobile navigation and avoids overflow',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.goto('/web/#wallet');
+ await expect(page.locator('#pcWalletSurfaceNav')).toBeHidden();
+ await expect(page.locator('.bottom-nav')).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+ for(const route of ['explore','defi','boost','wallet']){
+  await page.locator('.bottom-nav [data-page="'+route+'"]').click();
+  await expect(page.locator('body')).toHaveAttribute('data-page',route);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+ }
+});
+
+test('USDT wallet dialog follows Pearl Cobalt light and dark surfaces',async({page})=>{
+ await page.setViewportSize({width:1280,height:900});
+ await page.goto('/web/#wallet');
+ await expect(page.locator('#walletUsdtEntry')).toBeVisible();
+ await page.locator('#walletUsdtEntry').click();
+ await expect(page.locator('#usdtDialog')).toBeVisible();
+ const lightBg=await page.locator('#usdtDialog').evaluate(el=>getComputedStyle(el).backgroundColor);
+ expect(lightBg).toBe('rgb(255, 255, 255)');
+ await page.locator('#usdtClose').click();
+ await page.locator('#pcThemeToggle').click();
+ await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
+ await page.locator('#walletUsdtEntry').click();
+ await expect(page.locator('#usdtDialog')).toBeVisible();
+ const darkBg=await page.locator('#usdtDialog').evaluate(el=>getComputedStyle(el).backgroundColor);
+ expect(darkBg).toBe('rgb(11, 23, 40)');
+});
