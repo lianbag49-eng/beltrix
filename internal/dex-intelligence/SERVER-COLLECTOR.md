@@ -151,3 +151,28 @@ the existing browser-local telemetry path remains the fallback.
 A production deployment should put the API behind short-lived authenticated
 Admin sessions or an authenticated reverse proxy. A permanent bearer token
 must not be embedded in the public BELTRIX frontend.
+
+
+## Phase 8 — Admin server history + retention policy
+
+Internal Admin now supports two explicit history sources:
+
+- local browser telemetry
+- authenticated server history
+
+Server configuration is kept in the active page session only. The token is not
+written to local storage by the Admin implementation.
+
+The Postgres adapter/repository also exposes collector-health and open-alert
+read methods for a future internal status surface.
+
+An explicit retention policy module now defines default windows:
+
+- snapshots: 30 days
+- collector runs: 30 days
+- resolved alerts: 90 days
+- BD events: 180 days
+
+Retention SQL is generated as parameterized statements. The repository does not
+automatically execute destructive cleanup against production; activation should
+be reviewed with the target Neon project and backup/restore policy first.
