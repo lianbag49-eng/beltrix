@@ -281,3 +281,37 @@ test('Pearl Cobalt Wallet and USDT modal follow light and dark themes',async({pa
  expect(dark.bg).not.toBe(light.bg);
  expect(dark.color).not.toBe(light.color);
 });
+
+
+test('Pearl Cobalt desktop Wallet workspace uses the full shell and desktop workspace nav',async({page})=>{
+ await page.goto('/web/#wallet');
+ await expect(page.locator('body')).toHaveAttribute('data-page','wallet');
+ await expect(page.locator('#pcWalletSurfaceNav')).toBeVisible();
+ await expect(page.locator('.bottom-nav')).toBeHidden();
+ await expect(page.locator('#pcSidebar')).toBeHidden();
+ await expect(page.locator('#pcRightRail')).toBeHidden();
+ await expect(page.locator('#wallet')).toBeVisible();
+ const box=await page.locator('#wallet').boundingBox();
+ expect(box.width).toBeGreaterThan(800);
+ const textColor=await page.locator('#wallet').evaluate(el=>getComputedStyle(el).color);
+ const background=await page.locator('.w-section-card').first().evaluate(el=>getComputedStyle(el).backgroundColor);
+ expect(textColor).not.toBe('rgb(248, 249, 250)');
+ expect(background).not.toBe('rgb(20, 22, 24)');
+ await page.locator('#pcWalletSurfaceNav [data-pc-wallet-route="defi"]').click();
+ await expect(page.locator('body')).toHaveAttribute('data-page','defi');
+ await expect(page.locator('#defi')).toBeVisible();
+ await page.locator('#pcWalletSurfaceNav [data-pc-wallet-route="markets"]').click();
+ await expect(page.locator('body')).toHaveAttribute('data-page','markets');
+ await expect(page.locator('.order-ticket')).toBeVisible();
+});
+
+test('Pearl Cobalt mobile Wallet keeps bottom navigation and avoids desktop workspace nav',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.goto('/web/#wallet');
+ await expect(page.locator('#pcWalletSurfaceNav')).toBeHidden();
+ await expect(page.locator('.bottom-nav')).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+ await page.locator('.bottom-nav [data-page="defi"]').click();
+ await expect(page.locator('body')).toHaveAttribute('data-page','defi');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+});
