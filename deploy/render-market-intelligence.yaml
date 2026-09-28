@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: beltrix-market-intelligence
+    runtime: docker
+    dockerfilePath: ./Dockerfile.market-intelligence
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: MI_DATABASE_URL
+        sync: false
+      - key: MI_API_TOKEN
+        sync: false
+      - key: MI_ADMIN_ORIGIN
+        sync: false
+      - key: MI_QUERY_CLIENT_MODULE
+        value: ./query-client.pg.js
+      - key: HOST
+        value: 0.0.0.0
