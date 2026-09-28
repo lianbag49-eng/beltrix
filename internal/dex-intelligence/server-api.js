@@ -37,8 +37,8 @@ export function createMarketIntelligenceApi({repository,token,clock=()=>Date.now
   async handle(request={}){
    const method=String(request.method||'GET').toUpperCase();
    const url=parseUrl(request.url||'/');
-   if(method!=='GET')return json(405,{error:'method_not_allowed'},{allow:'GET'});
-   if(url.pathname==='/health')return json(200,{ok:true,service:'beltrix-market-intelligence',time:new Date(clock()).toISOString()});
+   if(method==='GET'&&url.pathname==='/health')return json(200,{ok:true,service:'beltrix-market-intelligence',time:new Date(clock()).toISOString()});
+   if(!['GET','PATCH'].includes(method))return json(405,{error:'method_not_allowed'},{allow:'GET, PATCH'});
    if(!configured||!sameSecret(bearer(request.headers),configured))return json(401,{error:'unauthorized'});
    if(url.pathname==='/v1/history'){
     const asset=cleanAsset(url.searchParams.get('asset'));
@@ -60,10 +60,19 @@ export function createMarketIntelligenceApi({repository,token,clock=()=>Date.now
     const rows=typeof repository.collectorHealth==='function'?await repository.collectorHealth({limit}):[];
     return json(200,{count:rows.length,rows});
    }
-   if(url.pathname==='/v1/open-alerts'){
+   if(method==='GET'&&url.pathname==='/v1/open-alerts'){
     const limit=cleanLimit(url.searchParams.get('limit'),200);
     const rows=typeof repository.openAlerts==='function'?await repository.openAlerts({limit}):[];
     return json(200,{count:rows.length,rows});
+   }
+   if(method==='PATCH'&&/^\/v1\/alerts\/\d+$/.test(url.pathname)){
+    if(typeof repository.updateAlertStatus!=='function')return json(501,{error:'alert_updates_unavailable'});
+    const id=Number(url.pathname.split('/').pop());
+    const status=String(request.body?.status||'');
+    if(!['acknowledged','resolved'].includes(status))return json(400,{error:'invalid_alert_status'});
+    const row=await repository.updateAlertStatus({id,status});
+    if(!row)return json(404,{error:'alert_not_found'});
+    return json(200,{alert:row});
    }
    return json(404,{error:'not_found'});
   }
