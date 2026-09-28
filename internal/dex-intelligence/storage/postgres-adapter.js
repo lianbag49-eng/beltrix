@@ -49,6 +49,27 @@ export function createPostgresTelemetryAdapter(client){
     [asset||null,since||null,limit]
    );
    return result.rows.map(row=>row.payload);
+  },
+
+  async queryCollectorHealth({limit=100}={}){
+   const result=await client.query(
+    `select finished_at,successful_assets,failed_assets,healthy
+       from mi_collector_health_recent
+      order by finished_at desc
+      limit $1`,
+    [Math.max(1,Math.min(500,Number(limit)||100))]
+   );
+   return result.rows;
+  },
+
+  async queryOpenAlerts({limit=200}={}){
+   const result=await client.query(
+    `select id,asset,venue,alert_key,severity,status,message,evidence,opened_at,last_seen_at
+       from mi_open_alerts
+      limit $1`,
+    [Math.max(1,Math.min(1000,Number(limit)||200))]
+   );
+   return result.rows;
   }
  });
 }
