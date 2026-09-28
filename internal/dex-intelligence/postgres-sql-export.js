@@ -21,7 +21,7 @@ function observationTuple(snapshotIdAlias,venue,state){
  ].join(',');
 }
 
-export function batchToPostgresSql(batch){
+export function batchToPostgresSql(batch,{includeRetention=false}={}){
  if(!batch||batch.version!==1||!Array.isArray(batch.rows))throw Error('Invalid scheduled collector batch');
  const statements=['begin;'];
  statements.push('insert into mi_collector_runs(started_at,finished_at,successful_assets,failed_assets,payload) values ('+ts(batch.startedAt)+','+ts(batch.finishedAt)+','+num(batch.successful)+','+num(batch.failed)+','+json(batch)+');');
@@ -70,13 +70,15 @@ export function batchToPostgresSql(batch){
    );
   }
  }
- const cutoffs=retentionCutoffs(DEFAULT_RETENTION,Number(batch.finishedAt)||Date.now());
- statements.push(
-  'delete from mi_alert_events where status=\'resolved\' and coalesce(resolved_at,last_seen_at,opened_at) < '+text(cutoffs.resolvedAlertsBefore)+'::timestamptz;',
-  'delete from mi_snapshots where captured_at < '+text(cutoffs.snapshotsBefore)+'::timestamptz;',
-  'delete from mi_collector_runs where finished_at < '+text(cutoffs.collectorRunsBefore)+'::timestamptz;',
-  'delete from mi_bd_events where created_at < '+text(cutoffs.bdEventsBefore)+'::timestamptz;'
- );
+ if(includeRetention){
+  const cutoffs=retentionCutoffs(DEFAULT_RETENTION,Number(batch.finishedAt)||Date.now());
+  statements.push(
+   'delete from mi_alert_events where status=\'resolved\' and coalesce(resolved_at,last_seen_at,opened_at) < '+text(cutoffs.resolvedAlertsBefore)+'::timestamptz;',
+   'delete from mi_snapshots where captured_at < '+text(cutoffs.snapshotsBefore)+'::timestamptz;',
+   'delete from mi_collector_runs where finished_at < '+text(cutoffs.collectorRunsBefore)+'::timestamptz;',
+   'delete from mi_bd_events where created_at < '+text(cutoffs.bdEventsBefore)+'::timestamptz;'
+  );
+ }
  statements.push('commit;');
  return statements.join('\n\n')+'\n';
 }
