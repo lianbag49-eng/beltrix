@@ -54,6 +54,10 @@ export function createTelemetryRepository(adapter){
   async openAlerts({limit=200}={}){
    if(typeof adapter.queryOpenAlerts!=='function')return [];
    return adapter.queryOpenAlerts({limit:Math.max(1,Math.min(1000,Number(limit)||200))});
+  },
+  async updateAlertStatus({id,status}={}){
+   if(typeof adapter.updateAlertStatus!=='function')throw Error('Alert status updates are unavailable');
+   return adapter.updateAlertStatus({id:Number(id),status});
   }
  });
 }
