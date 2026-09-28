@@ -79,3 +79,26 @@ test('alert status client sends authenticated PATCH without persisting credentia
  assert.deepEqual(JSON.parse(call.init.body),{status:'acknowledged'});
  assert.equal(out.alert.status,'acknowledged');
 });
+
+
+test('expanded client exposes comparison operations protocol and plan endpoints',async()=>{
+ const calls=[];
+ const authValue='t'.repeat(32);
+ const client=createServerHistoryClient({
+  baseUrl:'https://internal.example',
+  getToken:()=>authValue,
+  fetchImpl:async(url,init)=>{calls.push({url,init});return {ok:true,status:200,async json(){return {ok:true}}}}
+ });
+ await client.operations('btc');
+ await client.quality({asset:'ETH',hours:12});
+ await client.comparison({asset:'SOL',hours:48});
+ await client.bd();
+ await client.protocol();
+ await client.planExecution({asset:'BTC',side:'buy',notionalUsd:1000});
+ assert.equal(calls[0].url,'https://internal.example/v1/operations?asset=BTC');
+ assert.equal(calls[1].url,'https://internal.example/v1/quality?asset=ETH&hours=12');
+ assert.equal(calls[2].url,'https://internal.example/v1/comparison?asset=SOL&hours=48');
+ assert.equal(calls[5].url,'https://internal.example/v1/execution/plan');
+ assert.equal(calls[5].init.method,'POST');
+ assert.deepEqual(JSON.parse(calls[5].init.body),{asset:'BTC',side:'buy',notionalUsd:1000});
+});
