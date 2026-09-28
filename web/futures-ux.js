@@ -21,6 +21,8 @@ const heading=ticket.querySelector(':scope > h3');if(heading)extra.append(headin
 
 const sizes=element('div','fast-size',`<label for="futuresSizePercent">Position size <output id="futuresSizeLabel">Manual</output></label><input id="futuresSizePercent" type="range" min="0" max="100" step="1" value="0" aria-label="Order size percentage"><div class="fast-row" role="group" aria-label="Quick size"><button type="button" data-size-pct="25">25%</button><button type="button" data-size-pct="50">50%</button><button type="button" data-size-pct="75">75%</button><button type="button" data-size-pct="100">MAX</button></div><p id="futuresSizingStatus" class="futures-note">Connect to load size limits.</p>`);
 $('tradeSize').closest('label').after(sizes);
+const positionSnapshot=element('section','futures-position-snapshot','<div class="futures-position-head"><span>Current position</span><strong id="futuresPositionState">No open position</strong></div><div id="futuresPositionMetrics" class="futures-position-metrics" hidden><div><small>Size</small><strong data-position-metric="size">—</strong></div><div><small>Entry</small><strong data-position-metric="entry">—</strong></div><div><small>Liquidation</small><strong data-position-metric="liq">—</strong></div><div><small>Unrealized PnL</small><strong data-position-metric="pnl">—</strong></div></div></section>');
+$('tradeReview').before(positionSnapshot);
 const actions=element('div','futures-actions',`<button type="button" id="futuresLong" class="futures-long" disabled>Open Long</button><button type="button" id="futuresShort" class="futures-short" disabled>Open Short</button><small>Opens a review. Wallet approval is still required.</small>`);$('tradeReview').before(actions);
 const note=element('p','futures-note','');note.id='futuresModeHint';bar.after(note);
 const bookMid=element('div','futures-book-mid','<small>Mark price</small><strong id="futuresBookPrice">—</strong><small id="futuresBookFeed">Waiting for live book</small>');$('marketSpread').before(bookMid);
@@ -95,6 +97,25 @@ $('futuresLong').onclick=()=>reviewSide(closeMode()?'sell':'buy');$('futuresShor
 document.addEventListener('input',e=>{if(e.target.id==='tradeSize'&&!internalInput)selectedPct=null;if(['tradeLeverage','tradeMarginMode'].includes(e.target.id)&&!internalInput)marginEdited=true;if(e.target.closest('.order-ticket'))sync();});
 $('tradeRefresh').addEventListener('click',()=>{snapshot=null;attemptedAt=0;refreshSizing();});
 window.addEventListener('beltrix:wallet',e=>{invalidate();user=e.detail?.account||null;network=user?(e.detail.chainId===421614?'testnet':e.detail.chainId===42161?'mainnet':null):null;marginEdited=false;sync();refreshSizing();});
+window.addEventListener('beltrix:position',e=>{
+ const p=e.detail?.position||null;
+ const state=$('futuresPositionState'),metrics=$('futuresPositionMetrics');
+ if(!state||!metrics)return;
+ if(!p||!Number.isFinite(Number(p.szi))||Number(p.szi)===0){
+  state.textContent='No open position';state.className='';metrics.hidden=true;return;
+ }
+ const size=Number(p.szi),long=size>0;
+ state.textContent=(long?'Long ':'Short ')+Math.abs(size).toLocaleString('en-US',{maximumFractionDigits:8})+' '+(e.detail?.coin||'');
+ state.className=long?'green':'red';metrics.hidden=false;
+ const set=(key,value)=>{const el=metrics.querySelector('[data-position-metric="'+key+'"]');if(el)el.textContent=value??'—'};
+ const fmt=(v,d=4)=>Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{maximumFractionDigits:d}):'—';
+ set('size',Math.abs(size).toLocaleString('en-US',{maximumFractionDigits:8}));
+ set('entry',fmt(p.entryPx));
+ set('liq',fmt(p.liquidationPx));
+ const pnl=Number(p.unrealizedPnl);
+ set('pnl',Number.isFinite(pnl)?(pnl>=0?'+':'')+fmt(pnl,2)+' USDC':'—');
+ const pnlEl=metrics.querySelector('[data-position-metric="pnl"]');if(pnlEl)pnlEl.className=Number.isFinite(pnl)?(pnl>=0?'green':'red'):'';
+});
 window.addEventListener('beltrix:market',e=>{const next=e.detail;if(market?.network!==next.network||market?.market?.value!==next.market?.value){invalidate();marginEdited=false;}market=next;sync();if(!snapshot&&!loading)refreshSizing();});
 function updateCounts(){for(const [tab,id,label] of [['positions','tradePositions','Positions'],['orders','tradeOrders','Open orders']]){const root=$(id),count=root.querySelector('table')?root.querySelectorAll('tbody tr').length:root.textContent.trim()==='No records'?0:'—';const b=document.querySelector(`[data-account-tab="${tab}"]`),text=`${label} (${count})`;if(b.textContent!==text)b.textContent=text;}}
 function sync(){
