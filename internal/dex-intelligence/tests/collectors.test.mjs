@@ -72,3 +72,28 @@ test('GMX JIT trading capacity converts 30-decimal USD and fails over peer',asyn
  assert.equal(out.jitDataStatus,'available');
  assert.equal(usd30ToNumber('1000000000000000000000000000000'),1);
 });
+
+
+test('Orderly production collector uses unauthenticated public WebSocket snapshot',async()=>{
+ const sent=[];
+ class FakeWebSocket{
+  static OPEN=1;
+  constructor(url){
+   this.url=url;this.readyState=1;
+   setTimeout(()=>this.onopen?.(),0);
+  }
+  send(raw){
+   const msg=JSON.parse(raw);sent.push(msg);
+   if(msg.event==='subscribe')setTimeout(()=>this.onmessage?.({data:JSON.stringify({
+    topic:'PERP_BTC_USDC@orderbook',ts:999,
+    data:{symbol:'PERP_BTC_USDC',bids:[[100,2],[99,3]],asks:[[101,4],[102,5]]}
+   })}),0);
+  }
+  close(){this.readyState=3}
+ }
+ const out=await orderlyBook('PERP_BTC_USDC',{WebSocketCtor:FakeWebSocket,timeoutMs:1000});
+ assert.equal(out.transport,'public-websocket');
+ assert.equal(out.receivedAt,999);
+ assert.deepEqual(out.bids[0],[100,2]);
+ assert.deepEqual(sent[0],{id:sent[0].id,event:'subscribe',topic:'PERP_BTC_USDC@orderbook'});
+});
