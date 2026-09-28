@@ -41,6 +41,34 @@ Requires the same bearer authorization.
 
 Returns only the newest persisted normalized snapshot for the asset.
 
+
+
+### GET /v1/collector-health?limit=100
+
+Authenticated read of recent persisted collector runs.
+
+### GET /v1/open-alerts?limit=200
+
+Authenticated read of current open/acknowledged operational alerts.
+
+### PATCH /v1/alerts/:id
+
+Authenticated internal operator action.
+
+Request body:
+
+```json
+{"status":"acknowledged"}
+```
+
+or:
+
+```json
+{"status":"resolved"}
+```
+
+Only those two state transitions are accepted. Arbitrary status values are rejected.
+
 ## Security boundary
 
 - `DATABASE_URL` stays in the backend runtime only.
