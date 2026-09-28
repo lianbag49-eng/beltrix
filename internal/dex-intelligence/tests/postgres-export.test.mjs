@@ -57,3 +57,17 @@ test('retention is disabled by default until explicitly enabled',()=>{
  assert.doesNotMatch(sql,/delete from mi_collector_runs/);
  assert.doesNotMatch(sql,/delete from mi_bd_events/);
 });
+
+
+test('nullable numeric telemetry remains typed for Postgres VALUES inference',()=>{
+ const sql=batchToPostgresSql({
+  version:1,startedAt:1,finishedAt:2,successful:1,failed:0,
+  rows:[{ok:true,snapshot:{version:1,asset:'BTC',timestamp:1700000000000,venues:{
+   hyperliquid:{ok:true,health:'healthy',latencyMs:null,spreadBps:null,depth25Usd:null,minFillRatio:null,metric:{}}
+  }},alerts:[],bdEvents:[],intelligence:{rows:[]}}]
+ });
+ assert.match(sql,/NULL::integer/);
+ assert.match(sql,/NULL::double precision/);
+ assert.doesNotMatch(sql,/\(s\.id,/);
+ assert.match(sql,/\(select id from s\)/);
+});
