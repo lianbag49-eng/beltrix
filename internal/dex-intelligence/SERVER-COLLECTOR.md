@@ -93,3 +93,37 @@ A future Neon deployment should:
 
 Until that deployment is completed, the current browser-local 7-day history
 remains the active history store.
+
+
+## Phase 6 — scheduled collection evidence
+
+The repository now includes a scheduled GitHub Actions collector as an interim
+24/7 collection layer.
+
+- workflow: `.github/workflows/market-intelligence-collector.yml`
+- cadence: every 15 minutes
+- default assets: BTC, ETH, SOL
+- output: normalized JSON artifact
+- retention: 14 days
+- per-asset failure isolation: enabled
+- all-assets-failed condition: workflow fails
+
+This scheduled layer is **collection evidence, not the final production history
+store**. GitHub Actions artifacts are intentionally temporary and are not used
+as the long-term source of truth for Admin analytics.
+
+The next persistence step is:
+
+```text
+Scheduled collector
+      ↓
+Postgres telemetry adapter
+      ↓
+Neon / PostgreSQL
+      ↓
+Authenticated internal read API
+      ↓
+BELTRIX Admin history / alerts
+```
+
+The collector never receives wallet signing material and does not submit trades.
