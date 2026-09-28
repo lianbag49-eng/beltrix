@@ -7,7 +7,7 @@ import {createMarketPicker} from './market-picker.js';
 import {hyperliquidDisplaySymbol,hyperliquidLogoUrl} from './asset-logo.js';
 const $=id=>document.getElementById(id);
 const marketPicker=createMarketPicker($('marketSymbol'));
-const intervals={'1m':60000,'5m':300000,'15m':900000,'1h':3600000,'4h':14400000,'1d':86400000};
+const intervals={'1m':60000,'3m':180000,'5m':300000,'15m':900000,'30m':1800000,'1h':3600000,'4h':14400000,'1d':86400000,'1w':604800000};
 let generation=0,controller,socket,retry,heartbeat,lastUpdate=0,candles=[],book=null,trades=[],lastTradeTime=0,streamReceived=0,dirty=false;
 let marketMeta=[],assetContext=null,contextReceived=0,contextTimer,candleFeed='snapshot',catalogSignature='';
 function endpoint(){return hyperliquidNetwork($('marketNetwork').value).http}
