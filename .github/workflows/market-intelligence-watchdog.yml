@@ -1,0 +1,84 @@
+name: BELTRIX Market Intelligence Watchdog
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '12,27,42,57 * * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: beltrix-market-intelligence-watchdog
+  cancel-in-progress: true
+
+jobs:
+  verify-collector:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Require persistence configuration
+        env:
+          MI_DATABASE_URL: ${{ secrets.MI_DATABASE_URL }}
+        run: |
+          if [ -z "$MI_DATABASE_URL" ]; then
+            echo "MI_DATABASE_URL is required for the production watchdog."
+            exit 1
+          fi
+
+      - name: Install PostgreSQL client
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update -y
+            sudo apt-get install -y postgresql-client
+          fi
+
+      - name: Verify collector freshness and success
+        env:
+          MI_DATABASE_URL: ${{ secrets.MI_DATABASE_URL }}
+        run: |
+          mkdir -p test-results/market-intelligence
+          status="$(psql "$MI_DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "
+            with recent as (
+              select finished_at, successful_assets, failed_assets
+              from mi_collector_runs
+              order by finished_at desc
+              limit 3
+            ),
+            latest as (
+              select * from recent order by finished_at desc limit 1
+            )
+            select json_build_object(
+              'checkedAt', now(),
+              'lastRun', l.finished_at,
+              'ageMinutes', round((extract(epoch from (now()-l.finished_at))/60.0)::numeric, 2),
+              'successfulAssets', l.successful_assets,
+              'failedAssets', l.failed_assets,
+              'recentZeroSuccessRuns', (select count(*) from recent where successful_assets=0),
+              'stale', now()-l.finished_at > interval '40 minutes'
+            )
+            from latest l;
+          ")"
+          if [ -z "$status" ]; then
+            echo '{"ok":false,"reason":"no_collector_runs"}' | tee test-results/market-intelligence/watchdog.json
+            exit 1
+          fi
+          echo "$status" | tee test-results/market-intelligence/watchdog.json
+          stale="$(echo "$status" | jq -r '.stale')"
+          success="$(echo "$status" | jq -r '.successfulAssets')"
+          if [ "$stale" = "true" ]; then
+            echo "Collector is stale (>40 minutes)."
+            exit 1
+          fi
+          if [ "$success" -le 0 ]; then
+            echo "Latest collector run has zero successful assets."
+            exit 1
+          fi
+
+      - name: Upload watchdog evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-intelligence-watchdog-${{ github.run_id }}
+          path: test-results/market-intelligence/
+          retention-days: 14
