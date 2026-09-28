@@ -11,11 +11,11 @@ test('BELTRIX local wallet creates locks unlocks and registers as trading provid
  await page.locator('#wLocalCreateConfirm').click();
 
  const recovery=await page.locator('#wLocalRecovery').inputValue();
- expect(recovery).toMatch(/^0x[0-9a-f]{64}$/);
+ expect(recovery.trim().split(/\s+/)).toHaveLength(12);
  await expect(page.locator('#wAccountMode')).toContainText('BELTRIX Wallet');
  await expect(page.locator('#walletProvider')).toContainText('BELTRIX Wallet');
 
- const storageLeak=await page.evaluate(key=>Object.entries(localStorage).some(([,v])=>String(v).includes(key)),recovery);
+ const storageLeak=await page.evaluate(secret=>Object.entries(localStorage).some(([,v])=>String(v).includes(secret)),recovery);
  expect(storageLeak).toBe(false);
 
  await page.locator('#wLocalRecoverySaved').check();
