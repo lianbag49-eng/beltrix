@@ -112,7 +112,7 @@ window.addEventListener('beltrix:position',e=>{
  set('size',Math.abs(size).toLocaleString('en-US',{maximumFractionDigits:8}));
  set('entry',fmt(p.entryPx));
  set('liq',fmt(p.liquidationPx));
- const mark=Number(e.detail?.markPx),liq=Number(p.liquidationPx);
+ const mark=Number(e.detail?.markPx??snapshot?.asset?.markPx??market?.context?.markPx),liq=Number(p.liquidationPx);
  const liqDistance=Number.isFinite(mark)&&mark>0&&Number.isFinite(liq)&&liq>0?Math.abs(mark-liq)/mark*100:null;
  set('liqDistance',liqDistance===null?'—':liqDistance.toFixed(2)+'%');
  const pnl=Number(p.unrealizedPnl);
