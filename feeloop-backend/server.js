@@ -265,7 +265,12 @@ app.get("/api/auth/csrf",requireAuth,async(req,res)=>{
 app.use("/api",async(req,res,next)=>{
   if(["GET","HEAD","OPTIONS"].includes(req.method)) return next();
   if(!req.user) return next();
-  if(req.path==="/auth/csrf") return next();
+  const csrfExempt=new Set([
+    "/auth/csrf","/auth/login","/auth/mfa-login","/auth/register",
+    "/auth/verify-email","/auth/password-reset/request","/auth/password-reset/confirm",
+    "/auth/change-email/confirm","/auth/bootstrap-admin"
+  ]);
+  if(csrfExempt.has(req.path)) return next();
   const provided=String(req.get("x-csrf-token")||"");
   if(!provided || !req.user.csrf_token_hash || hashToken(provided)!==req.user.csrf_token_hash){
     return res.status(403).json({error:"CSRF_INVALID"});
