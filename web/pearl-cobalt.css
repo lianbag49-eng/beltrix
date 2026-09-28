@@ -610,15 +610,6 @@ html[data-beltrix-ui="pearl-cobalt"] .book-head span{
  }
 }
 
-/* Keep insight sections reachable from Analytics/Protocol shortcuts on mobile instead of turning them into dead controls. */
 @media (max-width:900px){
- html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .pc-right-rail{
-  display:grid!important;position:static;margin-top:12px;gap:10px;
- }
- html[data-beltrix-ui="pearl-cobalt"] body:not([data-page="markets"]) .pc-right-rail{
-  display:none!important;
- }
- html[data-beltrix-ui="pearl-cobalt"] #markets .market-stats strong{
-  white-space:normal;
- }
+ html[data-beltrix-ui="pearl-cobalt"] #markets .market-stats strong{white-space:normal}
 }
