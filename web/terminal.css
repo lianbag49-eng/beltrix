@@ -10,3 +10,11 @@
 /* Empty account tabs reserve equal space, avoiding document-bottom scroll clamps.
    flow-root contains note margins; populated tables still grow without clipping. */
 .terminal-account > [role="tabpanel"]{min-height:144px;display:flow-root;}
+
+
+.trade-review-risk{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--card2);font-size:11px}
+.trade-review-risk[hidden]{display:none!important}.trade-review-risk>div{min-width:0;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+.trade-review-risk dt{color:var(--muted);font-size:9px}.trade-review-risk dd{margin:3px 0 0;color:var(--text);font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.trade-review-risk [data-tone="risk"]{border-color:color-mix(in srgb,var(--red) 45%,var(--line));background:color-mix(in srgb,var(--red) 7%,var(--card))}
+.trade-review-risk [data-tone="risk"] dd{color:var(--red)}
+@media(max-width:680px){.trade-review-risk{grid-template-columns:1fr 1fr;gap:6px;padding:9px}.trade-review-risk>div{padding:6px}.trade-review-risk dd{font-size:10px}}
