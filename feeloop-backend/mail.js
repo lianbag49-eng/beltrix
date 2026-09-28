@@ -35,4 +35,12 @@ function passwordResetEmail({origin,token}){
   };
 }
 
-module.exports={configured,sendEmail,verificationEmail,passwordResetEmail};
+function emailChangeEmail({origin,token}){
+  const url=origin+"/confirm-email-change.html?token="+encodeURIComponent(token);
+  return {
+    subject:"Confirm your new FEELOOP email",
+    html:`<p>Confirm this new email address for your FEELOOP account.</p><p><a href="${url}">Confirm email change</a></p><p>This link expires in 30 minutes.</p>`
+  };
+}
+
+module.exports={configured,sendEmail,verificationEmail,passwordResetEmail,emailChangeEmail};
