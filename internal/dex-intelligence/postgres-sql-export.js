@@ -1,3 +1,4 @@
+import {DEFAULT_RETENTION,retentionCutoffs} from './storage/retention-policy.js';
 const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
 const text=v=>{
  if(v===null||v===undefined)return 'NULL';
@@ -59,11 +60,22 @@ export function batchToPostgresSql(batch){
     'do update set severity=excluded.severity,message=excluded.message,evidence=excluded.evidence,last_seen_at=excluded.last_seen_at;'
    );
   }
+  for(const event of row.bdEvents||[]){
+   if(!event?.venue||!event?.eventType)continue;
+   const eventKey=[snap.asset,event.venue,event.eventType,event.title||'',event.detail||''].join('|');
+   statements.push(
+    'insert into mi_bd_events(event_key,asset,venue,event_type,source,priority,title,detail,evidence,created_at)\n'+
+    'values ('+text(eventKey)+','+text(snap.asset)+','+text(event.venue)+','+text(event.eventType)+','+text(event.source||'market-intelligence')+','+text(event.priority||'medium')+','+text(event.title||'')+','+text(event.detail||'')+','+json(event.evidence||{})+','+ts(event.timestamp||snap.timestamp)+')\n'+
+    'on conflict (event_key) where event_key is not null do nothing;'
+   );
+  }
  }
+ const cutoffs=retentionCutoffs(DEFAULT_RETENTION,Number(batch.finishedAt)||Date.now());
  statements.push(
-  "delete from mi_alert_events where status='resolved' and coalesce(resolved_at,last_seen_at,opened_at) < now()-interval '90 days';",
-  "delete from mi_snapshots where captured_at < now()-interval '90 days';",
-  "delete from mi_collector_runs where finished_at < now()-interval '90 days';"
+  'delete from mi_alert_events where status=\'resolved\' and coalesce(resolved_at,last_seen_at,opened_at) < '+text(cutoffs.resolvedAlertsBefore)+'::timestamptz;',
+  'delete from mi_snapshots where captured_at < '+text(cutoffs.snapshotsBefore)+'::timestamptz;',
+  'delete from mi_collector_runs where finished_at < '+text(cutoffs.collectorRunsBefore)+'::timestamptz;',
+  'delete from mi_bd_events where created_at < '+text(cutoffs.bdEventsBefore)+'::timestamptz;'
  );
  statements.push('commit;');
  return statements.join('\n\n')+'\n';
