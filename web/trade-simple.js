@@ -4,9 +4,11 @@ const root = $('markets'), ticket = root?.querySelector('.order-ticket');
 const KEY = 'beltrix-trade-layout-v1';
 const required = ['marketType','marketNetwork','marketInterval','tradeType','tradeSide','tradeReduce','tradeSlippageField','fastOrderBar','futuresExtra','futuresLeverageDrawer'];
 if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.simpleTrade) {
-  const css = document.createElement('link');
-  css.rel = 'stylesheet'; css.href = new URL('./trade-simple.css', import.meta.url).href;
-  css.id = 'simpleTradeStyles'; document.head.append(css);
+  if (!document.getElementById('simpleTradeStyles')) {
+    const css = document.createElement('link');
+    css.rel = 'stylesheet'; css.href = new URL('./trade-simple.css', import.meta.url).href;
+    css.id = 'simpleTradeStyles'; document.head.append(css);
+  }
   const node = (tag, cls, html) => {
     const el = document.createElement(tag); el.className = cls; el.innerHTML = html; return el;
   };
