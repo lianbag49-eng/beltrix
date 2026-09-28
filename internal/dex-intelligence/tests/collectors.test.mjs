@@ -75,11 +75,11 @@ test('GMX JIT trading capacity converts 30-decimal USD and fails over peer',asyn
 
 
 test('Orderly production collector uses unauthenticated public WebSocket snapshot',async()=>{
- const sent=[];
+ const sent=[],urls=[];
  class FakeWebSocket{
   static OPEN=1;
   constructor(url){
-   this.url=url;this.readyState=1;
+   this.url=url;urls.push(url);this.readyState=1;
    setTimeout(()=>this.onopen?.(),0);
   }
   send(raw){
@@ -93,6 +93,7 @@ test('Orderly production collector uses unauthenticated public WebSocket snapsho
  }
  const out=await orderlyBook('PERP_BTC_USDC',{WebSocketCtor:FakeWebSocket,timeoutMs:1000});
  assert.equal(out.transport,'public-websocket');
+ assert.equal(urls[0],'wss://ws-evm.orderly.org/ws/stream/OqdphuyCtYWxwzhxyLLjOWNdFP7sQt8RPWzmb5xY');
  assert.equal(out.receivedAt,999);
  assert.deepEqual(out.bids[0],[100,2]);
  assert.deepEqual(sent[0],{id:sent[0].id,event:'subscribe',topic:'PERP_BTC_USDC@orderbook'});
