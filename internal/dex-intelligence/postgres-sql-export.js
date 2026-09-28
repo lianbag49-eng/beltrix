@@ -7,6 +7,8 @@ const text=v=>{
 };
 const json=v=>text(JSON.stringify(v??null))+'::jsonb';
 const num=v=>finite(v)?String(Number(v)):'NULL';
+const dbl=v=>finite(v)?String(Number(v)):'NULL::double precision';
+const intNum=v=>finite(v)?String(Math.trunc(Number(v))):'NULL::integer';
 const bool=v=>v?'true':'false';
 const ts=v=>finite(v)?text(new Date(Number(v)).toISOString())+'::timestamptz':'now()';
 
@@ -14,10 +16,10 @@ function observationTuple(snapshotIdAlias,venue,state){
  const metric=state?.metric||{};
  return [
   snapshotIdAlias,text(venue),bool(Boolean(state?.ok)),text(state?.health||null),
-  num(state?.latencyMs),num(state?.spreadBps),num(state?.depth25Usd),num(state?.minFillRatio),
-  num(metric?.fundingRate),num(metric?.openInterest),num(metric?.openInterestUsd),text(metric?.openInterestUnit||null),
-  num(metric?.volume24h),num(metric?.volume24hUsd),text(metric?.volume24hUnit||null),
-  num(state?.capacityLongUsd),num(state?.capacityShortUsd),json(state?.flags||[])
+  intNum(state?.latencyMs),dbl(state?.spreadBps),dbl(state?.depth25Usd),dbl(state?.minFillRatio),
+  dbl(metric?.fundingRate),dbl(metric?.openInterest),dbl(metric?.openInterestUsd),text(metric?.openInterestUnit||null),
+  dbl(metric?.volume24h),dbl(metric?.volume24hUsd),text(metric?.volume24hUnit||null),
+  dbl(state?.capacityLongUsd),dbl(state?.capacityShortUsd),json(state?.flags||[])
  ].join(',');
 }
 
