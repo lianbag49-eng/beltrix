@@ -127,3 +127,27 @@ BELTRIX Admin history / alerts
 ```
 
 The collector never receives wallet signing material and does not submit trades.
+
+
+## Phase 7 — authenticated internal history API
+
+The repository now includes a runtime-neutral authenticated read API contract:
+
+- `server-api.js`
+- `server-history-client.js`
+- `INTERNAL-API.md`
+
+The API exposes only:
+
+- public liveness health
+- authenticated normalized history reads
+- authenticated latest-snapshot reads
+
+It does not expose database credentials, signing material or execution actions.
+
+The internal browser client is optional. If no server endpoint is configured,
+the existing browser-local telemetry path remains the fallback.
+
+A production deployment should put the API behind short-lived authenticated
+Admin sessions or an authenticated reverse proxy. A permanent bearer token
+must not be embedded in the public BELTRIX frontend.
