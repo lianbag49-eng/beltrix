@@ -194,11 +194,12 @@ test('Wallet and USDT surfaces inherit Pearl Cobalt light and dark tokens',async
  expect(light.color).not.toBe('rgb(230, 190, 114)');
  await page.locator('#pcThemeToggle').click();
  await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
+ await expect.poll(async()=>page.locator('.w-action-circle').first().evaluate(el=>getComputedStyle(el).backgroundColor)).not.toBe(light.background);
  const dark=await page.locator('.w-action-circle').first().evaluate(el=>({
   color:getComputedStyle(el).color,
   background:getComputedStyle(el).backgroundColor
  }));
- expect(dark.background).not.toBe(light.background);
+ expect(dark.color).not.toBe(light.color);
 });
 
 
