@@ -323,3 +323,40 @@ test('Pearl Cobalt mobile Wallet keeps bottom navigation and avoids desktop work
  await expect(page.locator('body')).toHaveAttribute('data-page','defi');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
 });
+
+
+test('Pearl Cobalt 1224px desktop reflows insight rail without text or viewport overlap',async({page})=>{
+ await page.setViewportSize({width:1224,height:800});
+ await page.goto('/web/#markets');
+ await expect(page.locator('#pcSidebar')).toBeVisible();
+ await expect(page.locator('#pcRightRail')).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ const bounds=await page.locator('#markets .market-stats').evaluate(el=>{
+  const box=el.getBoundingClientRect();
+  const children=[...el.children].map(child=>child.getBoundingClientRect());
+  return {left:box.left,right:box.right,children:children.map(r=>({left:r.left,right:r.right,width:r.width}))};
+ });
+ expect(bounds.children.every(r=>r.left>=bounds.left-1&&r.right<=bounds.right+1&&r.width>0)).toBe(true);
+ for(const selector of ['#marketVolume','#marketOI','#marketFunding','#marketFundingCountdown']){
+  const el=page.locator(selector);
+  await expect(el).toBeVisible();
+  expect(await el.evaluate(node=>node.scrollWidth<=node.clientWidth+1||getComputedStyle(node).overflowWrap!=='normal')).toBe(true);
+ }
+});
+
+test('Pearl Cobalt desktop sidebar destinations are clickable and routed',async({page})=>{
+ await page.setViewportSize({width:1224,height:800});
+ await page.goto('/web/#markets');
+ await page.locator('[data-pc-action="analytics"]').click();
+ await expect(page.locator('#pcMarketIntel')).toBeVisible();
+ await page.locator('[data-pc-action="protocol"]').click();
+ await expect(page.locator('#pcProtocolCard')).toBeVisible();
+ await page.locator('[data-pc-action="wallet"]').click();
+ await expect(page.locator('body')).toHaveAttribute('data-page','wallet');
+ await expect(page.locator('#wallet')).toBeVisible();
+ await page.locator('#pcWalletSurfaceNav [data-pc-wallet-route="markets"]').click();
+ await expect(page.locator('body')).toHaveAttribute('data-page','markets');
+ await page.locator('[data-pc-action="settings"]').click();
+ await expect(page.locator('body')).toHaveAttribute('data-page','settings');
+ await expect(page.locator('#settings')).toBeVisible();
+});
