@@ -360,3 +360,29 @@ test('Pearl Cobalt desktop sidebar destinations are clickable and routed',async(
  await expect(page.locator('body')).toHaveAttribute('data-page','settings');
  await expect(page.locator('#settings')).toBeVisible();
 });
+
+
+test('Pearl Cobalt typography uses a consistent four-weight scale',async({page})=>{
+ await page.setViewportSize({width:1224,height:800});
+ await page.goto('/web/#markets');
+ const weights=await page.evaluate(()=>{
+  const weight=s=>getComputedStyle(document.querySelector(s)).fontWeight;
+  return {
+   body:weight('body'),
+   nav:weight('.pc-rail-nav button'),
+   market:weight('.pc-market-row strong'),
+   stat:weight('#marketMark'),
+   book:weight('.book-level'),
+   action:weight('.futures-actions button'),
+   card:weight('.pc-card-kicker')
+  };
+ });
+ expect(weights.body).toBe('400');
+ expect(weights.nav).toBe('500');
+ expect(weights.market).toBe('600');
+ expect(weights.stat).toBe('500');
+ expect(weights.book).toBe('500');
+ expect(weights.action).toBe('600');
+ expect(weights.card).toBe('600');
+ expect(Object.values(weights).every(v=>['400','500','600','700'].includes(v))).toBe(true);
+});
