@@ -22,7 +22,18 @@ for(const file of [
  'commercial-model.js',
  'execution-qualification.js',
  'public-data.js',
- 'server-history-client.js'
+ 'server-history-client.js',
+ 'operations-health.js',
+ 'data-quality.js',
+ 'venue-current-profile.js',
+ 'venue-comparison.js',
+ 'bd-intelligence.js',
+ 'execution-router.js',
+ 'market-registry.js',
+ 'oracle-policy.js',
+ 'risk-engine.js',
+ 'settlement-adapter.js',
+ 'protocol-core.js'
 ])await copyFile(join(src,file),join(out,file));
 
 for(const file of ['index.html','app.js','style.css'])
