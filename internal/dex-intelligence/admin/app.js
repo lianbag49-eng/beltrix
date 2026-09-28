@@ -61,11 +61,23 @@ async function loadServerHistory(){
   const client=serverClient();
   if(!client.enabled)throw Error('Enter the internal API base URL.');
   await client.health();
-  const result=await client.history({asset,hours,limit:5000});
+  const [result,healthResult,alertResult]=await Promise.all([
+   client.history({asset,hours,limit:5000}),
+   client.collectorHealth(100),
+   client.openAlerts(200)
+  ]);
   latestHistory=Array.isArray(result?.rows)?result.rows:[];
+  latestAlerts=Array.isArray(alertResult?.rows)?alertResult.rows.map(row=>({
+   venue:row.venue,severity:row.severity,key:row.alert_key||row.key,message:row.message,evidence:row.evidence||{},
+   status:row.status,lastSeenAt:row.last_seen_at||row.lastSeenAt
+  })):[];
   historySource='server';
-  status.textContent=`Loaded ${latestHistory.length} persisted ${asset} snapshots from the server.`;
+  const healthRows=Array.isArray(healthResult?.rows)?healthResult.rows:[];
+  const latestRun=healthRows[0]||null;
+  status.textContent=`Loaded ${latestHistory.length} persisted ${asset} snapshots`+(latestRun? ` · last collector run ${new Date(latestRun.finished_at||latestRun.finishedAt).toLocaleString()}`:'')+'.';
+  renderAlerts();
   renderHistory();
+  renderCollectorStatus();
  }catch(error){
   status.textContent='Server history unavailable: '+String(error?.message||error);
  }
