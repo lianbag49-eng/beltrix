@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Login — FEELOOP</title><link rel="stylesheet" href="assets/style.css?v=14"></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Login — FEELOOP</title><link rel="stylesheet" href="assets/style.css?v=15"></head>
 <body>
 <div class="auth-wrap">
   <section class="auth-visual">
@@ -18,7 +18,7 @@
         <div class="notice">Enter the 6-digit code from your authenticator app.</div>
         <div class="field"><label>Authentication code</label><input id="mfaCode" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="123456"></div>
       </div>
-      <div id="loginError" style="min-height:18px;color:var(--danger);font-size:12px"></div>
+      <div id="loginError" style="min-height:18px;color:var(--danger);font-size:12px"></div><button class="btn sm" id="resendVerification" type="button" style="display:none">Resend verification email</button>
       <button class="btn primary" id="loginButton" type="submit">Continue</button>
       <div class="divider">ACCOUNT</div>
       <a class="btn" href="signup.html">Create an account</a>
@@ -27,4 +27,4 @@
     </form>
   </section>
 </div>
-<script src="assets/app.js?v=14"></script></body></html>
+<script src="assets/app.js?v=15"></script></body></html>
