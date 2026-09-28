@@ -125,3 +125,10 @@ html[data-clean-terminal] .chart-period-grid input{background:#0d0c0b;border-col
  html[data-clean-terminal] body[data-page=markets] #walletProvider{max-width:68px}
  html[data-clean-terminal] .clean-icon-button{min-width:30px;padding:4px}
 }
+
+/* BELTRIX built-in wallet launcher */
+#tradeBeltrixWallet{white-space:nowrap}
+@media(max-width:680px){
+ #tradeBeltrixWallet{min-width:0;max-width:88px;overflow:hidden;text-overflow:ellipsis;padding:6px 7px;font-size:9px;flex:0 1 88px}
+ #tradeConnect{min-width:0;max-width:92px;overflow:hidden;text-overflow:ellipsis;padding-inline:7px}
+}
