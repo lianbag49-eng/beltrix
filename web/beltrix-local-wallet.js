@@ -38,7 +38,7 @@ export function createBeltrixWalletManager({win=window,cryptoImpl=globalThis.cry
    address:active.record.address,
    chainId:active.provider.chainId,
    solanaAddress:active.solana?.address||null,
-   walletType:active.material.type,
+   walletType:active.walletType,
    backupConfirmed:Boolean(active.record.backupConfirmedAt),
    chains:Object.freeze(active.solana?['evm','solana']:['evm'])
   }):null
@@ -63,8 +63,11 @@ export function createBeltrixWalletManager({win=window,cryptoImpl=globalThis.cry
    record={...record,solanaAddress:solana.address,updatedAt:new Date().toISOString()};
    await putVault(record);
   }
-  active={record,material,account,provider,solana};
-  win.beltrixWallet={...win.beltrixWallet,provider,solanaProvider:solana?.provider||null,manager:api};
+  active={record,walletType:material.type,account,provider,solana};
+  const bridge=win.beltrixWallet||(win.beltrixWallet={});
+  bridge.manager=api;
+  bridge.localProvider=provider;
+  bridge.solanaProvider=solana?.provider||null;
   announceBeltrixProvider(provider,win);
   event(win,'beltrix:local-wallet-unlocked',{
    account:account.address,
@@ -136,7 +139,7 @@ export function createBeltrixWalletManager({win=window,cryptoImpl=globalThis.cry
     active=null;
     previous.provider.lock();
     previous.solana?.provider?.lock?.();
-    if(win.beltrixWallet){win.beltrixWallet.provider=null;win.beltrixWallet.solanaProvider=null;}
+    if(win.beltrixWallet){win.beltrixWallet.localProvider=null;win.beltrixWallet.solanaProvider=null;}
     event(win,'beltrix:local-wallet-locked',{address:previous.record.address,id:previous.record.id});
    }
    notify();
@@ -170,7 +173,7 @@ export function createBeltrixWalletManager({win=window,cryptoImpl=globalThis.cry
    return true;
   }
  };
- win.beltrixWallet={provider:null,solanaProvider:null,manager:api};
+ win.beltrixWallet={localProvider:null,solanaProvider:null,manager:api};
  notify();
  return api;
 }
