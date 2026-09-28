@@ -258,6 +258,17 @@ function renderHistory(metricRows=latestMetrics){
  if(sourceNote)sourceNote.textContent=historySource==='server'
   ?'Persisted server telemetry. Venue-native units are kept when semantics are not safely comparable.'
   :'Snapshots are stored locally in this browser for up to 7 days. Venue-native units are kept when semantics are not safely comparable.';
+ const latest=history.at(-1)||null;
+ const ageMs=latest?.timestamp?Math.max(0,Date.now()-Number(latest.timestamp)):null;
+ const ageMin=ageMs===null?null:ageMs/60000;
+ const freshness=ageMin===null?'No data':ageMin<=30?'Fresh':ageMin<=90?'Delayed':'Stale';
+ const freshnessClass=freshness==='Fresh'?'ok':freshness==='Delayed'?'warn':freshness==='Stale'?'bad':'na';
+ $('historySourceHealth').innerHTML=[
+  ['Source',historySource==='server'?'Server':'Local'],
+  ['Snapshots',history.length],
+  ['Freshness','<span class="'+freshnessClass+'">'+freshness+'</span>'],
+  ['Latest',latest?.timestamp?new Date(latest.timestamp).toLocaleString():'N/A']
+ ].map(([label,value])=>'<article class="summary-card"><strong>'+value+'</strong><span>'+esc(label)+'</span></article>').join('');
  const healthRows=Object.entries(apiHealthSummary(latestHistory,asset)).map(([venue,v])=>[
   esc(venue),String(v.samples),pct(v.successRatio),fmt(v.avgLatencyMs)+' ms',fmt(v.p95LatencyMs)+' ms',health(v.lastStatus),
   v.lastSeen?new Date(v.lastSeen).toLocaleString():'N/A'
