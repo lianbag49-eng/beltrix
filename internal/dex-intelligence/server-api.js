@@ -61,7 +61,7 @@ export function createMarketIntelligenceApi({repository,token,clock=()=>Date.now
    }
    if(!['GET','PATCH','POST'].includes(method))return json(405,{error:'method_not_allowed'},{allow:'GET, PATCH, POST, OPTIONS',...cors(request)});
    if(!configured||!sameSecret(bearer(request.headers),configured))return json(401,{error:'unauthorized'},cors(request));
-   if(url.pathname==='/v1/history'){
+   if(method==='GET'&&url.pathname==='/v1/history'){
     const asset=cleanAsset(url.searchParams.get('asset'));
     if(!asset)return json(400,{error:'invalid_asset'},cors(request));
     const limit=cleanLimit(url.searchParams.get('limit'));
@@ -69,14 +69,14 @@ export function createMarketIntelligenceApi({repository,token,clock=()=>Date.now
     const rows=await repository.history({asset,since,limit});
     return json(200,{asset,since,limit,count:rows.length,rows},cors(request));
    }
-   if(url.pathname==='/v1/latest'){
+   if(method==='GET'&&url.pathname==='/v1/latest'){
     const asset=cleanAsset(url.searchParams.get('asset'));
     if(!asset)return json(400,{error:'invalid_asset'},cors(request));
     const rows=await repository.history({asset,since:hoursAgo(24*30),limit:5000});
     const latest=rows.length?rows[rows.length-1]:null;
     return json(200,{asset,latest},cors(request));
    }
-   if(url.pathname==='/v1/collector-health'){
+   if(method==='GET'&&url.pathname==='/v1/collector-health'){
     const limit=cleanLimit(url.searchParams.get('limit'),100);
     const rows=typeof repository.collectorHealth==='function'?await repository.collectorHealth({limit}):[];
     return json(200,{count:rows.length,rows},cors(request));
