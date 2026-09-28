@@ -157,8 +157,8 @@ export function createMarketChart(canvas) {
  window.addEventListener('beltrix:chart-open',e=>{if(e.detail?.expanded){expand();return;}if(drawer&&!drawer.hidden)drawer.open=true;collapsed=false;content.hidden=false;schedule();});
  window.addEventListener('beltrix:page',()=>{if(fullscreen)modal.close();schedule();});document.addEventListener('visibilitychange',schedule);window.addEventListener('resize',schedule);
  window.addEventListener('beltrix:theme',schedule);
- window.addEventListener('beltrix:position',e=>{const p=e.detail?.position;positionMarker=p?{coin:e.detail?.coin,entryPx:p.entryPx,liquidationPx:p.liquidationPx}:null;schedule();});
- window.addEventListener('beltrix:order-draft',e=>{draftMarker=e.detail||null;schedule();});
+ window.addEventListener('beltrix:position',e=>{const p=e.detail?.position;positionMarker=p?{coin:e.detail?.coin,entryPx:p.entryPx,liquidationPx:p.liquidationPx}:null;canvas.dataset.positionMarker=positionMarker?String(positionMarker.entryPx||''):'';schedule();});
+ window.addEventListener('beltrix:order-draft',e=>{draftMarker=e.detail||null;canvas.dataset.orderDraft=draftMarker?.price?String(draftMarker.price):'';schedule();});
  window.addEventListener('beltrix:market',sync);
  return {
   update(rows,next={}){
