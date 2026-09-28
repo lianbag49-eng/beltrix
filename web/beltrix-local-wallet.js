@@ -1,10 +1,30 @@
-import {generatePrivateKey,privateKeyToAccount} from 'viem/accounts';
-import {encryptWalletSecret,decryptWalletSecret,putVault,getVault,listVaults,deleteVault} from './beltrix-wallet-vault.js';
+import {generatePrivateKey,privateKeyToAccount,generateMnemonic,mnemonicToAccount,english} from 'viem/accounts';
+import {encryptWalletMaterial,decryptWalletMaterial,putVault,getVault,listVaults,deleteVault} from './beltrix-wallet-vault.js';
 import {createBeltrixLocalProvider,announceBeltrixProvider} from './beltrix-local-provider.js';
 
 const cleanName=value=>String(value||'BELTRIX Wallet').replace(/[\u0000-\u001f\u007f]/g,'').trim().slice(0,40)||'BELTRIX Wallet';
 const keyOK=value=>/^0x[0-9a-fA-F]{64}$/.test(String(value||'').trim());
+const normalizePhrase=value=>String(value||'').trim().toLowerCase().replace(/\s+/g,' ');
 const event=(win,name,detail)=>win.dispatchEvent(new CustomEvent(name,{detail}));
+
+function accountFromMaterial(material){
+ if(material?.type==='privateKey')return privateKeyToAccount(material.secret);
+ if(material?.type==='mnemonic')return mnemonicToAccount(material.secret,{accountIndex:0,addressIndex:0,changeIndex:0});
+ throw Error('Unsupported BELTRIX wallet material.');
+}
+function parseRecovery(value){
+ const raw=String(value||'').trim();
+ if(keyOK(raw))return Object.freeze({type:'privateKey',secret:raw});
+ const phrase=normalizePhrase(raw);
+ const words=phrase.split(' ').filter(Boolean);
+ if(![12,15,18,21,24].includes(words.length))throw Error('Enter a valid BELTRIX recovery phrase or 0x recovery key.');
+ try{
+  mnemonicToAccount(phrase,{accountIndex:0,addressIndex:0,changeIndex:0});
+  return Object.freeze({type:'mnemonic',secret:phrase});
+ }catch{
+  throw Error('Enter a valid BELTRIX recovery phrase or 0x recovery key.');
+ }
+}
 
 export function createBeltrixWalletManager({win=window,cryptoImpl=globalThis.crypto}={}){
  let active=null;
@@ -15,7 +35,9 @@ export function createBeltrixWalletManager({win=window,cryptoImpl=globalThis.cry
    id:active.record.id,
    name:active.record.name,
    address:active.record.address,
-   chainId:active.provider.chainId
+   chainId:active.provider.chainId,
+   walletType:active.material.type,
+   backupConfirmed:Boolean(active.record.backupConfirmedAt)
   }):null
  });
 
@@ -26,27 +48,26 @@ export function createBeltrixWalletManager({win=window,cryptoImpl=globalThis.cry
   if(rows.some(x=>x.address.toLowerCase()===address.toLowerCase()))throw Error('This wallet already exists in BELTRIX.');
  }
 
- function activate(record,privateKey,chainId=1){
+ function activate(record,material,chainId=1){
   active?.provider?.lock?.();
-  const account=privateKeyToAccount(privateKey);
-  if(account.address.toLowerCase()!==record.address.toLowerCase())throw Error('Encrypted wallet address does not match its recovery key.');
+  const account=accountFromMaterial(material);
+  if(account.address.toLowerCase()!==record.address.toLowerCase())throw Error('Encrypted wallet address does not match its recovery material.');
   const provider=createBeltrixLocalProvider({account,initialChainId:chainId});
-  active={record,account,provider};
+  active={record,material,account,provider};
   win.beltrixWallet={...win.beltrixWallet,provider,manager:api};
   announceBeltrixProvider(provider,win);
-  event(win,'beltrix:local-wallet-unlocked',{account:account.address,provider,providerName:'BELTRIX Wallet',chainId:provider.chainId,id:record.id,name:record.name});
+  event(win,'beltrix:local-wallet-unlocked',{account:account.address,provider,providerName:'BELTRIX Wallet',chainId:provider.chainId,id:record.id,name:record.name,walletType:material.type});
   notify();
   return publicState();
  }
 
  const api={
-  async list(){
-   return listVaults();
-  },
+  async list(){return listVaults()},
   state:publicState,
-  async create({name='BELTRIX Wallet',password,chainId=1}={}){
-   const privateKey=generatePrivateKey();
-   const account=privateKeyToAccount(privateKey);
+  async create({name='BELTRIX Wallet',password,chainId=1,strength=128}={}){
+   const mnemonic=generateMnemonic(english,Number(strength)===256?256:128);
+   const material=Object.freeze({type:'mnemonic',secret:mnemonic});
+   const account=accountFromMaterial(material);
    await ensureUnique(account.address);
    const now=new Date().toISOString();
    const record={
@@ -55,38 +76,39 @@ export function createBeltrixWalletManager({win=window,cryptoImpl=globalThis.cry
     address:account.address,
     createdAt:now,
     updatedAt:now,
-    encrypted:await encryptWalletSecret(privateKey,password,{cryptoImpl})
+    backupConfirmedAt:null,
+    encrypted:await encryptWalletMaterial(material,password,{cryptoImpl})
    };
    await putVault(record);
-   activate(record,privateKey,chainId);
-   return Object.freeze({
-    wallet:publicState().active,
-    recoveryKey:privateKey
-   });
+   activate(record,material,chainId);
+   return Object.freeze({wallet:publicState().active,recoveryPhrase:mnemonic,recoveryKey:null});
+  },
+  async importRecovery({name='Imported BELTRIX Wallet',recovery,password,chainId=1}={}){
+   const material=parseRecovery(recovery);
+   const account=accountFromMaterial(material);
+   await ensureUnique(account.address);
+   const now=new Date().toISOString();
+   const record={
+    id:cryptoImpl.randomUUID(),
+    name:cleanName(name),
+    address:account.address,
+    createdAt:now,
+    updatedAt:now,
+    backupConfirmedAt:now,
+    encrypted:await encryptWalletMaterial(material,password,{cryptoImpl})
+   };
+   await putVault(record);
+   activate(record,material,chainId);
+   return publicState();
   },
   async importRecoveryKey({name='Imported BELTRIX Wallet',recoveryKey,password,chainId=1}={}){
-   const privateKey=String(recoveryKey||'').trim();
-   if(!keyOK(privateKey))throw Error('Enter a valid 32-byte EVM recovery key beginning with 0x.');
-   const account=privateKeyToAccount(privateKey);
-   await ensureUnique(account.address);
-   const now=new Date().toISOString();
-   const record={
-    id:cryptoImpl.randomUUID(),
-    name:cleanName(name),
-    address:account.address,
-    createdAt:now,
-    updatedAt:now,
-    encrypted:await encryptWalletSecret(privateKey,password,{cryptoImpl})
-   };
-   await putVault(record);
-   activate(record,privateKey,chainId);
-   return publicState();
+   return api.importRecovery({name,recovery:recoveryKey,password,chainId});
   },
   async unlock({id,password,chainId=1}={}){
    const record=await getVault(id);
    if(!record)throw Error('BELTRIX wallet was not found in this browser.');
-   const privateKey=await decryptWalletSecret(record.encrypted,password,{cryptoImpl});
-   return activate(record,privateKey,chainId);
+   const material=await decryptWalletMaterial(record.encrypted,password,{cryptoImpl});
+   return activate(record,material,chainId);
   },
   lock(){
    if(active){
@@ -99,15 +121,28 @@ export function createBeltrixWalletManager({win=window,cryptoImpl=globalThis.cry
    notify();
    return publicState();
   },
-  async exportRecoveryKey({id,password}={}){
+  async exportRecovery({id,password}={}){
    const record=await getVault(id);
    if(!record)throw Error('BELTRIX wallet was not found in this browser.');
-   return decryptWalletSecret(record.encrypted,password,{cryptoImpl});
+   return decryptWalletMaterial(record.encrypted,password,{cryptoImpl});
+  },
+  async exportRecoveryKey({id,password}={}){
+   const material=await api.exportRecovery({id,password});
+   return material.secret;
+  },
+  async confirmBackup({id}={}){
+   const record=await getVault(id);
+   if(!record)throw Error('BELTRIX wallet was not found in this browser.');
+   const updated={...record,backupConfirmedAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+   await putVault(updated);
+   if(active?.record?.id===id)active.record=updated;
+   notify();
+   return publicState();
   },
   async remove({id,password}={}){
    const record=await getVault(id);
    if(!record)return false;
-   await decryptWalletSecret(record.encrypted,password,{cryptoImpl});
+   await decryptWalletMaterial(record.encrypted,password,{cryptoImpl});
    if(active?.record?.id===record.id)api.lock();
    await deleteVault(record.id);
    notify();
