@@ -860,6 +860,7 @@ app.get("/api/admin/users",requireAdmin,async(req,res)=>{
     `SELECT u.id,u.email,u.role,u.country,u.email_verified,u.mfa_enabled,u.created_at,
        COALESCE(f.total_fees,0)::float8 AS total_fees,
        COALESCE(f.accrued,0)::float8 AS accrued,
+       COALESCE(a.adjustments,0)::float8 AS adjustments,
        COALESCE(p.reserved,0)::float8 AS reserved,
        COALESCE(p.paid,0)::float8 AS paid
      FROM feeloop.users u
@@ -867,6 +868,10 @@ app.get("/api/admin/users",requireAdmin,async(req,res)=>{
        SELECT user_id,SUM(fee_amount) total_fees,SUM(cashback_amount) accrued
        FROM feeloop.fee_records GROUP BY user_id
      ) f ON f.user_id=u.id
+     LEFT JOIN (
+       SELECT user_id,SUM(amount) adjustments
+       FROM feeloop.ledger_adjustments GROUP BY user_id
+     ) a ON a.user_id=u.id
      LEFT JOIN (
        SELECT user_id,
        SUM(amount) FILTER(WHERE status IN ('pending','processing')) reserved,
@@ -877,10 +882,12 @@ app.get("/api/admin/users",requireAdmin,async(req,res)=>{
      ORDER BY u.created_at DESC LIMIT 250`,[search]
   );
   res.json({users:r.rows.map(u=>({
-    id:u.id,email:u.email,role:u.role,country:u.country,emailVerified:u.email_verified,mfaEnabled:u.mfa_enabled,createdAt:u.created_at,
+    id:u.id,email:u.email,role:u.role,country:u.country,emailVerified:u.email_verified,mfaEnabled:u.mfa_enabled,
+    eligibilityStatus:u.eligibility_status,preferredLanguage:u.preferred_language,createdAt:u.created_at,
     summary:{
-      totalFees:numeric(u.total_fees),accrued:numeric(u.accrued),reserved:numeric(u.reserved),paid:numeric(u.paid),
-      available:Math.max(0,numeric(u.accrued)-numeric(u.reserved)-numeric(u.paid))
+      totalFees:numeric(u.total_fees),accrued:numeric(u.accrued)+numeric(u.adjustments),adjustments:numeric(u.adjustments),
+      reserved:numeric(u.reserved),paid:numeric(u.paid),
+      available:Math.max(0,numeric(u.accrued)+numeric(u.adjustments)-numeric(u.reserved)-numeric(u.paid))
     }
   }))});
 });
@@ -889,12 +896,15 @@ app.patch("/api/admin/exchange-accounts/:id",requireAdmin,async(req,res)=>{
   const status=String(req.body.status||"");
   if(!["pending","verified","rejected"].includes(status)) return res.status(400).json({error:"INVALID_STATUS"});
   const r=await q(
-    `UPDATE feeloop.exchange_accounts SET status=$1,updated_at=NOW() WHERE id=$2
-     RETURNING id,user_id AS "userId",exchange_id AS "exchangeId",uid,status,updated_at AS "updatedAt"`,
+    `UPDATE feeloop.exchange_accounts
+     SET status=$1,verified_at=CASE WHEN $1='verified' THEN NOW() ELSE NULL END,updated_at=NOW()
+     WHERE id=$2
+     RETURNING id,user_id AS "userId",exchange_id AS "exchangeId",uid,status,verified_at AS "verifiedAt",updated_at AS "updatedAt"`,
     [status,req.params.id]
   );
   if(!r.rows.length) return res.status(404).json({error:"NOT_FOUND"});
   await audit(req.user.id,"EXCHANGE_UID_STATUS",req.params.id,{status});
+  await notify(r.rows[0].userId,"uid","Exchange UID "+status,"Your exchange UID status changed to "+status+".");
   res.json({account:r.rows[0]});
 });
 
@@ -913,23 +923,30 @@ app.patch("/api/admin/exchanges/:id",requireAdmin,async(req,res)=>{
   const current=await q("SELECT * FROM feeloop.exchange_configs WHERE id=$1",[req.params.id]);
   if(!current.rows.length) return res.status(404).json({error:"NOT_FOUND"});
   const c=current.rows[0];
-  const r=await q(
-    `UPDATE feeloop.exchange_configs SET
-      cashback_rate=$1,partner_commission_rate=$2,maker_fee=$3,taker_fee=$4,connector_status=$5,updated_at=NOW()
-     WHERE id=$6
-     RETURNING id,name,short,enabled,cashback_rate::float8 AS "cashbackRate",
-       partner_commission_rate::float8 AS "partnerCommissionRate",maker_fee::float8 AS "makerFee",
-       taker_fee::float8 AS "takerFee",connector_status AS "connectorStatus"`,
-    [
-      fields.cashbackRate!==undefined?fields.cashbackRate:c.cashback_rate,
-      fields.partnerCommissionRate!==undefined?fields.partnerCommissionRate:c.partner_commission_rate,
-      fields.makerFee!==undefined?fields.makerFee:c.maker_fee,
-      fields.takerFee!==undefined?fields.takerFee:c.taker_fee,
-      status!==undefined?status:c.connector_status,
-      req.params.id
-    ]
-  );
-  await audit(req.user.id,"EXCHANGE_CONFIG_UPDATED",req.params.id,fields);
+  const nextValues={
+    cashbackRate:fields.cashbackRate!==undefined?fields.cashbackRate:c.cashback_rate,
+    partnerCommissionRate:fields.partnerCommissionRate!==undefined?fields.partnerCommissionRate:c.partner_commission_rate,
+    makerFee:fields.makerFee!==undefined?fields.makerFee:c.maker_fee,
+    takerFee:fields.takerFee!==undefined?fields.takerFee:c.taker_fee,
+    connectorStatus:status!==undefined?status:c.connector_status
+  };
+  const r=await tx(async client=>{
+    const updated=await client.query(
+      `UPDATE feeloop.exchange_configs SET
+        cashback_rate=$1,partner_commission_rate=$2,maker_fee=$3,taker_fee=$4,connector_status=$5,updated_at=NOW()
+       WHERE id=$6
+       RETURNING id,name,short,enabled,cashback_rate::float8 AS "cashbackRate",
+         partner_commission_rate::float8 AS "partnerCommissionRate",maker_fee::float8 AS "makerFee",
+         taker_fee::float8 AS "takerFee",connector_status AS "connectorStatus"`,
+      [nextValues.cashbackRate,nextValues.partnerCommissionRate,nextValues.makerFee,nextValues.takerFee,nextValues.connectorStatus,req.params.id]
+    );
+    await client.query(
+      "INSERT INTO feeloop.exchange_rate_history(id,exchange_id,actor_id,previous_values,new_values,created_at) VALUES($1,$2,$3,$4::jsonb,$5::jsonb,NOW())",
+      [id("rth"),req.params.id,req.user.id,JSON.stringify({cashbackRate:c.cashback_rate,partnerCommissionRate:c.partner_commission_rate,makerFee:c.maker_fee,takerFee:c.taker_fee,connectorStatus:c.connector_status}),JSON.stringify(nextValues)]
+    );
+    return updated;
+  });
+  await audit(req.user.id,"EXCHANGE_CONFIG_UPDATED",req.params.id,nextValues);
   res.json({exchange:r.rows[0]});
 });
 
@@ -980,6 +997,7 @@ app.patch("/api/admin/payouts/:id",requireAdmin,async(req,res)=>{
   );
   if(!r.rows.length) return res.status(404).json({error:"NOT_FOUND"});
   await audit(req.user.id,"PAYOUT_STATUS_UPDATED",req.params.id,{status,paymentRef:paymentRef||null});
+  await notify(r.rows[0].userId,"payout","Payout "+status,"Your payout "+r.rows[0].id+" is now "+status+".");
   res.json({payout:r.rows[0]});
 });
 
@@ -1043,12 +1061,137 @@ app.patch("/api/admin/events/:id",requireAdmin,async(req,res)=>{
   res.json({event:r.rows[0]});
 });
 
-app.get("/api/admin/audit",requireAdmin,async(req,res)=>{
+app.get("/api/admin/users/:id",requireAdmin,async(req,res)=>{
+  const user=await getUserById(req.params.id);
+  if(!user || user.role!=="user") return res.status(404).json({error:"NOT_FOUND"});
+  const [summary,accounts,fees,payouts,notes,adjustments]=await Promise.all([
+    financials(user.id),
+    q(`SELECT id,exchange_id AS "exchangeId",uid,status,last_sync_at AS "lastSyncAt",verified_at AS "verifiedAt",created_at AS "createdAt"
+       FROM feeloop.exchange_accounts WHERE user_id=$1 ORDER BY created_at DESC`,[user.id]),
+    q(`SELECT id,exchange_id AS "exchangeId",source_record_id AS "sourceRecordId",fee_amount::float8 AS "feeAmount",
+              commission_amount::float8 AS "commissionAmount",cashback_amount::float8 AS "cashbackAmount",
+              status,occurred_at AS "occurredAt"
+       FROM feeloop.fee_records WHERE user_id=$1 ORDER BY occurred_at DESC LIMIT 500`,[user.id]),
+    q(`SELECT id,amount::float8 AS amount,method,destination,status,payment_ref AS "paymentRef",created_at AS "createdAt"
+       FROM feeloop.payouts WHERE user_id=$1 ORDER BY created_at DESC LIMIT 200`,[user.id]),
+    q(`SELECT n.id,n.note,n.created_at AS "createdAt",u.email AS "authorEmail"
+       FROM feeloop.admin_notes n LEFT JOIN feeloop.users u ON u.id=n.author_id
+       WHERE n.user_id=$1 ORDER BY n.created_at DESC LIMIT 100`,[user.id]),
+    q(`SELECT id,amount::float8 AS amount,reason,source,created_at AS "createdAt"
+       FROM feeloop.ledger_adjustments WHERE user_id=$1 ORDER BY created_at DESC LIMIT 100`,[user.id])
+  ]);
+  res.json({user:publicUser(user),summary,accounts:accounts.rows,fees:fees.rows,payouts:payouts.rows,notes:notes.rows,adjustments:adjustments.rows});
+});
+
+app.patch("/api/admin/users/:id/eligibility",requireAdmin,async(req,res)=>{
+  const status=String(req.body.status||"").toLowerCase();
+  if(!["active","review","rejected"].includes(status)) return res.status(400).json({error:"INVALID_STATUS"});
+  const r=await q("UPDATE feeloop.users SET eligibility_status=$1,updated_at=NOW() WHERE id=$2 AND role='user' RETURNING *",[status,req.params.id]);
+  if(!r.rows.length) return res.status(404).json({error:"NOT_FOUND"});
+  await audit(req.user.id,"USER_ELIGIBILITY_UPDATED",req.params.id,{status});
+  await notify(req.params.id,"eligibility","Eligibility status updated","Your account eligibility status is now "+status+".");
+  res.json({user:publicUser(r.rows[0])});
+});
+
+app.post("/api/admin/users/:id/notes",requireAdmin,async(req,res)=>{
+  const note=String(req.body.note||"").trim();
+  if(!note) return res.status(400).json({error:"NOTE_REQUIRED"});
+  const user=await getUserById(req.params.id);
+  if(!user || user.role!=="user") return res.status(404).json({error:"NOT_FOUND"});
   const r=await q(
-    `SELECT id,actor_id AS "actorId",action,target,meta,created_at AS "createdAt"
-     FROM feeloop.audit_logs ORDER BY created_at DESC LIMIT 500`
+    `INSERT INTO feeloop.admin_notes(id,user_id,author_id,note,created_at)
+     VALUES($1,$2,$3,$4,NOW())
+     RETURNING id,note,created_at AS "createdAt"`,
+    [id("note"),req.params.id,req.user.id,note.slice(0,4000)]
+  );
+  await audit(req.user.id,"ADMIN_NOTE_ADDED",req.params.id,{noteId:r.rows[0].id});
+  res.status(201).json({note:r.rows[0]});
+});
+
+app.post("/api/admin/users/:id/adjustments",requireAdmin,async(req,res)=>{
+  const amount=moneyRound(req.body.amount);
+  const reason=String(req.body.reason||"").trim();
+  if(!amount) return res.status(400).json({error:"INVALID_AMOUNT"});
+  if(!reason) return res.status(400).json({error:"REASON_REQUIRED"});
+  const user=await getUserById(req.params.id);
+  if(!user || user.role!=="user") return res.status(404).json({error:"NOT_FOUND"});
+  const r=await q(
+    `INSERT INTO feeloop.ledger_adjustments(id,user_id,amount,reason,source,actor_id,created_at)
+     VALUES($1,$2,$3,$4,'operator',$5,NOW())
+     RETURNING id,amount::float8 AS amount,reason,source,created_at AS "createdAt"`,
+    [id("adj"),req.params.id,amount,reason.slice(0,500),req.user.id]
+  );
+  await audit(req.user.id,"LEDGER_ADJUSTMENT_CREATED",r.rows[0].id,{userId:req.params.id,amount,reason});
+  await notify(req.params.id,"ledger","Balance adjustment","An operator adjustment was applied to your cashback ledger.");
+  res.status(201).json({adjustment:r.rows[0],summary:await financials(req.params.id)});
+});
+
+app.get("/api/admin/exchanges/:id/history",requireAdmin,async(req,res)=>{
+  const r=await q(
+    `SELECT h.id,h.previous_values AS "previousValues",h.new_values AS "newValues",h.created_at AS "createdAt",u.email AS "actorEmail"
+     FROM feeloop.exchange_rate_history h LEFT JOIN feeloop.users u ON u.id=h.actor_id
+     WHERE h.exchange_id=$1 ORDER BY h.created_at DESC LIMIT 100`,[req.params.id]
+  );
+  res.json({history:r.rows});
+});
+
+app.get("/api/admin/analytics/countries",requireAdmin,async(req,res)=>{
+  const r=await q(
+    `SELECT u.country,COUNT(*)::int AS users,
+       COALESCE(SUM(f.cashback),0)::float8 AS cashback,
+       COALESCE(SUM(f.fees),0)::float8 AS fees
+     FROM feeloop.users u
+     LEFT JOIN (
+       SELECT user_id,SUM(cashback_amount) cashback,SUM(fee_amount) fees
+       FROM feeloop.fee_records GROUP BY user_id
+     ) f ON f.user_id=u.id
+     WHERE u.role='user'
+     GROUP BY u.country ORDER BY users DESC,u.country`
+  );
+  res.json({countries:r.rows});
+});
+
+app.get("/api/admin/payouts.csv",requireAdmin,async(req,res)=>{
+  const r=await q(
+    `SELECT p.id,u.email,p.amount,p.method,p.destination,p.status,p.payment_ref,p.created_at,p.updated_at
+     FROM feeloop.payouts p JOIN feeloop.users u ON u.id=p.user_id ORDER BY p.created_at DESC`
+  );
+  const esc=v=>'"'+String(v??"").replaceAll('"','""')+'"';
+  const header=["id","email","amount","method","destination","status","payment_ref","created_at","updated_at"];
+  const lines=[header.join(","),...r.rows.map(row=>header.map(k=>esc(row[k])).join(","))];
+  res.type("text/csv").set("Content-Disposition",'attachment; filename="feeloop-payouts.csv"').send(lines.join("\n"));
+});
+
+app.get("/api/admin/readiness",requireAdmin,async(req,res)=>{
+  const connector=await q("SELECT COUNT(*) FILTER(WHERE connector_status='active')::int AS active,COUNT(*)::int AS total FROM feeloop.exchange_configs");
+  const recentErrors=await q("SELECT COUNT(*)::int AS count FROM feeloop.system_errors WHERE created_at>NOW()-INTERVAL '24 hours'");
+  res.json({
+    environment:APP_ENV,
+    database:true,
+    mfaEncryptionConfigured:!!MFA_ENCRYPTION_KEY,
+    trustedGeoConfigured:!!TRUSTED_GEO_HEADER,
+    emailProviderConfigured:mailConfigured(),
+    activeConnectors:connector.rows[0].active,
+    totalConnectors:connector.rows[0].total,
+    recentSystemErrors:recentErrors.rows[0].count,
+    productionReady:IS_PRODUCTION && !!MFA_ENCRYPTION_KEY && !!TRUSTED_GEO_HEADER && mailConfigured() && connector.rows[0].active>0
+  });
+});
+
+app.get("/api/admin/audit",requireAdmin,async(req,res)=>{
+  const action=String(req.query.action||"").trim();
+  const actor=String(req.query.actor||"").trim();
+  const r=await q(
+    `SELECT a.id,a.actor_id AS "actorId",a.action,a.target,a.meta,a.created_at AS "createdAt",u.email AS "actorEmail"
+     FROM feeloop.audit_logs a LEFT JOIN feeloop.users u ON u.id=a.actor_id
+     WHERE ($1='' OR a.action ILIKE '%'||$1||'%') AND ($2='' OR u.email ILIKE '%'||$2||'%')
+     ORDER BY a.created_at DESC LIMIT 500`,[action,actor]
   );
   res.json({audit:r.rows});
+});
+app.get("/api/admin/system-errors",requireAdmin,async(req,res)=>{
+  const r=await q("SELECT id,area,message,meta,created_at AS \"createdAt\" FROM feeloop.system_errors ORDER BY created_at DESC LIMIT 200");
+  res.json({errors:r.rows});
 });
 app.get("/api/admin/country-rules",requireAdmin,async(req,res)=>{
   const r=await q("SELECT country,status,reason,updated_at AS \"updatedAt\" FROM feeloop.country_rules ORDER BY country");
