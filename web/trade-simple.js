@@ -129,6 +129,21 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
     $('marketType').dispatchEvent(new Event('change', { bubbles: true }));
     sync();
   });
+  // Mobile WebKit may scroll a financial input into the visual-viewport center on
+  // pointer focus even when the field is already fully visible. Intercept the first
+  // pointer focus for the compact ticket and request focus without scrolling.
+  // We only do this for editable decimal/text transaction fields, never checkboxes,
+  // ranges, buttons or selects.
+  const stableTicketFocus = event => {
+    if (!matchMedia('(max-width:680px)').matches) return;
+    const input = event.target.closest?.('.order-ticket input:not([type=checkbox]):not([type=range])');
+    if (!input || input.disabled || input.readOnly || document.activeElement === input) return;
+    event.preventDefault();
+    try { input.focus({ preventScroll: true }); }
+    catch { input.focus(); }
+  };
+  ticket.addEventListener('pointerdown', stableTicketFocus);
+
   for (const event of ['input','change']) root.addEventListener(event, schedule);
   for (const event of ['beltrix:market','beltrix:wallet']) window.addEventListener(event, schedule);
   for (const event of ['close','cancel']) $('tradeDialog').addEventListener(event, schedule);
