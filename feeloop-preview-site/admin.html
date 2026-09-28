@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Operator Console — FEELOOP</title><link rel="stylesheet" href="assets/style.css?v=13"></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Operator Console — FEELOOP</title><link rel="stylesheet" href="assets/style.css?v=14"></head>
 <body>
 <div class="sidebar-layout">
   <aside class="sidebar">
     <div class="side-brand"><a class="brand" href="index.html"><span class="mark"></span><span>FEE<span class="word-grad">LOOP</span></span></a></div>
-    <nav class="side-nav"><a class="active" href="#overview">▦ <span>Overview</span></a><a href="#users">♙ <span>Members</span></a><a href="#payouts">↗ <span>Payouts</span></a><a href="#uids">◎ <span>UID review</span></a><a href="#exchanges">◇ <span>Exchanges</span></a><a href="#events">✦ <span>Event CMS</span></a><a href="#countries">◎ <span>Countries</span></a><a href="#security">⌾ <span>Security</span></a><a href="dashboard.html?preview=1">◉ <span>User preview</span></a></nav>
+    <nav class="side-nav"><a class="active" href="#overview">▦ <span>Overview</span></a><a href="#users">♙ <span>Members</span></a><a href="#payouts">↗ <span>Payouts</span></a><a href="#uids">◎ <span>UID review</span></a><a href="#exchanges">◇ <span>Exchanges</span></a><a href="#events">✦ <span>Event CMS</span></a><a href="#countries">◎ <span>Countries</span></a><a href="#readiness">✓ <span>Readiness</span></a><a href="#security">⌾ <span>Security</span></a><a href="dashboard.html?preview=1">◉ <span>User preview</span></a></nav>
     <div class="side-foot"><button class="btn sm" data-logout>Log out</button></div>
   </aside>
   <main class="app-main" id="adminRoot">
@@ -17,9 +17,9 @@
       <div class="card metric"><div class="meta">Platform margin</div><div class="value" id="adminMargin">$0.00</div><div class="delta">Commission minus cashback</div></div>
     </div>
 
-<section class="section" id="users"><div class="section-head"><div><div class="eyebrow">Members</div><h2>Member directory</h2><p class="lead">Search registered members and review current fee/cashback totals.</p></div><input class="search" id="userSearch" placeholder="Search by email"></div><div class="table-wrap"><table><thead><tr><th>Email</th><th>Country</th><th>Eligible fees</th><th>Cashback</th><th>Available</th><th>Joined</th></tr></thead><tbody id="userTable"></tbody></table></div></section>
+<section class="section" id="users"><div class="section-head"><div><div class="eyebrow">Members</div><h2>Member directory</h2><p class="lead">Search registered members and open a full member operations view.</p></div><input class="search" id="userSearch" placeholder="Search by email"></div><div class="table-wrap"><table><thead><tr><th>Email</th><th>Country</th><th>Eligibility</th><th>Fees</th><th>Cashback</th><th>Available</th><th></th></tr></thead><tbody id="userTable"></tbody></table></div></section>
 
-    <section class="section" id="payouts"><div class="section-head"><div><div class="eyebrow">Payout operations</div><h2>Manual queue</h2><p class="lead">Process requests, record the transfer ID or TXID, and keep a full audit trail.</p></div></div><div class="table-wrap"><table><thead><tr><th>Request</th><th>User ID</th><th>Method</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody id="payoutQueue"></tbody></table></div></section>
+    <section class="section" id="payouts"><div class="section-head"><div><div class="eyebrow">Payout operations</div><h2>Manual queue</h2><p class="lead">Process requests, record the transfer ID or TXID, and keep a full audit trail.</p></div><a class="btn" href="/api/admin/payouts.csv">Export CSV</a></div><div class="table-wrap"><table><thead><tr><th>Request</th><th>User ID</th><th>Method</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody id="payoutQueue"></tbody></table></div></section>
 
     <section class="section" id="uids"><div class="section-head"><div><div class="eyebrow">Referral verification</div><h2>UID review queue</h2><p class="lead">Until partner APIs are connected, operators can review submitted UIDs but should only verify after an official referral check.</p></div></div><div class="table-wrap"><table><thead><tr><th>User ID</th><th>Exchange</th><th>UID</th><th>Status</th><th>Action</th></tr></thead><tbody id="uidQueue"></tbody></table></div></section>
 
@@ -40,6 +40,21 @@
       </div>
     </section>
 
+    <section class="section" id="readiness">
+      <div class="section-head"><div><div class="eyebrow">Production gate</div><h2>Readiness</h2><p class="lead">Operational prerequisites before production traffic.</p></div></div>
+      <div class="admin-grid">
+        <div class="card metric"><div class="meta">MFA encryption</div><div class="value" id="readyMfa">—</div></div>
+        <div class="card metric"><div class="meta">Trusted geo</div><div class="value" id="readyGeo">—</div></div>
+        <div class="card metric"><div class="meta">Email provider</div><div class="value" id="readyEmail">—</div></div>
+        <div class="card metric"><div class="meta">Active connectors</div><div class="value" id="readyConnectors">—</div></div>
+      </div>
+      <div class="grid-2" style="margin-top:16px">
+        <div class="card"><h3>Connector health</h3><div id="connectorHealth" class="flow" style="margin-top:12px"></div></div>
+        <div class="card"><h3>Country analytics</h3><div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Country</th><th>Users</th><th>Fees</th><th>Cashback</th></tr></thead><tbody id="countryAnalytics"></tbody></table></div></div>
+      </div>
+      <div class="card" style="margin-top:16px"><h3>Recent system errors</h3><div id="systemErrors" class="flow" style="margin-top:12px"></div></div>
+    </section>
+
     <section class="section"><div class="grid-2">
       <div class="card" id="security"><div class="eyebrow">Security</div><h3 style="margin-top:8px">Administrator MFA</h3><p class="meta">TOTP-based MFA protects administrator sign-in.</p><div id="mfaStatus" style="margin-top:14px"></div><div id="mfaSetupAction" style="margin-top:14px"><button class="btn" id="setupMfa">Set up MFA</button></div><div id="mfaSetup" style="display:none;margin-top:16px" class="stack"><div class="notice"><div class="meta">Secret</div><code id="mfaSecret" style="word-break:break-all"></code></div><div class="helper" id="mfaUri" style="word-break:break-all"></div><div class="field"><label>Authenticator code</label><input id="mfaEnableCode" inputmode="numeric" placeholder="123456"></div><button class="btn primary" id="enableMfa">Enable MFA</button></div></div>
       <div class="card"><div class="eyebrow">Jurisdiction controls</div><h3 style="margin-top:8px">Country policy</h3><p class="meta">Customer registration is blocked for configured jurisdictions. Administrator access is handled separately from customer eligibility.</p><div class="notice" style="margin-top:14px">Republic of Korea: customer onboarding blocked.</div></div>
@@ -50,4 +65,4 @@
 </div>
 
 <div class="modal" id="eventModal"><form class="modal-card" id="eventForm"><div class="modal-head"><div><div class="eyebrow">Event CMS</div><h3>Create event</h3></div><button class="close" id="closeEvent" type="button">×</button></div><div class="stack"><div class="field"><label>Exchange</label><select id="eventExchange" name="exchangeId"></select></div><div class="field"><label>Title</label><input name="title" required></div><div class="field"><label>Type</label><input name="type" value="Promotion"></div><div class="field"><label>Summary</label><textarea name="summary" rows="3"></textarea></div><div class="form-grid"><div class="field"><label>Start</label><input name="startAt" type="datetime-local"></div><div class="field"><label>End</label><input name="endAt" type="datetime-local"></div></div><div class="field"><label>Reward / benefit</label><input name="reward"></div><div class="field"><label>Region</label><input name="region" value="Eligible regions only"></div><div class="field"><label>Official source URL</label><input name="sourceUrl" type="url" placeholder="https://"></div><div class="field"><label>Status</label><select name="status"><option value="draft">Draft</option><option value="published">Published</option></select></div><button class="btn primary" type="submit">Save event</button></div></form></div>
-<div id="toast" class="toast"></div><script src="assets/app.js?v=13"></script></body></html>
+<div id="toast" class="toast"></div><script src="assets/app.js?v=14"></script></body></html>
