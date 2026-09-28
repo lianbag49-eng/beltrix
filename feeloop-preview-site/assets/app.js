@@ -8,13 +8,32 @@ const FeeLoop = (() => {
 
   let publicConfig={exchanges:[],blockedCountries:["KR"],environment:"staging"};
   let currentUser=null;
+  let csrfToken=null;
 
   async function api(url,opts={}){
-    const init={credentials:"same-origin",headers:{"Content-Type":"application/json",...(opts.headers||{})},...opts};
+    const method=String(opts.method||"GET").toUpperCase();
+    const isMutation=!["GET","HEAD","OPTIONS"].includes(method);
+    if(isMutation && currentUser && url!=="/api/auth/csrf" && !opts._skipCsrf){
+      if(!csrfToken){
+        const csrfRes=await fetch("/api/auth/csrf",{credentials:"same-origin"});
+        if(csrfRes.ok){
+          const csrfData=await csrfRes.json();
+          csrfToken=csrfData.csrfToken||null;
+        }
+      }
+    }
+    const headers={"Content-Type":"application/json",...(opts.headers||{})};
+    if(isMutation && currentUser && csrfToken && url!=="/api/auth/csrf") headers["X-CSRF-Token"]=csrfToken;
+    const init={credentials:"same-origin",...opts,headers};
+    delete init._skipCsrf;
     if(init.body && typeof init.body!=="string") init.body=JSON.stringify(init.body);
-    const res=await fetch(url,init);
+    let res=await fetch(url,init);
     let data={};
     try{data=await res.json()}catch{}
+    if(!res.ok && data.error==="CSRF_INVALID" && currentUser && !opts._csrfRetried){
+      csrfToken=null;
+      return api(url,{...opts,_csrfRetried:true});
+    }
     if(!res.ok){
       const err=new Error(data.error||"REQUEST_FAILED");
       err.status=res.status;err.data=data;throw err;
@@ -47,7 +66,17 @@ const FeeLoop = (() => {
       MFA_ALREADY_ENABLED:"MFA is already enabled for this administrator.",
       MFA_SESSION_EXPIRED:"The MFA login session expired. Please log in again.",
       EMAIL_NOT_VERIFIED:"Verify your email before logging in.",
-      INVALID_OR_EXPIRED_TOKEN:"This link is invalid or has expired."
+      INVALID_OR_EXPIRED_TOKEN:"This link is invalid or has expired.",
+      ACCOUNT_UNDER_REVIEW:"Your account is pending eligibility review.",
+      ACCOUNT_NOT_ELIGIBLE:"This account is not eligible for customer access.",
+      INVALID_CURRENT_PASSWORD:"Your current password is incorrect.",
+      EMAIL_PROVIDER_NOT_CONFIGURED:"Email delivery is not configured yet.",
+      MFA_ENCRYPTION_NOT_CONFIGURED:"MFA encryption is not configured on the server.",
+      CSRF_INVALID:"Your security session expired. Please retry.",
+      DESTINATION_EXISTS:"This payout destination already exists.",
+      LABEL_REQUIRED:"Enter a label for this payout destination.",
+      NOTE_REQUIRED:"Enter an operator note.",
+      REASON_REQUIRED:"Enter a reason for this adjustment."
     };
     return map[err.message]||err.message.replaceAll("_"," ").toLowerCase().replace(/^./,c=>c.toUpperCase());
   }
