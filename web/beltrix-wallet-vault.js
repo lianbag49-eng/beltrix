@@ -148,12 +148,14 @@ export async function putVault(record,options={}){
   id:String(record?.id||''),
   name:cleanName(record?.name),
   address:String(record?.address||''),
+  solanaAddress:record?.solanaAddress?String(record.solanaAddress):null,
   createdAt:String(record?.createdAt||new Date().toISOString()),
   updatedAt:String(record?.updatedAt||new Date().toISOString()),
   backupConfirmedAt:record?.backupConfirmedAt?String(record.backupConfirmedAt):null,
   encrypted:record?.encrypted
  };
  if(!value.id||!/^0x[0-9a-fA-F]{40}$/.test(value.address)||!value.encrypted)throw Error('Invalid BELTRIX wallet vault record.');
+ if(value.solanaAddress&&!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value.solanaAddress))throw Error('Invalid BELTRIX Solana address.');
  await transact('readwrite',store=>store.put(value),options);
  return Object.freeze({...value});
 }
