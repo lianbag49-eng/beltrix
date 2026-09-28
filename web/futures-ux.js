@@ -21,7 +21,7 @@ const heading=ticket.querySelector(':scope > h3');if(heading)extra.append(headin
 
 const sizes=element('div','fast-size',`<label for="futuresSizePercent">Position size <output id="futuresSizeLabel">Manual</output></label><input id="futuresSizePercent" type="range" min="0" max="100" step="1" value="0" aria-label="Order size percentage"><div class="fast-row" role="group" aria-label="Quick size"><button type="button" data-size-pct="25">25%</button><button type="button" data-size-pct="50">50%</button><button type="button" data-size-pct="75">75%</button><button type="button" data-size-pct="100">MAX</button></div><p id="futuresSizingStatus" class="futures-note">Connect to load size limits.</p>`);
 $('tradeSize').closest('label').after(sizes);
-const positionSnapshot=element('section','futures-position-snapshot','<div class="futures-position-head"><span>Current position</span><strong id="futuresPositionState">No open position</strong></div><div id="futuresPositionMetrics" class="futures-position-metrics" hidden><div><small>Size</small><strong data-position-metric="size">—</strong></div><div><small>Entry</small><strong data-position-metric="entry">—</strong></div><div><small>Liquidation</small><strong data-position-metric="liq">—</strong></div><div><small>Unrealized PnL</small><strong data-position-metric="pnl">—</strong></div></div></section>');
+const positionSnapshot=element('section','futures-position-snapshot','<div class="futures-position-head"><span>Current position</span><strong id="futuresPositionState">No open position</strong></div><div id="futuresPositionMetrics" class="futures-position-metrics" hidden><div><small>Size</small><strong data-position-metric="size">—</strong></div><div><small>Entry</small><strong data-position-metric="entry">—</strong></div><div><small>Liquidation</small><strong data-position-metric="liq">—</strong></div><div><small>Liq distance</small><strong data-position-metric="liqDistance">—</strong></div><div><small>Unrealized PnL</small><strong data-position-metric="pnl">—</strong></div></div></section>');
 $('tradeReview').before(positionSnapshot);
 const actions=element('div','futures-actions',`<button type="button" id="futuresLong" class="futures-long" disabled>Open Long</button><button type="button" id="futuresShort" class="futures-short" disabled>Open Short</button><small>Opens a review. Wallet approval is still required.</small>`);$('tradeReview').before(actions);
 const note=element('p','futures-note','');note.id='futuresModeHint';bar.after(note);
@@ -112,6 +112,9 @@ window.addEventListener('beltrix:position',e=>{
  set('size',Math.abs(size).toLocaleString('en-US',{maximumFractionDigits:8}));
  set('entry',fmt(p.entryPx));
  set('liq',fmt(p.liquidationPx));
+ const mark=Number(e.detail?.markPx),liq=Number(p.liquidationPx);
+ const liqDistance=Number.isFinite(mark)&&mark>0&&Number.isFinite(liq)&&liq>0?Math.abs(mark-liq)/mark*100:null;
+ set('liqDistance',liqDistance===null?'—':liqDistance.toFixed(2)+'%');
  const pnl=Number(p.unrealizedPnl);
  set('pnl',Number.isFinite(pnl)?(pnl>=0?'+':'')+fmt(pnl,2)+' USDC':'—');
  const pnlEl=metrics.querySelector('[data-position-metric="pnl"]');if(pnlEl)pnlEl.className=Number.isFinite(pnl)?(pnl>=0?'green':'red'):'';
