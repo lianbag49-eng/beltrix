@@ -1,6 +1,6 @@
 const {test,expect}=require('@playwright/test');
 function series(coin,interval){
- const ms={ '1m':60000,'5m':300000,'15m':900000,'1h':3600000,'4h':14400000,'1d':86400000 }[interval];
+ const ms={ '1m':60000,'3m':180000,'5m':300000,'15m':900000,'30m':1800000,'1h':3600000,'4h':14400000,'1d':86400000,'1w':604800000 }[interval];
  const end=Math.floor(Date.now()/ms)*ms,scale=coin==='@0'?.015:1;
  return Array.from({length:600},(_,i)=>{const c=(2470+Math.sin(i*.07)*22+Math.cos(i*.27)*4+i*.033)*scale,o=c+Math.sin(i*.9)*4*scale;return {t:end-(599-i)*ms,o:String(o),h:String(Math.max(o,c)+4*scale),l:String(Math.min(o,c)-4*scale),c:String(c),v:String(20+Math.abs(Math.sin(i*.23))*300)};});
 }
@@ -53,8 +53,8 @@ test('folding really draws candles and saved indicator choices restore',async({p
  await page.reload();await expect(page.locator('#marketCanvas')).toBeVisible();await expect(page.locator('[data-chart-indicator=boll]')).toHaveAttribute('aria-pressed','true');
 });
 test('timeframe, zoom, history and cursor act on real loaded candles',async({page})=>{
- const {requests}=await setup(page);await expand(page);await page.locator('[data-chart-interval="1h"]').click();await expect(page.locator('#marketInterval')).toHaveValue('1h');
- await expect.poll(()=>requests.some(q=>q.type==='candleSnapshot'&&q.req.interval==='1h')).toBe(true);
+ const {requests}=await setup(page);await expand(page);await page.locator('[data-chart-interval="30m"]').click();await expect(page.locator('#marketInterval')).toHaveValue('30m');
+ await expect.poll(()=>requests.some(q=>q.type==='candleSnapshot'&&q.req.interval==='30m')).toBe(true);
  await page.locator('#chartZoomIn').click();await expect(page.locator('#marketCanvas')).toHaveAttribute('data-visible-bars','46');
  await page.locator('#marketCanvas').focus();await page.keyboard.press('Home');await expect.poll(async()=>Number(await page.locator('#marketCanvas').getAttribute('data-history-offset'))).toBeGreaterThan(0);
  await page.keyboard.press('ArrowRight');await expect(page.locator('#chartCandleReadout')).toContainText('UTC');await page.locator('#chartLatest').click();await expect(page.locator('#marketCanvas')).toHaveAttribute('data-history-offset','0');
