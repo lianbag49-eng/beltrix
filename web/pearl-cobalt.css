@@ -411,6 +411,23 @@ html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] .pc-market-search{
  display:none!important;
 }
 
+html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav{
+ display:flex;align-items:center;gap:6px;margin:0 0 16px;padding:6px;
+ border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:var(--pc-shadow);
+ position:sticky;top:88px;z-index:8;
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav button{
+ border:0;background:transparent;color:var(--muted);padding:8px 12px;border-radius:8px;font-size:11px;font-weight:650;
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav button:hover,
+html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav button.active{
+ background:var(--pc-accent-soft);color:var(--pc-accent);
+}
+@media(max-width:900px){
+ html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav{display:none}
+}
+
+
 /* Desktop wallet workspace navigation */
 html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav{
  grid-column:1/-1;grid-row:2;display:flex;align-items:center;gap:6px;width:min(100%,1180px);
@@ -460,20 +477,68 @@ html[data-beltrix-ui="pearl-cobalt"] .w-inline-status.error{color:var(--red)}
  html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] #boost.page.active{margin-top:0}
 }
 
+/* Pearl Cobalt wallet surface validation sync. */
 
-/* Final theme precedence over legacy wallet shorthand backgrounds. */
-html[data-beltrix-ui="pearl-cobalt"] .w-action-circle{
- background:var(--card)!important;
- border-color:var(--line)!important;
- color:var(--pc-accent)!important;
+
+/* Final wallet workspace normalization: one in-page navigation, no legacy grid offsets. */
+html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav{
+ position:static!important;top:auto!important;z-index:auto!important;
+ display:flex!important;align-items:center;gap:6px;width:100%!important;
+ margin:0 0 16px!important;padding:6px!important;
+ border:1px solid var(--line)!important;border-radius:12px!important;
+ background:var(--card)!important;box-shadow:var(--pc-shadow)!important;
+ grid-column:auto!important;grid-row:auto!important;
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav button{
+ min-height:36px;padding:7px 12px;border:0;border-radius:8px;
+ background:transparent;color:var(--muted);font-size:11px;font-weight:650;
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav button:hover,
+html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav button.active{
+ background:var(--pc-accent-soft);color:var(--pc-accent);
+}
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="wallet"] #wallet.page.active,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="explore"] #explore.page.active,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] #defi.page.active,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] #boost.page.active{
+ margin-top:0!important;
+}
+@media(max-width:900px){
+ html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav{display:none!important}
+}
+
+
+/* Single desktop Wallet workspace navigation. */
+@media(min-width:901px){
+ html[data-beltrix-ui="pearl-cobalt"] #pcWalletSurfaceNav:not([hidden]){
+  display:flex!important;grid-column:1/-1!important;grid-row:2!important;
+  width:min(100%,1180px)!important;margin:0 auto 12px!important;
+  position:sticky!important;top:88px!important;z-index:30!important;
+ }
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="wallet"] #wallet.page.active,
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="explore"] #explore.page.active,
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] #defi.page.active,
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] #boost.page.active{
+  grid-column:1/-1!important;grid-row:3!important;margin-top:0!important;
+ }
+}
+@media(max-width:900px){
+ html[data-beltrix-ui="pearl-cobalt"] #pcWalletSurfaceNav{display:none!important}
+}
+
+
+/* Explicit theme-state surfaces: beat legacy wallet gradient shorthands after theme toggles. */
+html[data-beltrix-ui="pearl-cobalt"][data-theme="light"] .w-action-circle{
+ background-color:#ffffff!important;background-image:none!important;
 }
 html[data-beltrix-ui="pearl-cobalt"][data-theme="dark"] .w-action-circle{
- background:var(--card2)!important;
- border-color:var(--line)!important;
+ background-color:#0f1d30!important;background-image:none!important;
 }
-html[data-beltrix-ui="pearl-cobalt"] .wallet-modal,
-html[data-beltrix-ui="pearl-cobalt"] .usdt-modal{
- background:var(--card)!important;
- color:var(--text)!important;
- border-color:var(--line)!important;
+html[data-beltrix-ui="pearl-cobalt"][data-theme="light"] .wallet-modal,
+html[data-beltrix-ui="pearl-cobalt"][data-theme="light"] .usdt-modal{
+ background-color:#ffffff!important;
+}
+html[data-beltrix-ui="pearl-cobalt"][data-theme="dark"] .wallet-modal,
+html[data-beltrix-ui="pearl-cobalt"][data-theme="dark"] .usdt-modal{
+ background-color:#0b1728!important;
 }
