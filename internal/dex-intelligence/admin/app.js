@@ -513,6 +513,8 @@ async function refreshLiquidity({record=true}={}){
  renderBdEvents();
  renderHistory(metrics);
  renderCollectorStatus();
+ renderOperations();
+ renderVenueCompare();
 }
 
 for(const b of document.querySelectorAll('[data-tab]'))b.onclick=()=>{
@@ -523,7 +525,7 @@ for(const b of document.querySelectorAll('[data-tab]'))b.onclick=()=>{
 $('refresh').onclick=()=>{renderOverview();refreshLiquidity({record:true})};
 $('assetSelect').onchange=async()=>{renderOverview();if(historySource==='server')await loadServerHistory();else renderHistory();refreshLiquidity({record:true})};
 $('notional').onchange=()=>refreshLiquidity({record:true});
-$('historySource').onchange=async()=>{syncHistorySource();if($('historySource').value==='server')await loadServerHistory();else{latestHistory=loadTelemetry(localStorage);historySource='local';renderHistory();}};
+$('historySource').onchange=async()=>{syncHistorySource();if($('historySource').value==='server')await loadServerHistory();else{latestHistory=loadTelemetry(localStorage);latestCollectorRuns=[];historySource='local';renderHistory();renderOperations();renderVenueCompare();}};
 $('loadServerHistory').onclick=loadServerHistory;
 $('serverHistoryHours').onchange=()=>{if(historySource==='server')loadServerHistory()};
 $('autoRefresh').onchange=setAutoRefresh;
@@ -533,7 +535,10 @@ if($('buildRoutePlan'))$('buildRoutePlan').onclick=renderRoutePlan;
 $('clearHistory').onclick=()=>{
  localStorage.removeItem(DEFAULT_HISTORY_KEY);
  latestHistory=[];
+ latestCollectorRuns=[];
  renderHistory();
+ renderOperations();
+ renderVenueCompare();
 };
 for(const x of document.querySelectorAll('[data-fee]'))x.onchange=()=>refreshLiquidity({record:true});
 
