@@ -6,7 +6,7 @@ const TTL=20000;
 let market=null,user=null,network=null,snapshot=null,version=0,loading=false,controller=null,selectedPct=null,marginEdited=false,internalInput=false,attemptedAt=0;
 const ticket=document.querySelector('.order-ticket');
 if(!ticket||$('fastOrderBar'))throw Error('Futures terminal cannot mount');
-const css=document.createElement('link');css.rel='stylesheet';css.href=new URL('./mobile-futures.css',import.meta.url).href;css.id='futuresStyles';document.head.append(css);
+if(!$('futuresStyles')){const css=document.createElement('link');css.rel='stylesheet';css.href=new URL('./mobile-futures.css',import.meta.url).href;css.id='futuresStyles';document.head.append(css);}
 function element(tag,cls,html){const e=document.createElement(tag);e.className=cls;e.innerHTML=html;return e;}
 const bar=element('div','fast-order-bar',`<div class="fast-row fast-open-close" role="group" aria-label="Position intent"><button type="button" data-intent="open" aria-pressed="true">Open</button><button type="button" data-intent="close" aria-pressed="false">Close</button></div><div class="fast-row" role="group" aria-label="Order direction"><button type="button" data-fast-side="buy">Long</button><button type="button" data-fast-side="sell">Short</button></div><div class="fast-row fast-types" role="group" aria-label="Quick order type"><button type="button" data-fast-type="Market">Market</button><button type="button" data-fast-type="Gtc">Limit</button><button type="button" data-fast-type="Stop">SL</button><button type="button" data-fast-type="TakeProfit">TP</button></div>`);bar.id='fastOrderBar';
 ticket.prepend(bar);
