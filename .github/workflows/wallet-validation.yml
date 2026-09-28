@@ -1,0 +1,47 @@
+name: BELTRIX Local Wallet Validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'web/beltrix-wallet-vault.js'
+      - 'web/beltrix-local-provider.js'
+      - 'web/beltrix-local-wallet.js'
+      - 'web/beltrix-local-wallet-ui.js'
+      - 'web/wallet.js'
+      - 'web/wallet-entry.js'
+      - 'web/trading.js'
+      - 'web/wallet.css'
+      - 'web/tests/beltrix-*.test.mjs'
+      - 'web/tests/beltrix-local-wallet.spec.cjs'
+      - 'package.json'
+      - '.github/workflows/wallet-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - name: Unit tests
+        run: npm run test:unit
+      - name: Bundle clients
+        run: npm run build
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Local Wallet browser lifecycle
+        run: npx playwright test web/tests/beltrix-local-wallet.spec.cjs --config=web/playwright.config.cjs --project=advanced-regressions
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: beltrix-local-wallet-validation
+          path: test-results/
+          retention-days: 7
