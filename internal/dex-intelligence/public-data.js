@@ -64,7 +64,8 @@ export async function orderlyBook(symbol,{maxLevel=100,fetchImpl=fetch,WebSocket
    try{ws?.close?.()}catch{}
    error?reject(error):resolve(value);
   };
-  try{ws=new WebSocketCtor('wss://ws.orderly.org/ws/stream')}
+  const orderlyClientId='OqdphuyCtYWxwzhxyLLjOWNdFP7sQt8RPWzmb5xY';
+  try{ws=new WebSocketCtor('wss://ws-evm.orderly.org/ws/stream/'+orderlyClientId)}
   catch(error){finish(error);return}
   timer=setTimeout(()=>finish(Error('Orderly public orderbook timeout')),Math.max(1000,Number(timeoutMs)||5000));
   ws.onopen=()=>ws.send(JSON.stringify({id:'beltrix-'+Date.now(),event:'subscribe',topic}));
