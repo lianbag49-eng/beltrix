@@ -708,3 +708,10 @@ html[data-beltrix-ui="pearl-cobalt"] .book-head{
   min-height:44px!important;
  }
 }
+
+/* BELTRIX built-in wallet launcher */
+#tradeBeltrixWallet{white-space:nowrap}
+@media(max-width:680px){
+ #tradeBeltrixWallet{min-width:0;max-width:88px;overflow:hidden;text-overflow:ellipsis;padding:6px 7px;font-size:9px;flex:0 1 88px}
+ #tradeConnect{min-width:0;max-width:92px;overflow:hidden;text-overflow:ellipsis;padding-inline:7px}
+}
