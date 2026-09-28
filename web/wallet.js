@@ -366,8 +366,15 @@ document.addEventListener('click',e=>{
 });
 window.addEventListener('beltrix:page',e=>{if(e.detail==='defi')loadPools();});
 window.addEventListener('beltrix:wallet',e=>{const d=e.detail;if(s.account||!d?.account||!d.provider||!NETWORKS.some(n=>n.chain.id===d.chainId))return;detachProvider();s.provider=d.provider;s.providerName=$('walletProvider')?.value==='okx'?'OKX Wallet':'Browser wallet';s.net=network(d.chainId);prefs.network=d.chainId;s.provider.on?.('accountsChanged',accountEvent);s.provider.on?.('chainChanged',chainEvent);s.provider.on?.('disconnect',disconnectEvent);setAccount(d.account,false);});
-const localWalletManager=window.beltrixWallet?.manager||null;
-window.beltrixWallet={manager:localWalletManager,get provider(){return s.provider},get account(){return s.account},openAccounts:showAccounts};
+const walletBridge=window.beltrixWallet||{};
+const localWalletManager=walletBridge.manager||null;
+walletBridge.manager=localWalletManager;
+walletBridge.localProvider=walletBridge.localProvider||null;
+walletBridge.solanaProvider=walletBridge.solanaProvider||null;
+walletBridge.openAccounts=showAccounts;
+Object.defineProperty(walletBridge,'provider',{configurable:true,enumerable:true,get(){return s.provider||walletBridge.localProvider||null}});
+Object.defineProperty(walletBridge,'account',{configurable:true,enumerable:true,get(){return s.account||null}});
+window.beltrixWallet=walletBridge;
 renderDapps();renderHome();
 const route=location.hash.slice(1),initial=route==='assets'?'wallet':route==='discover'?'explore':route;window.openPage(['markets','swap','settings','wallet','explore','defi','boost'].includes(initial)?initial:'markets');
 // Poll confirmations only; never retry a write or trigger a wallet request in the background.
