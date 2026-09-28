@@ -60,6 +60,11 @@ export function batchToPostgresSql(batch){
    );
   }
  }
+ statements.push(
+  "delete from mi_alert_events where status='resolved' and coalesce(resolved_at,last_seen_at,opened_at) < now()-interval '90 days';",
+  "delete from mi_snapshots where captured_at < now()-interval '90 days';",
+  "delete from mi_collector_runs where finished_at < now()-interval '90 days';"
+ );
  statements.push('commit;');
  return statements.join('\n\n')+'\n';
 }
