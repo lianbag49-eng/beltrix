@@ -185,6 +185,18 @@ async function initDatabase(){
   await q("DELETE FROM feeloop.sessions WHERE expires_at < NOW() OR revoked_at IS NOT NULL");
   await q("DELETE FROM feeloop.password_reset_tokens WHERE expires_at < NOW() OR used=TRUE");
   await q("DELETE FROM feeloop.email_verification_tokens WHERE expires_at < NOW() OR used=TRUE");
+  await q("DELETE FROM feeloop.email_change_tokens WHERE expires_at < NOW() OR used=TRUE");
+  if(MFA_ENCRYPTION_KEY){
+    const legacy=await q("SELECT id,mfa_secret,mfa_pending_secret FROM feeloop.users WHERE role='admin' AND (mfa_secret IS NOT NULL OR mfa_pending_secret IS NOT NULL)");
+    for(const row of legacy.rows){
+      const nextSecret=row.mfa_secret && !String(row.mfa_secret).startsWith("enc:v1:") ? encryptSecret(row.mfa_secret) : row.mfa_secret;
+      const nextPending=row.mfa_pending_secret && !String(row.mfa_pending_secret).startsWith("enc:v1:") ? encryptSecret(row.mfa_pending_secret) : row.mfa_pending_secret;
+      if(nextSecret!==row.mfa_secret || nextPending!==row.mfa_pending_secret){
+        await q("UPDATE feeloop.users SET mfa_secret=$1,mfa_pending_secret=$2,updated_at=NOW() WHERE id=$3",[nextSecret||null,nextPending||null,row.id]);
+        await audit(row.id,"MFA_SECRET_MIGRATED",row.id,{encrypted:true});
+      }
+    }
+  }
 }
 
 app.use(helmet({
