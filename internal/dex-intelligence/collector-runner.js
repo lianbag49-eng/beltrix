@@ -4,6 +4,7 @@ import {makeTelemetrySnapshot} from './telemetry-history.js';
 import {buildMarketIntelligence} from './market-intelligence.js';
 import {evaluateMarketAlerts,dedupeAlerts} from './alert-engine.js';
 import {alertsToBdEvents} from './bd-events.js';
+import {evaluateSnapshotQuality,qualityAlerts} from './data-quality.js';
 
 export async function runMarketIntelligenceCycle(asset,{
  fetchImpl=fetch,
@@ -22,7 +23,11 @@ export async function runMarketIntelligenceCycle(asset,{
  const timestamp=Date.now();
  const snapshot=makeTelemetrySnapshot({asset,bookRows,gmxState,metricRows,timestamp});
  const intelligence=buildMarketIntelligence({bookRows,gmxState});
- const alerts=dedupeAlerts(evaluateMarketAlerts(intelligence.rows,{healthByVenue,previousByVenue}));
+ const quality=evaluateSnapshotQuality(snapshot,null,{now:timestamp});
+ const alerts=dedupeAlerts([
+  ...evaluateMarketAlerts(intelligence.rows,{healthByVenue,previousByVenue}),
+  ...qualityAlerts(quality)
+ ]);
  const bdEvents=alertsToBdEvents(alerts,{asset,timestamp});
  let persistence=null;
  if(repository?.save)persistence=await repository.save(snapshot);
@@ -34,6 +39,7 @@ export async function runMarketIntelligenceCycle(asset,{
   metricRows,
   snapshot,
   intelligence,
+  quality,
   alerts,
   bdEvents,
   persistence
