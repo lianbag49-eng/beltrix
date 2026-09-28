@@ -1,0 +1,57 @@
+const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
+const text=v=>{
+ if(v===null||v===undefined)return 'NULL';
+ const s=String(v).replace(/\\0/g,'').replace(/\\/g,'\\\\').replace(/'/g,"''");
+ return "E'"+s+"'";
+};
+const json=v=>text(JSON.stringify(v??null))+'::jsonb';
+const num=v=>finite(v)?String(Number(v)):'NULL';
+const bool=v=>v?'true':'false';
+const ts=v=>finite(v)?text(new Date(Number(v)).toISOString())+'::timestamptz':'now()';
+
+function observationTuple(snapshotIdAlias,venue,state){
+ const metric=state?.metric||{};
+ return [
+  snapshotIdAlias,text(venue),bool(Boolean(state?.ok)),text(state?.health||null),
+  num(state?.latencyMs),num(state?.spreadBps),num(state?.depth25Usd),num(state?.minFillRatio),
+  num(metric?.fundingRate),num(metric?.openInterest),num(metric?.openInterestUsd),text(metric?.openInterestUnit||null),
+  num(metric?.volume24h),num(metric?.volume24hUsd),text(metric?.volume24hUnit||null),
+  num(state?.capacityLongUsd),num(state?.capacityShortUsd),json(state?.flags||[])
+ ].join(',');
+}
+
+export function batchToPostgresSql(batch){
+ if(!batch||batch.version!==1||!Array.isArray(batch.rows))throw Error('Invalid scheduled collector batch');
+ const statements=['begin;'];
+ for(const row of batch.rows){
+  if(!row?.ok||!row.snapshot)continue;
+  const snap=row.snapshot,entries=Object.entries(snap.venues||{});
+  const values=entries.map(([venue,state])=>'('+observationTuple('s.id',venue,state)+')').join(',\n');
+  let stmt='with s as (\n'+
+   ' insert into mi_snapshots(asset,captured_at,source,payload)\n'+
+   ' values ('+text(snap.asset)+','+ts(snap.timestamp)+',\'scheduled-collector\','+json(snap)+')\n'+
+   ' returning id\n)\n';
+  if(values){
+   stmt+='insert into mi_venue_observations(\n'+
+    ' snapshot_id,venue,ok,health,latency_ms,spread_bps,depth_25_usd,min_fill_ratio,\n'+
+    ' funding_rate,open_interest,open_interest_usd,open_interest_unit,\n'+
+    ' volume_24h,volume_24h_usd,volume_24h_unit,capacity_long_usd,capacity_short_usd,flags\n'+
+    ')\nselect * from (values\n'+values+'\n) as v(\n'+
+    ' snapshot_id,venue,ok,health,latency_ms,spread_bps,depth_25_usd,min_fill_ratio,\n'+
+    ' funding_rate,open_interest,open_interest_usd,open_interest_unit,\n'+
+    ' volume_24h,volume_24h_usd,volume_24h_unit,capacity_long_usd,capacity_short_usd,flags\n'+
+    ');';
+  }else stmt+='select id from s;';
+  statements.push(stmt);
+  for(const alert of row.alerts||[]){
+   statements.push(
+    'insert into mi_alert_events(asset,venue,alert_key,severity,status,message,evidence,opened_at,last_seen_at)\n'+
+    'values ('+text(snap.asset)+','+text(alert.venue)+','+text(alert.key)+','+text(alert.severity)+',\'open\','+text(alert.message)+','+json(alert.evidence||{})+','+ts(snap.timestamp)+','+ts(snap.timestamp)+')\n'+
+    'on conflict (asset,venue,alert_key) where status in (\'open\',\'acknowledged\')\n'+
+    'do update set severity=excluded.severity,message=excluded.message,evidence=excluded.evidence,last_seen_at=excluded.last_seen_at;'
+   );
+  }
+ }
+ statements.push('commit;');
+ return statements.join('\n\n')+'\n';
+}
