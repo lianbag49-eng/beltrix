@@ -52,3 +52,21 @@ test('unsupported methods and routes fail closed',async()=>{
  assert.equal((await api.handle({method:'POST',url:'/v1/history',headers:{authorization:'Bearer x'}})).status,405);
  assert.equal((await api.handle({url:'/v1/nope',headers:{authorization:'Bearer x'}})).status,404);
 });
+
+
+test('collector health and open alerts require auth and use repository read methods',async()=>{
+ const repo={
+  history:async()=>[],
+  collectorHealth:async({limit})=>[{finished_at:'2026-09-28T00:00:00Z',healthy:true,limit}],
+  openAlerts:async({limit})=>[{venue:'orderly',severity:'warning',alert_key:'latency',message:'Slow',limit}]
+ };
+ const api=createMarketIntelligenceApi({repository:repo,token:'secret'});
+ const denied=await api.handle({url:'/v1/collector-health'});
+ assert.equal(denied.status,401);
+ const health=await api.handle({url:'/v1/collector-health?limit=10',headers:{authorization:'Bearer secret'}});
+ assert.equal(health.status,200);
+ assert.equal(parse(health).rows[0].limit,10);
+ const alerts=await api.handle({url:'/v1/open-alerts?limit=20',headers:{authorization:'Bearer secret'}});
+ assert.equal(alerts.status,200);
+ assert.equal(parse(alerts).rows[0].alert_key,'latency');
+});
