@@ -92,7 +92,7 @@ const errorText=e=>{
  if(t.includes('network changed')||t.includes('account changed'))return 'Wallet account or network changed. Reconnect and review the order again.';
  if(t.includes('slippage'))return 'The current slippage limit is too tight for this price. Increase the limit or wait for a better quote.';
  if(t.includes('trigger price is on the wrong side'))return 'Trigger price is invalid for the selected TP/SL direction. Check it against the current mark price.';
- if(t.includes('size')&&t.includes('reduce'))return 'Reduce-only size or side does not match the current position.';
+ if(t.includes('size')&&t.includes('reduce'))return 'Reduce-only size or side does not match the existing position. Use a size no larger than the current position.';
  if(t.includes('fresh order book')||t.includes('stale'))return 'Market data is stale. Refresh the market before reviewing a new order.';
  if(t.includes('wallet did not switch'))return 'The wallet did not switch to the required network. Change the network in your wallet and try again.';
  return raw;
