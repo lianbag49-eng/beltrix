@@ -70,3 +70,21 @@ test('collector health and open alerts require auth and use repository read meth
  assert.equal(alerts.status,200);
  assert.equal(parse(alerts).rows[0].alert_key,'latency');
 });
+
+
+test('alert status update is authenticated bounded and delegated',async()=>{
+ let seen=null;
+ const repo={
+  history:async()=>[],
+  updateAlertStatus:async input=>{seen=input;return {id:7,status:input.status}}
+ };
+ const api=createMarketIntelligenceApi({repository:repo,token:'secret'});
+ const denied=await api.handle({method:'PATCH',url:'/v1/alerts/7',body:{status:'acknowledged'}});
+ assert.equal(denied.status,401);
+ const bad=await api.handle({method:'PATCH',url:'/v1/alerts/7',headers:{authorization:'Bearer secret'},body:{status:'deleted'}});
+ assert.equal(bad.status,400);
+ const ok=await api.handle({method:'PATCH',url:'/v1/alerts/7',headers:{authorization:'Bearer secret'},body:{status:'resolved'}});
+ assert.equal(ok.status,200);
+ assert.deepEqual(seen,{id:7,status:'resolved'});
+ assert.equal(parse(ok).alert.status,'resolved');
+});
