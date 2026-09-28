@@ -62,7 +62,10 @@ function scrollToElement(el){
 }
 function openTrading(section=null){
  window.openPage?.('markets');
- if(section)queueMicrotask(()=>scrollToElement(typeof section==='string'?document.querySelector(section):section));
+ if(section)requestAnimationFrame(()=>{
+  const target=typeof section==='string'?document.querySelector(section):section;
+  if(target)scrollToElement(target);
+ });
 }
 function syncThemeToggle(){
  if(!$('pcThemeToggle'))return;
@@ -192,6 +195,18 @@ function syncPageShell(page=document.body.dataset.page){
  const walletPage=['wallet','explore','defi','boost'].includes(page);
  $('pcSidebar')?.classList.toggle('pc-hidden',!trading);
  $('pcRightRail')?.classList.toggle('pc-hidden',!trading);
+ document.querySelectorAll('[data-pc-action]').forEach(b=>{
+  const action=b.dataset.pcAction;
+  const active=(page==='markets'&&action==='trade')||action===page;
+  b.classList.toggle('active',active);
+  b.setAttribute('aria-current',active?'page':'false');
+ });
+ document.querySelectorAll('.pc-header-link').forEach(b=>{
+  const label=(b.getAttribute('aria-label')||'').toLowerCase();
+  const active=(page==='markets'&&label==='trade')||(page==='wallet'&&label==='wallet');
+  b.classList.toggle('active',active);
+  b.setAttribute('aria-current',active?'page':'false');
+ });
  const nav=$('pcWalletSurfaceNav');
  if(nav){
   nav.hidden=!walletPage;
