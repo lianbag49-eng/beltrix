@@ -383,6 +383,17 @@ const FeeLoop = (() => {
     }catch(err){root.innerHTML='<div class="notice">'+escapeHtml(errorText(err))+'</div><div style="margin-top:18px"><a class="btn" href="login.html">Back to login</a></div>'}
   }
 
+  async function initConfirmEmailChange(){
+    const root=$("#confirmEmailChangeRoot");if(!root)return;
+    const raw=query("token");
+    if(!raw){root.innerHTML='<div class="notice">Confirmation token is missing.</div>';return}
+    try{
+      const d=await api("/api/auth/change-email/confirm",{method:"POST",body:{token:raw}});
+      currentUser=d.user;csrfToken=null;
+      root.innerHTML='<div class="pill">✓ Email updated</div><p class="meta" style="margin-top:12px">Your login email has been changed and a fresh session was created.</p><div style="margin-top:18px"><a class="btn primary" href="account.html">Open account</a></div>';
+    }catch(err){root.innerHTML='<div class="notice">'+escapeHtml(errorText(err))+'</div><div style="margin-top:18px"><a class="btn" href="login.html">Back to login</a></div>'}
+  }
+
   async function initResetPassword(){
     const form=$("#resetPasswordForm");if(!form)return;
     const raw=query("token");
@@ -502,6 +513,7 @@ const FeeLoop = (() => {
     initForgot();
     await initVerifyEmail();
     await initResetPassword();
+    await initConfirmEmailChange();
     await initAccount();
     await initAdminSetup();
     await renderEvents("[data-events]",3);
