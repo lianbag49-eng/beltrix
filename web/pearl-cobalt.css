@@ -613,3 +613,84 @@ html[data-beltrix-ui="pearl-cobalt"] .book-head span{
 @media (max-width:900px){
  html[data-beltrix-ui="pearl-cobalt"] #markets .market-stats strong{white-space:normal}
 }
+
+
+/* 2026-09-28 typography normalization — use real common font weights only. */
+html[data-beltrix-ui="pearl-cobalt"]{
+ --pc-font:Inter,"Segoe UI Variable Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+ --pc-weight-regular:400;
+ --pc-weight-medium:500;
+ --pc-weight-semibold:600;
+ --pc-weight-bold:700;
+}
+html[data-beltrix-ui="pearl-cobalt"] body,
+html[data-beltrix-ui="pearl-cobalt"] button,
+html[data-beltrix-ui="pearl-cobalt"] input,
+html[data-beltrix-ui="pearl-cobalt"] select,
+html[data-beltrix-ui="pearl-cobalt"] textarea{
+ font-family:var(--pc-font)!important;
+ font-weight:var(--pc-weight-regular);
+ -webkit-font-smoothing:antialiased;
+ -moz-osx-font-smoothing:grayscale;
+ text-rendering:optimizeLegibility;
+}
+html[data-beltrix-ui="pearl-cobalt"] button,
+html[data-beltrix-ui="pearl-cobalt"] .select,
+html[data-beltrix-ui="pearl-cobalt"] .wallet,
+html[data-beltrix-ui="pearl-cobalt"] summary,
+html[data-beltrix-ui="pearl-cobalt"] .pc-header-link,
+html[data-beltrix-ui="pearl-cobalt"] .pc-rail-nav button,
+html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-link,
+html[data-beltrix-ui="pearl-cobalt"] .simple-products button,
+html[data-beltrix-ui="pearl-cobalt"] .simple-view-toggle,
+html[data-beltrix-ui="pearl-cobalt"] .fast-row button,
+html[data-beltrix-ui="pearl-cobalt"] .account-tabs button{
+ font-weight:var(--pc-weight-medium)!important;
+}
+html[data-beltrix-ui="pearl-cobalt"] h1,
+html[data-beltrix-ui="pearl-cobalt"] h2,
+html[data-beltrix-ui="pearl-cobalt"] h3,
+html[data-beltrix-ui="pearl-cobalt"] strong,
+html[data-beltrix-ui="pearl-cobalt"] .brand b,
+html[data-beltrix-ui="pearl-cobalt"] .pc-card-kicker,
+html[data-beltrix-ui="pearl-cobalt"] .pc-watchlist header strong,
+html[data-beltrix-ui="pearl-cobalt"] .pc-market-row strong,
+html[data-beltrix-ui="pearl-cobalt"] .w-account-button,
+html[data-beltrix-ui="pearl-cobalt"] .w-token-name,
+html[data-beltrix-ui="pearl-cobalt"] .w-tab{
+ font-weight:var(--pc-weight-semibold)!important;
+}
+html[data-beltrix-ui="pearl-cobalt"] .primary,
+html[data-beltrix-ui="pearl-cobalt"] .futures-actions button,
+html[data-beltrix-ui="pearl-cobalt"] #tradeConnect,
+html[data-beltrix-ui="pearl-cobalt"] .pc-live-pill,
+html[data-beltrix-ui="pearl-cobalt"] .testnet,
+html[data-beltrix-ui="pearl-cobalt"] .w-primary{
+ font-weight:var(--pc-weight-semibold)!important;
+}
+html[data-beltrix-ui="pearl-cobalt"] #marketPrice,
+html[data-beltrix-ui="pearl-cobalt"] #simpleMark,
+html[data-beltrix-ui="pearl-cobalt"] .futures-book-mid strong,
+html[data-beltrix-ui="pearl-cobalt"] .market-stats strong,
+html[data-beltrix-ui="pearl-cobalt"] .pc-intel-grid strong,
+html[data-beltrix-ui="pearl-cobalt"] .pc-protocol-grid strong,
+html[data-beltrix-ui="pearl-cobalt"] .book-level,
+html[data-beltrix-ui="pearl-cobalt"] .terminal-table td,
+html[data-beltrix-ui="pearl-cobalt"] .order-estimate dd{
+ font-weight:var(--pc-weight-medium)!important;
+ font-variant-numeric:tabular-nums;
+}
+html[data-beltrix-ui="pearl-cobalt"] .brand b{
+ font-weight:var(--pc-weight-bold)!important;
+}
+html[data-beltrix-ui="pearl-cobalt"] small,
+html[data-beltrix-ui="pearl-cobalt"] .muted,
+html[data-beltrix-ui="pearl-cobalt"] .feed-note,
+html[data-beltrix-ui="pearl-cobalt"] .pc-intel-note,
+html[data-beltrix-ui="pearl-cobalt"] .pc-market-row small,
+html[data-beltrix-ui="pearl-cobalt"] .pc-protocol-grid small,
+html[data-beltrix-ui="pearl-cobalt"] .pc-intel-grid small,
+html[data-beltrix-ui="pearl-cobalt"] .book-head,
+html[data-beltrix-ui="pearl-cobalt"] .order-estimate dt{
+ font-weight:var(--pc-weight-regular)!important;
+}
