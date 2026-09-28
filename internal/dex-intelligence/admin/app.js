@@ -68,7 +68,7 @@ async function loadServerHistory(){
   ]);
   latestHistory=Array.isArray(result?.rows)?result.rows:[];
   latestAlerts=Array.isArray(alertResult?.rows)?alertResult.rows.map(row=>({
-   venue:row.venue,severity:row.severity,key:row.alert_key||row.key,message:row.message,evidence:row.evidence||{},
+   id:row.id,venue:row.venue,severity:row.severity,key:row.alert_key||row.key,message:row.message,evidence:row.evidence||{},
    status:row.status,lastSeenAt:row.last_seen_at||row.lastSeenAt
   })):[];
   historySource='server';
@@ -172,16 +172,33 @@ function renderIntegration(){
 }
 
 function renderAlerts(alerts=latestAlerts){
+ const serverActions=historySource==='server';
  const rows=(alerts||[]).map(v=>[
   esc(v.venue),
   '<span class="'+severityClass(v.severity)+'">'+esc(v.severity)+'</span>',
   esc(v.key),
   esc(v.message),
-  '<code>'+esc(JSON.stringify(v.evidence||{}))+'</code>'
+  '<code>'+esc(JSON.stringify(v.evidence||{}))+'</code>',
+  serverActions&&v.id
+   ?'<div class="alert-actions"><button type="button" data-alert-id="'+esc(v.id)+'" data-alert-status="acknowledged">Acknowledge</button><button type="button" data-alert-id="'+esc(v.id)+'" data-alert-status="resolved">Resolve</button></div>'
+   :'—'
  ]);
  $('alertTable').innerHTML=rows.length
-  ?table(['Venue','Severity','Alert','Message','Evidence'],rows)
+  ?table(['Venue','Severity','Alert','Message','Evidence','Action'],rows)
   :'<p class="ok">No current venue-health alerts for this snapshot.</p>';
+ for(const button of $('alertTable').querySelectorAll('[data-alert-id]')){
+  button.onclick=async()=>{
+   if(historySource!=='server')return;
+   button.disabled=true;
+   try{
+    const client=serverClient();
+    await client.updateAlertStatus(Number(button.dataset.alertId),button.dataset.alertStatus);
+    await loadServerHistory();
+   }catch(error){
+    $('serverHistoryStatus').textContent='Alert update failed: '+String(error?.message||error);
+   }finally{button.disabled=false}
+  };
+ }
 }
 
 function renderCollectorStatus(){
