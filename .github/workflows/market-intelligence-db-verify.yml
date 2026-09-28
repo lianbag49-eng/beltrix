@@ -1,0 +1,73 @@
+name: BELTRIX Market Intelligence DB Verify
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require configured database secret
+        env:
+          MI_DATABASE_URL: ${{ secrets.MI_DATABASE_URL }}
+        run: |
+          if [ -z "$MI_DATABASE_URL" ]; then
+            echo "::error::MI_DATABASE_URL is not configured."
+            exit 1
+          fi
+      - name: Install PostgreSQL client
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update -y
+            sudo apt-get install -y postgresql-client
+          fi
+      - name: Verify Market Intelligence schema read-only
+        env:
+          MI_DATABASE_URL: ${{ secrets.MI_DATABASE_URL }}
+        run: |
+          psql "$MI_DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "
+            select table_name
+            from information_schema.tables
+            where table_schema='public' and table_name in (
+              'mi_collector_runs','mi_snapshots','mi_venue_observations','mi_alert_events','mi_bd_events'
+            )
+            order by table_name;
+          " > /tmp/mi-tables.txt
+          for name in mi_collector_runs mi_snapshots mi_venue_observations mi_alert_events mi_bd_events; do
+            grep -qx "$name" /tmp/mi-tables.txt || { echo "::error::Missing table $name"; exit 1; }
+          done
+          psql "$MI_DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "
+            select table_name
+            from information_schema.views
+            where table_schema='public' and table_name in (
+              'mi_latest_venue_state','mi_collector_health_recent','mi_open_alerts'
+            )
+            order by table_name;
+          " > /tmp/mi-views.txt
+          for name in mi_latest_venue_state mi_collector_health_recent mi_open_alerts; do
+            grep -qx "$name" /tmp/mi-views.txt || { echo "::error::Missing view $name"; exit 1; }
+          done
+      - name: Verify persisted telemetry read-only
+        env:
+          MI_DATABASE_URL: ${{ secrets.MI_DATABASE_URL }}
+        run: |
+          psql "$MI_DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "
+            select json_build_object(
+              'snapshots',(select count(*) from mi_snapshots),
+              'collectorRuns',(select count(*) from mi_collector_runs),
+              'openAlerts',(select count(*) from mi_open_alerts),
+              'latestSnapshot',(select max(captured_at) from mi_snapshots)
+            );
+          " > db-verification.json
+          cat db-verification.json
+      - name: Upload verification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-intelligence-db-verification-${{ github.run_id }}
+          path: db-verification.json
+          retention-days: 14
