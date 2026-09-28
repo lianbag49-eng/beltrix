@@ -12,7 +12,9 @@ test('commercial models are sourced and time stamped',()=>{
 test('only fully evidenced venue is qualified by the gate',()=>{
  assert.equal(INITIAL_QUALIFICATION.hyperliquid.qualified,true);
  assert.equal(INITIAL_QUALIFICATION.orderly.qualified,false);
- assert.ok(INITIAL_QUALIFICATION.orderly.missing.includes('orderLifecycle'));
+ assert.ok(INITIAL_QUALIFICATION.orderly.missing.includes('paperOrTestnetE2E'));
+ assert.ok(INITIAL_QUALIFICATION.orderly.missing.includes('failureRecovery'));
+ assert.ok(INITIAL_QUALIFICATION.paradex.missing.includes('paperOrTestnetE2E'));
  const checks=executionChecklist();
  const all=qualifyExecutionVenue({venue:'x',evidence:Object.fromEntries(checks.map(x=>[x,true]))});
  assert.equal(all.qualified,true);
