@@ -100,10 +100,13 @@ test('compact view reduces ticket height for both products without overflow or r
 test('typing and expanding settings preserve focus without invoking page navigation',async({page})=>{
  await setup(page);await page.addStyleTag({content:'.page{min-height:2600px}'});await page.setViewportSize({width:390,height:844});
  await $(page,'tradeSize').evaluate(e=>scrollTo(0,e.getBoundingClientRect().top+scrollY-180));
- const before=await page.evaluate(()=>scrollY);expect(before).toBeGreaterThan(0);
+ const beforeScroll=await page.evaluate(()=>scrollY);expect(beforeScroll).toBeGreaterThan(0);
+ const beforeBox=await $(page,'tradeSize').boundingBox();
  await page.evaluate(()=>{window.simpleScrolls=[];const f=window.scrollTo;window.scrollTo=(...a)=>{window.simpleScrolls.push(a);return f(...a);};});
  await $(page,'tradeSize').click();await page.keyboard.type('0.5');await page.waitForTimeout(350);
- await expect($(page,'tradeSize')).toBeFocused();expect(Math.abs(await page.evaluate(()=>scrollY)-before)).toBeLessThanOrEqual(2);
+ await expect($(page,'tradeSize')).toBeFocused();
+ const afterBox=await $(page,'tradeSize').boundingBox();
+ expect(Math.abs(afterBox.y-beforeBox.y)).toBeLessThanOrEqual(2);
  expect(await page.evaluate(()=>window.simpleScrolls)).toEqual([]);
 });
 
