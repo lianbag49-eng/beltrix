@@ -686,6 +686,82 @@ app.delete("/api/exchange-accounts/:id",requireAuth,async(req,res)=>{
   res.json({ok:true});
 });
 
+app.patch("/api/exchange-accounts/:id",requireAuth,async(req,res)=>{
+  const uid=String(req.body.uid||"").trim();
+  if(!uid||uid.length>100) return res.status(400).json({error:"INVALID_UID"});
+  try{
+    const r=await q(
+      `UPDATE feeloop.exchange_accounts
+       SET uid=$1,status='pending',verified_at=NULL,updated_at=NOW()
+       WHERE id=$2 AND user_id=$3
+       RETURNING id,exchange_id AS "exchangeId",uid,status,last_sync_at AS "lastSyncAt",verified_at AS "verifiedAt",updated_at AS "updatedAt"`,
+      [uid,req.params.id,req.user.id]
+    );
+    if(!r.rows.length) return res.status(404).json({error:"NOT_FOUND"});
+    await audit(req.user.id,"EXCHANGE_UID_UPDATED",req.params.id,{uid});
+    await notify(req.user.id,"uid","Exchange UID resubmitted","Your updated UID is pending verification.");
+    res.json({account:r.rows[0]});
+  }catch(err){
+    if(err.code==="23505") return res.status(409).json({error:"UID_ALREADY_REGISTERED"});
+    throw err;
+  }
+});
+
+app.get("/api/payout-destinations",requireAuth,async(req,res)=>{
+  const r=await q(
+    `SELECT id,label,method,destination,is_default AS "isDefault",created_at AS "createdAt",updated_at AS "updatedAt"
+     FROM feeloop.payout_destinations WHERE user_id=$1 ORDER BY is_default DESC,created_at DESC`,
+    [req.user.id]
+  );
+  res.json({destinations:r.rows});
+});
+app.post("/api/payout-destinations",requireAuth,async(req,res)=>{
+  const label=String(req.body.label||"").trim().slice(0,80);
+  const method=String(req.body.method||"").trim();
+  const destination=String(req.body.destination||"").trim();
+  const isDefault=!!req.body.isDefault;
+  if(!label) return res.status(400).json({error:"LABEL_REQUIRED"});
+  if(!["exchange_uid","wallet"].includes(method)) return res.status(400).json({error:"INVALID_METHOD"});
+  if(!destination||destination.length>250) return res.status(400).json({error:"INVALID_DESTINATION"});
+  try{
+    const rec=await tx(async c=>{
+      if(isDefault) await c.query("UPDATE feeloop.payout_destinations SET is_default=FALSE,updated_at=NOW() WHERE user_id=$1",[req.user.id]);
+      const r=await c.query(
+        `INSERT INTO feeloop.payout_destinations(id,user_id,label,method,destination,is_default,created_at,updated_at)
+         VALUES($1,$2,$3,$4,$5,$6,NOW(),NOW())
+         RETURNING id,label,method,destination,is_default AS "isDefault",created_at AS "createdAt"`,
+        [id("dst"),req.user.id,label,method,destination,isDefault]
+      );
+      return r.rows[0];
+    });
+    await audit(req.user.id,"PAYOUT_DESTINATION_ADDED",rec.id,{method,isDefault});
+    res.status(201).json({destination:rec});
+  }catch(err){
+    if(err.code==="23505") return res.status(409).json({error:"DESTINATION_EXISTS"});
+    throw err;
+  }
+});
+app.delete("/api/payout-destinations/:id",requireAuth,async(req,res)=>{
+  const r=await q("DELETE FROM feeloop.payout_destinations WHERE id=$1 AND user_id=$2 RETURNING id",[req.params.id,req.user.id]);
+  if(!r.rows.length) return res.status(404).json({error:"NOT_FOUND"});
+  await audit(req.user.id,"PAYOUT_DESTINATION_REMOVED",req.params.id,{});
+  res.json({ok:true});
+});
+
+app.get("/api/notifications",requireAuth,async(req,res)=>{
+  const r=await q(
+    `SELECT id,type,title,body,read_at AS "readAt",created_at AS "createdAt"
+     FROM feeloop.notifications WHERE user_id=$1 ORDER BY created_at DESC LIMIT 100`,
+    [req.user.id]
+  );
+  res.json({notifications:r.rows});
+});
+app.patch("/api/notifications/:id/read",requireAuth,async(req,res)=>{
+  const r=await q("UPDATE feeloop.notifications SET read_at=COALESCE(read_at,NOW()) WHERE id=$1 AND user_id=$2 RETURNING id",[req.params.id,req.user.id]);
+  if(!r.rows.length) return res.status(404).json({error:"NOT_FOUND"});
+  res.json({ok:true});
+});
+
 app.get("/api/payouts",requireAuth,async(req,res)=>{
   const r=await q(`SELECT id,amount::float8 AS amount,method,destination,status,payment_ref AS "paymentRef",
                           created_at AS "createdAt",updated_at AS "updatedAt"
