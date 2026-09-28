@@ -20,9 +20,9 @@ test('postgres export persists snapshots observations and deduplicated alerts',(
  assert.match(sql,/can''t fetch/);
  assert.match(sql,/insert into mi_bd_events/);
  assert.match(sql,/on conflict \(event_key\).*do nothing/);
- assert.match(sql,/delete from mi_snapshots where captured_at < E'/);
- assert.match(sql,/delete from mi_collector_runs where finished_at < E'/);
- assert.match(sql,/delete from mi_bd_events where created_at < E'/);
+ assert.doesNotMatch(sql,/delete from mi_snapshots/);
+ assert.doesNotMatch(sql,/delete from mi_collector_runs/);
+ assert.doesNotMatch(sql,/delete from mi_bd_events/);
  assert.match(sql,/commit;/);
 });
 
