@@ -20,7 +20,7 @@ export function providersFor(routeId,win=window){
   add('tronlink','TronLink',win.tronLink,()=>win.tronWeb||win.tronLink?.tronWeb);
   return out.filter(x=>x.provider.request&&x.web);
  }
- add('okx-solana','OKX Wallet · Solana',win.okxwallet?.solana);add('phantom','Phantom',win.phantom?.solana);add('solana','Solana wallet',win.solana);
+ add('beltrix-solana','BELTRIX Wallet · Solana',win.beltrixWallet?.solanaProvider);add('okx-solana','OKX Wallet · Solana',win.okxwallet?.solana);add('phantom','Phantom',win.phantom?.solana);add('solana','Solana wallet',win.solana);
  return out.filter(x=>typeof x.provider.connect==='function'&&typeof x.provider.signTransaction==='function');
 }
 export async function connectUsdt(routeId,choice){
