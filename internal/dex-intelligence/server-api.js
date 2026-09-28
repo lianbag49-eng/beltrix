@@ -38,6 +38,18 @@ export function createMarketIntelligenceApi({repository,token,clock=()=>Date.now
    const method=String(request.method||'GET').toUpperCase();
    const url=parseUrl(request.url||'/');
    if(method==='GET'&&url.pathname==='/health')return json(200,{ok:true,service:'beltrix-market-intelligence',time:new Date(clock()).toISOString()});
+   if(method==='GET'&&url.pathname==='/ready'){
+    try{
+     const rows=typeof repository.collectorHealth==='function'?await repository.collectorHealth({limit:1}):[];
+     const latest=rows[0]||null;
+     const finishedAt=latest?.finished_at||latest?.finishedAt||null;
+     const ageMs=finishedAt?Math.max(0,clock()-new Date(finishedAt).getTime()):null;
+     const ready=Boolean(latest)&&ageMs!==null&&ageMs<=90*60*1000&&Number(latest.successful_assets??latest.successfulAssets??0)>0;
+     return json(ready?200:503,{ok:ready,service:'beltrix-market-intelligence',collector:{finishedAt,ageMs,successfulAssets:Number(latest?.successful_assets??latest?.successfulAssets??0),failedAssets:Number(latest?.failed_assets??latest?.failedAssets??0)}});
+    }catch(error){
+     return json(503,{ok:false,service:'beltrix-market-intelligence',error:'persistence_unavailable'});
+    }
+   }
    if(!['GET','PATCH'].includes(method))return json(405,{error:'method_not_allowed'},{allow:'GET, PATCH'});
    if(!configured||!sameSecret(bearer(request.headers),configured))return json(401,{error:'unauthorized'});
    if(url.pathname==='/v1/history'){
