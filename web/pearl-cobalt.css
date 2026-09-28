@@ -542,3 +542,83 @@ html[data-beltrix-ui="pearl-cobalt"][data-theme="dark"] .wallet-modal,
 html[data-beltrix-ui="pearl-cobalt"][data-theme="dark"] .usdt-modal{
  background-color:#0b1728!important;
 }
+
+
+/* 2026-09-28 desktop stability pass: prevent mid-width rail/stat collisions and preserve clickable navigation. */
+html[data-beltrix-ui="pearl-cobalt"] .app{
+ width:100%;max-width:1780px;min-width:0;
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-sidebar,
+html[data-beltrix-ui="pearl-cobalt"] .pc-right-rail,
+html[data-beltrix-ui="pearl-cobalt"] #markets.page.active{
+ min-width:0;
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-rail-nav,
+html[data-beltrix-ui="pearl-cobalt"] .pc-watchlist{
+ position:relative;z-index:2;
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-rail-nav button,
+html[data-beltrix-ui="pearl-cobalt"] .pc-market-row,
+html[data-beltrix-ui="pearl-cobalt"] .pc-header-link,
+html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-link{
+ position:relative;z-index:1;pointer-events:auto;
+}
+html[data-beltrix-ui="pearl-cobalt"] #markets .market-stats{
+ min-width:0;
+}
+html[data-beltrix-ui="pearl-cobalt"] #markets .market-stats>div{
+ min-width:0;overflow:hidden;
+}
+html[data-beltrix-ui="pearl-cobalt"] #markets .market-stats strong,
+html[data-beltrix-ui="pearl-cobalt"] #markets .market-stats span,
+html[data-beltrix-ui="pearl-cobalt"] .pc-intel-grid strong{
+ max-width:100%;overflow-wrap:anywhere;word-break:break-word;
+}
+html[data-beltrix-ui="pearl-cobalt"] #markets .market-stats strong{
+ line-height:1.25;
+}
+html[data-beltrix-ui="pearl-cobalt"] .trade-layout>*{
+ min-width:0;
+}
+html[data-beltrix-ui="pearl-cobalt"] .book-level span,
+html[data-beltrix-ui="pearl-cobalt"] .book-head span{
+ min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+
+/* At laptop widths the insight rail becomes a lower information row instead of squeezing the order terminal. */
+@media (min-width:901px) and (max-width:1320px){
+ html[data-beltrix-ui="pearl-cobalt"] .app{
+  grid-template-columns:176px minmax(0,1fr);grid-template-rows:auto auto auto;
+ }
+ html[data-beltrix-ui="pearl-cobalt"] #markets.page.active{
+  grid-column:2;grid-row:2;
+ }
+ html[data-beltrix-ui="pearl-cobalt"] .pc-right-rail{
+  display:grid!important;grid-column:2;grid-row:3;position:static;top:auto;
+  grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;
+ }
+ html[data-beltrix-ui="pearl-cobalt"] .pc-right-rail.pc-hidden{display:none!important}
+ html[data-beltrix-ui="pearl-cobalt"] #swap.page.active,
+ html[data-beltrix-ui="pearl-cobalt"] #settings.page.active{
+  grid-column:2;grid-row:2;
+ }
+ html[data-beltrix-ui="pearl-cobalt"] #markets .market-stats{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+ }
+ html[data-beltrix-ui="pearl-cobalt"] #markets .market-stats>div{
+  min-height:54px;
+ }
+}
+
+/* Keep insight sections reachable from Analytics/Protocol shortcuts on mobile instead of turning them into dead controls. */
+@media (max-width:900px){
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .pc-right-rail{
+  display:grid!important;position:static;margin-top:12px;gap:10px;
+ }
+ html[data-beltrix-ui="pearl-cobalt"] body:not([data-page="markets"]) .pc-right-rail{
+  display:none!important;
+ }
+ html[data-beltrix-ui="pearl-cobalt"] #markets .market-stats strong{
+  white-space:normal;
+ }
+}
