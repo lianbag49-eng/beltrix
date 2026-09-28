@@ -29,6 +29,7 @@ export async function runMarketIntelligenceBatch({
     alerts:result.alerts,
     bdEvents:result.bdEvents,
     intelligence:result.intelligence,
+    quality:result.quality||null,
     collectorErrors:Object.freeze(collectorErrors),
     persistence:result.persistence??null
    }));
