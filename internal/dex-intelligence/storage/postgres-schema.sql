@@ -76,6 +76,8 @@ create unique index if not exists mi_alert_events_open_key_idx
 
 create table if not exists mi_bd_events (
   id bigserial primary key,
+  event_key text,
+  asset text,
   venue text not null,
   event_type text not null,
   source text not null,
@@ -88,6 +90,10 @@ create table if not exists mi_bd_events (
 
 create index if not exists mi_bd_events_venue_created_idx
   on mi_bd_events (venue, created_at desc);
+
+create unique index if not exists mi_bd_events_event_key_idx
+  on mi_bd_events (event_key)
+  where event_key is not null;
 
 
 create or replace view mi_latest_venue_state as
