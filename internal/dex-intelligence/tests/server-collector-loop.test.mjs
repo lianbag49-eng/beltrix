@@ -5,7 +5,7 @@ import {createServerCollectorLoop} from '../server-collector-loop.js';
 test('server collector persists each asset snapshot and one run summary',async()=>{
  const saved=[],queries=[];
  const repository={save:async snap=>{saved.push(snap);return {snapshotId:saved.length}}};
- const queryClient={query:async(sql,args)=>{queries.push([sql,args]);return {rows:[{id:99}]}}};
+ const queryClient={query:async(sql,args)=>{queries.push([sql,args]);if(sql.includes('select id,venue,alert_key'))return {rows:[]};if(sql.includes('insert into mi_collector_runs'))return {rows:[{id:99}]};return {rows:[]}}};
  const cycle=async(asset,{repository})=>{
   const snapshot={asset,timestamp:1000,venues:{}};
   const persistence=await repository.save(snapshot);
@@ -19,13 +19,13 @@ test('server collector persists each asset snapshot and one run summary',async()
  assert.equal(result.successful,3);
  assert.equal(result.failed,0);
  assert.deepEqual(saved.map(x=>x.asset),['BTC','ETH','SOL']);
- assert.equal(queries.length,1);
- assert.match(queries[0][0],/insert into mi_collector_runs/);
+ assert.ok(queries.some(([sql])=>sql.includes('insert into mi_collector_runs')));
+ assert.ok(queries.some(([sql])=>sql.includes('select id,venue,alert_key')));
 });
 
 test('server collector isolates one asset failure and still records run',async()=>{
  const repository={save:async()=>({snapshotId:1})};
- const queryClient={query:async()=>({rows:[{id:1}]})};
+ const queryClient={query:async sql=>sql.includes('select id,venue,alert_key')?{rows:[]}:{rows:[{id:1}]}};
  const cycle=async asset=>{if(asset==='ETH')throw Error('fixture offline');return {alerts:[],bdEvents:[],persistence:{snapshotId:1}}};
  const loop=createServerCollectorLoop({repository,queryClient,assets:['BTC','ETH','SOL'],cycle});
  const out=await loop.run();
@@ -37,7 +37,7 @@ test('server collector isolates one asset failure and still records run',async()
 test('collector start schedules recurring work and stop prevents new schedules',async()=>{
  let cycles=0;
  const repository={save:async()=>({})};
- const queryClient={query:async()=>({rows:[{id:1}]})};
+ const queryClient={query:async sql=>sql.includes('select id,venue,alert_key')?{rows:[]}:{rows:[{id:1}]}};
  const cycle=async()=>{cycles++;return {alerts:[],bdEvents:[]}};
  const loop=createServerCollectorLoop({repository,queryClient,assets:['BTC'],cycle,intervalMs:60000});
  loop.start({immediate:true});
