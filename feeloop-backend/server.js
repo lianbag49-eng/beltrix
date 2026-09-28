@@ -1215,11 +1215,18 @@ app.put("/api/admin/country-rules/:country",requireAdmin,async(req,res)=>{
 });
 
 app.get("/api/admin/connectors",requireAdmin,async(req,res)=>{
-  const r=await q("SELECT id,connector_status FROM feeloop.exchange_configs ORDER BY id");
-  res.json({connectors:r.rows.map(x=>({
-    exchangeId:x.id,status:x.connector_status,configured:false,
-    capabilities:{uidVerification:false,feeSync:false,eventSync:false,payout:false}
-  }))});
+  const [r,sync]=await Promise.all([
+    q("SELECT id,connector_status FROM feeloop.exchange_configs ORDER BY id"),
+    q("SELECT value,updated_at FROM feeloop.system_settings WHERE key='last_connector_sync' LIMIT 1")
+  ]);
+  res.json({
+    lastSync:sync.rows[0]?.updated_at||null,
+    syncMeta:sync.rows[0]?.value||null,
+    connectors:r.rows.map(x=>({
+      exchangeId:x.id,status:x.connector_status,configured:x.connector_status==="active",
+      capabilities:{uidVerification:x.connector_status==="active",feeSync:x.connector_status==="active",eventSync:false,payout:false}
+    }))
+  });
 });
 
 app.use(express.static(PUBLIC_DIR,{extensions:["html"],maxAge:0,etag:true}));
@@ -1230,8 +1237,11 @@ app.get("*",(req,res,next)=>{
 });
 app.use((err,req,res,next)=>{
   console.error(err);
+  logSystemError("http",err,{path:req.path,method:req.method,userId:req.user?.id||null}).catch(()=>{});
   res.status(500).json({error:"INTERNAL_ERROR"});
 });
+process.on("unhandledRejection",reason=>{ console.error("unhandledRejection",reason); logSystemError("process.unhandledRejection",reason,{}).catch(()=>{}); });
+process.on("uncaughtException",err=>{ console.error("uncaughtException",err); logSystemError("process.uncaughtException",err,{}).catch(()=>{}); });
 
 initDatabase().then(()=>{
   app.listen(PORT,()=>console.log(`FEELOOP ${APP_ENV} listening on :${PORT} using relational postgres storage`));
