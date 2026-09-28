@@ -16,6 +16,11 @@ export async function runMarketIntelligenceBatch({
   const assetStarted=Date.now();
   try{
    const result=await cycle(asset,cycleOptions);
+   const collectorErrors=[
+    ...(result.bookRows||[]).filter(x=>!x?.ok).map(x=>({venue:x.venue,source:'book',error:x.error||'collector unavailable',latencyMs:x.latencyMs??null})),
+    ...(result.metricRows||[]).filter(x=>!x?.ok).map(x=>({venue:x.venue,source:'metrics',error:x.error||'metrics unavailable',latencyMs:x.latencyMs??null})),
+    ...(result.gmxState&&!result.gmxState.ok?[{venue:'gmx',source:'state',error:result.gmxState.error||'state unavailable',latencyMs:result.gmxState.latencyMs??null}]:[])
+   ];
    rows.push(Object.freeze({
     asset,
     ok:true,
@@ -24,6 +29,7 @@ export async function runMarketIntelligenceBatch({
     alerts:result.alerts,
     bdEvents:result.bdEvents,
     intelligence:result.intelligence,
+    collectorErrors:Object.freeze(collectorErrors),
     persistence:result.persistence??null
    }));
   }catch(error){
