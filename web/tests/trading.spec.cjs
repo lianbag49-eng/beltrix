@@ -29,3 +29,21 @@ test('account change inside signing prompt never posts an order',async({page})=>
  await page.goto('/web/#markets');await expect(page.locator('#tradeReview')).toBeDisabled();await page.locator('#marketNetwork').selectOption('testnet');await page.locator('#tradeConnect').click();await expect(page.locator('#tradeAccount')).toContainText('111111');
  await expect(page.locator('#tradeReview')).toBeEnabled();await page.locator('#tradePrice').fill('20');await page.locator('#tradeSize').fill('1');await page.locator('#tradeReview').click();await expect(page.locator('#tradeDialog')).toBeVisible();await page.locator('#tradeSubmit').click();await expect(page.locator('#tradeStatus')).toContainText('Failed to sign the typed data using the wallet');expect(await page.evaluate(()=>window.signChanged)).toBe(true);expect(posted).toHaveLength(0);
 });
+
+
+test('EIP-6963 wallet providers appear by name and can be explicitly selected',async({page})=>{
+ await page.addInitScript(()=>{
+  window.eipUsed=[];
+  const rabby={on(){},removeListener(){},async request(x){window.eipUsed.push(x.method);throw new Error('Rabby fixture rejected')}};
+  window.addEventListener('eip6963:requestProvider',()=>window.dispatchEvent(new CustomEvent('eip6963:announceProvider',{detail:{
+   info:{uuid:'rabby-test-provider',name:'Rabby Wallet',icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>',rdns:'io.rabby'},
+   provider:rabby
+  }})));
+ });
+ await page.goto('/web/#markets');
+ await expect(page.locator('#walletProvider option')).toContainText(['Auto detect','Rabby Wallet']);
+ await page.locator('#walletProvider').selectOption('rabby-test-provider');
+ await page.locator('#tradeConnect').click();
+ await expect(page.locator('#tradeStatus')).toContainText('Rabby fixture rejected');
+ expect(await page.evaluate(()=>window.eipUsed)).toEqual(['eth_requestAccounts']);
+});
