@@ -404,12 +404,69 @@ const FeeLoop = (() => {
     $("#accountCountry").textContent=me.country||"—";
     $("#accountVerified").textContent=me.emailVerified?"Verified":"Pending";
     $("#accountMfa").textContent=me.mfaEnabled?"Enabled":"Not enabled";
+    if($("#preferredLanguage")) $("#preferredLanguage").value=me.preferredLanguage||"en";
+
     try{
       const data=await api("/api/auth/sessions");
       $("#sessionTable").innerHTML=data.sessions.length?data.sessions.map(s=>`<tr><td>${escapeHtml(new Date(s.created_at).toLocaleString())}</td><td>${escapeHtml(new Date(s.last_seen_at).toLocaleString())}</td><td>${escapeHtml(s.ip||"—")}</td><td>${s.current?'<span class="pill">Current</span>':'<button class="btn sm danger" data-revoke-session="'+escapeHtml(s.id)+'">Revoke</button>'}</td></tr>`).join(""):'<tr><td colspan="4"><div class="empty">No active sessions.</div></td></tr>';
-      $("[data-revoke-session]").forEach(btn=>btn.addEventListener("click",async()=>{try{await api("/api/auth/sessions/"+btn.dataset.revokeSession,{method:"DELETE"});toast("Session revoked");setTimeout(()=>location.reload(),300)}catch(err){toast(errorText(err))}}));
+      $$("[data-revoke-session]").forEach(btn=>btn.addEventListener("click",async()=>{try{await api("/api/auth/sessions/"+btn.dataset.revokeSession,{method:"DELETE"});toast("Session revoked");setTimeout(()=>location.reload(),300)}catch(err){toast(errorText(err))}}));
     }catch(err){toast(errorText(err))}
-    $("#logoutAll")?.addEventListener("click",async()=>{if(!confirm("Log out all sessions?"))return;try{await api("/api/auth/logout-all",{method:"POST"});location.replace("login.html")}catch(err){toast(errorText(err))}});
+
+    async function loadDestinations(){
+      try{
+        const d=await api("/api/payout-destinations");
+        $("#destinationList").innerHTML=d.destinations.length?d.destinations.map(x=>`<div class="step"><div class="step-no">${x.isDefault?"★":"↗"}</div><div style="flex:1"><b>${escapeHtml(x.label)}</b><div class="meta">${escapeHtml(x.method)} · ${escapeHtml(x.destination)}</div></div><button class="btn sm danger" data-delete-destination="${x.id}">Remove</button></div>`).join(""):'<div class="empty">No saved payout destinations.</div>';
+        $$("[data-delete-destination]").forEach(btn=>btn.addEventListener("click",async()=>{try{await api("/api/payout-destinations/"+btn.dataset.deleteDestination,{method:"DELETE"});toast("Destination removed");await loadDestinations()}catch(err){toast(errorText(err))}}));
+      }catch(err){toast(errorText(err))}
+    }
+    await loadDestinations();
+
+    async function loadNotifications(){
+      try{
+        const d=await api("/api/notifications");
+        $("#notificationList").innerHTML=d.notifications.length?d.notifications.map(n=>`<div class="step"><div class="step-no">${n.readAt?"•":"!"}</div><div style="flex:1"><b>${escapeHtml(n.title)}</b><div class="meta">${escapeHtml(n.body||"")} · ${escapeHtml(new Date(n.createdAt).toLocaleString())}</div></div>${n.readAt?"":'<button class="btn sm" data-read-notification="'+n.id+'">Mark read</button>'}</div>`).join(""):'<div class="empty">No notifications yet.</div>';
+        $$("[data-read-notification]").forEach(btn=>btn.addEventListener("click",async()=>{try{await api("/api/notifications/"+btn.dataset.readNotification+"/read",{method:"PATCH"});await loadNotifications()}catch(err){toast(errorText(err))}}));
+      }catch(err){toast(errorText(err))}
+    }
+    await loadNotifications();
+
+    $("#destinationForm")?.addEventListener("submit",async e=>{
+      e.preventDefault();
+      try{
+        await api("/api/payout-destinations",{method:"POST",body:{
+          label:$("#destinationLabel").value.trim(),
+          method:$("#destinationMethod").value,
+          destination:$("#destinationValue").value.trim(),
+          isDefault:$("#destinationDefault").checked
+        }});
+        e.currentTarget.reset();toast("Destination saved");await loadDestinations();
+      }catch(err){toast(errorText(err))}
+    });
+
+    $("#preferredLanguage")?.addEventListener("change",async e=>{
+      try{
+        const d=await api("/api/account/profile",{method:"PATCH",body:{preferredLanguage:e.target.value}});
+        currentUser=d.user;toast("Language preference saved");
+      }catch(err){toast(errorText(err))}
+    });
+
+    $("#changePasswordForm")?.addEventListener("submit",async e=>{
+      e.preventDefault();
+      try{
+        await api("/api/auth/change-password",{method:"POST",body:{currentPassword:$("#currentPassword").value,newPassword:$("#newAccountPassword").value}});
+        e.currentTarget.reset();csrfToken=null;toast("Password updated");
+      }catch(err){toast(errorText(err))}
+    });
+
+    $("#changeEmailForm")?.addEventListener("submit",async e=>{
+      e.preventDefault();
+      try{
+        await api("/api/auth/change-email/request",{method:"POST",body:{newEmail:$("#newEmail").value.trim(),password:$("#emailChangePassword").value}});
+        e.currentTarget.reset();toast("Confirmation email sent");
+      }catch(err){toast(errorText(err))}
+    });
+
+    $("#logoutAll")?.addEventListener("click",async()=>{if(!confirm("Log out all sessions?"))return;try{await api("/api/auth/logout-all",{method:"POST"});currentUser=null;csrfToken=null;location.replace("login.html")}catch(err){toast(errorText(err))}});
   }
 
   async function initAdminSetup(){
