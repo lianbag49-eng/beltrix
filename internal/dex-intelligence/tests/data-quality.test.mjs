@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {evaluateVenueQuality,evaluateSnapshotQuality} from '../data-quality.js';
+import {evaluateVenueQuality,evaluateSnapshotQuality,qualityAlerts} from '../data-quality.js';
 
 test('valid venue telemetry remains trusted',()=>{
  const q=evaluateVenueQuality({ok:true,latencyMs:120,spreadBps:2.5,depth25Usd:500000,minFillRatio:1,flags:[]});
@@ -33,4 +33,14 @@ test('stale snapshots degrade aggregate quality',()=>{
  assert.equal(out.status,'degraded');
  assert.equal(out.asset,'BTC');
  assert.ok(out.snapshotIssues.some(x=>x.code==='snapshot-stale'));
+});
+
+
+test('quality issues become persistent alert candidates',()=>{
+ const quality=evaluateSnapshotQuality({
+  asset:'BTC',timestamp:1000,
+  venues:{orderly:{ok:true,latencyMs:-1,spreadBps:2,depth25Usd:100,minFillRatio:1}}
+ },null,{now:1000});
+ const alerts=qualityAlerts(quality);
+ assert.ok(alerts.some(x=>x.venue==='orderly'&&x.key==='quality-invalid-latency'&&x.severity==='critical'));
 });
