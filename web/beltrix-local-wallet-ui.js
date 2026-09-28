@@ -25,6 +25,12 @@ export function installBeltrixLocalWalletUI({manager=beltrixWalletManager,win=wi
  button.innerHTML='<span class="w-local-vault-dot"></span><span>BELTRIX Wallet</span><small id="wBeltrixVaultState">Local vault</small>';
  accountMode.after(button);
 
+ const multi=doc.createElement('section');
+ multi.id='wBeltrixMultichain';
+ multi.className='w-section-card w-beltrix-multichain';
+ multi.hidden=true;
+ button.after(multi);
+
  const dialog=doc.createElement('dialog');
  dialog.id='wLocalWalletDialog';
  dialog.className='wallet-modal w-local-wallet-modal';
@@ -42,6 +48,20 @@ export function installBeltrixLocalWalletUI({manager=beltrixWalletManager,win=wi
   const state=manager.state(),el=doc.getElementById('wBeltrixVaultState');
   if(el)el.textContent=state.active?short(state.active.address):'Local vault';
   button.dataset.unlocked=String(Boolean(state.active));
+  if(state.active){
+   multi.hidden=false;
+   multi.innerHTML='<div class="w-list-head"><span>BELTRIX Account</span><span>'+(state.active.solanaAddress?'EVM + Solana':'EVM')+'</span></div>'+
+    '<div class="w-beltrix-chain-row"><div><strong>EVM</strong><small>'+esc(state.active.address)+'</small></div><button type="button" class="w-text-button" id="wCopyBeltrixEvm">Copy</button></div>'+
+    (state.active.solanaAddress?'<div class="w-beltrix-chain-row"><div><strong>Solana</strong><small>'+esc(state.active.solanaAddress)+'</small></div><button type="button" class="w-text-button" id="wCopyBeltrixSol">Copy</button></div>':'<p class="w-note">Legacy private-key wallets are EVM-only. Import a recovery phrase to enable Solana.</p>')+
+    '<div class="w-form-row"><button type="button" class="w-secondary" data-usdt-open="receive">Receive</button><button type="button" class="w-secondary" data-usdt-open="send">Send</button><button type="button" class="w-primary" id="wBeltrixTrade">Trade</button></div>'+
+    '<p class="w-note">One local recovery phrase, chain-specific addresses. Always verify the destination network before sending.</p>';
+   doc.getElementById('wCopyBeltrixEvm')?.addEventListener('click',()=>copy(state.active.address));
+   doc.getElementById('wCopyBeltrixSol')?.addEventListener('click',()=>copy(state.active.solanaAddress));
+   doc.getElementById('wBeltrixTrade')?.addEventListener('click',()=>win.openPage?.('markets'));
+  }else{
+   multi.hidden=true;
+   multi.replaceChildren();
+  }
  };
  const copy=async text=>{
   try{await win.navigator.clipboard.writeText(text);status('Copied.','success')}
@@ -59,20 +79,20 @@ export function installBeltrixLocalWalletUI({manager=beltrixWalletManager,win=wi
   let list='';
   for(const v of vaults){
    const active=state.active?.id===v.id;
-   list+='<article class="w-local-vault-row"><div><strong>'+esc(v.name)+'</strong><small>'+esc(v.address)+'</small></div><div class="w-local-vault-controls">'+
+   list+='<article class="w-local-vault-row"><div><strong>'+esc(v.name)+'</strong><small>EVM · '+esc(v.address)+'</small>'+(v.solanaAddress?'<small>Solana · '+esc(v.solanaAddress)+'</small>':'')+'</div><div class="w-local-vault-controls">'+
     (active?'<span class="w-badge">Active</span>':'<button class="w-secondary" data-unlock="'+esc(v.id)+'">Unlock</button>')+
     '<button class="w-text-button" data-backup="'+esc(v.id)+'">Backup</button>'+
     '<button class="w-text-button danger" data-remove="'+esc(v.id)+'">Remove</button></div></article>';
   }
   body().innerHTML=
    '<div class="w-local-state '+(state.active?'unlocked':'locked')+'"><strong>'+(state.active?'Unlocked':'Locked')+'</strong><span>'+
-   (state.active?esc(state.active.name)+' · '+esc(short(state.active.address)):'Private keys remain encrypted in this browser.')+'</span></div>'+
+   (state.active?esc(state.active.name)+' · '+esc(short(state.active.address))+(state.active.solanaAddress?' · SOL '+esc(short(state.active.solanaAddress)):''):'Recovery material remains encrypted in this browser.')+'</span></div>'+
    (state.active?'<div class="w-form-row"><button id="wLocalLock" class="w-secondary">Lock now</button><button id="wLocalActiveBackup" class="w-secondary">Backup recovery</button></div>':'')+
    '<div class="w-local-actions"><button id="wLocalCreate" class="w-primary">Create BELTRIX Wallet</button><button id="wLocalImport" class="w-secondary">Import wallet</button></div>'+
    '<hr class="w-divider"><div class="w-list-head"><span>Wallets in this browser</span><span>'+vaults.length+'</span></div>'+
    '<div class="w-local-vault-list">'+(list||'<p class="w-note">No BELTRIX Local Wallet exists in this browser yet.</p>')+'</div>'+
    '<p id="wLocalWalletStatus" class="w-inline-status" role="status"></p>'+
-   '<p class="w-note">BELTRIX Local Wallet is non-custodial. The encrypted vault stays in this browser. BELTRIX servers, Neon and Render never receive the recovery key.</p>';
+   '<p class="w-note">BELTRIX Local Wallet is non-custodial. The encrypted vault stays in this browser. BELTRIX servers, Neon and Render never receive the recovery phrase or private key.</p>';
 
   doc.getElementById('wLocalCreate').onclick=showCreate;
   doc.getElementById('wLocalImport').onclick=showImport;
@@ -87,7 +107,7 @@ export function installBeltrixLocalWalletUI({manager=beltrixWalletManager,win=wi
  function showCreate(){
   title('Create BELTRIX Wallet');
   body().innerHTML=
-   '<p class="w-note">A new 12-word BIP-39 recovery phrase is generated on this device. BELTRIX derives the first EVM account and encrypts the phrase before storage.</p>'+
+   '<p class="w-note">A new 12-word BIP-39 recovery phrase is generated on this device. BELTRIX derives the first EVM account and a Solana account locally, then encrypts the phrase before storage.</p>'+
    '<label class="w-field">Wallet name<input id="wLocalName" maxlength="40" value="BELTRIX Wallet" autocomplete="off"></label>'+
    '<label class="w-field">Wallet password<input id="wLocalPassword" type="password" minlength="10" autocomplete="new-password"></label>'+
    '<label class="w-field">Confirm password<input id="wLocalPassword2" type="password" minlength="10" autocomplete="new-password"></label>'+
@@ -109,7 +129,7 @@ export function installBeltrixLocalWalletUI({manager=beltrixWalletManager,win=wi
   title('Back up your recovery phrase');
   body().innerHTML=
    '<div class="w-error">These words control the wallet. Anyone with them can move the assets. BELTRIX cannot recover them for you.</div>'+
-   '<p class="w-note">'+esc(wallet.name)+' · '+esc(wallet.address)+'</p>'+
+   '<p class="w-note">'+esc(wallet.name)+'<br>EVM · '+esc(wallet.address)+(wallet.solanaAddress?'<br>Solana · '+esc(wallet.solanaAddress):'')+'</p>'+
    '<label class="w-field">Recovery phrase<textarea id="wLocalRecovery" class="w-input w-local-secret" rows="4" readonly spellcheck="false">'+esc(recoveryKey)+'</textarea></label>'+
    '<button id="wLocalCopyRecovery" class="w-secondary full">Copy recovery phrase</button>'+
    '<label class="w-check"><input id="wLocalRecoverySaved" type="checkbox">I saved the recovery phrase somewhere safe.</label>'+
