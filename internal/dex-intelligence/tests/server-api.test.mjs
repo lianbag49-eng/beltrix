@@ -108,3 +108,16 @@ test('readiness is public but requires fresh successful persisted collector stat
  const failedApi=createMarketIntelligenceApi({repository:{history:async()=>[],collectorHealth:async()=>[{finished_at:'2026-09-28T05:19:00.000Z',successful_assets:0,failed_assets:3}]},token:'secret',clock:()=>Date.parse('2026-09-28T05:20:00.000Z')});
  assert.equal((await failedApi.handle({url:'/ready'})).status,503);
 });
+
+
+test('exact-origin CORS allows configured Admin origin and rejects other origins',async()=>{
+ const repo={history:async()=>[],collectorHealth:async()=>[]};
+ const api=createMarketIntelligenceApi({repository:repo,token:'secret',allowedOrigin:'https://admin.example'});
+ const preflight=await api.handle({method:'OPTIONS',url:'/v1/history',headers:{origin:'https://admin.example'}});
+ assert.equal(preflight.status,200);
+ assert.equal(preflight.headers['access-control-allow-origin'],'https://admin.example');
+ const allowed=await api.handle({url:'/v1/history?asset=BTC',headers:{origin:'https://admin.example',authorization:'Bearer secret'}});
+ assert.equal(allowed.headers['access-control-allow-origin'],'https://admin.example');
+ const deniedOrigin=await api.handle({url:'/v1/history?asset=BTC',headers:{origin:'https://evil.example',authorization:'Bearer secret'}});
+ assert.equal(deniedOrigin.headers['access-control-allow-origin'],undefined);
+});
