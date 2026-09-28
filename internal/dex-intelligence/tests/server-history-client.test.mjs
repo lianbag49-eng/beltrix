@@ -44,3 +44,22 @@ test('authenticated requests fail before fetch when token is absent',async()=>{
  await assert.rejects(()=>client.latest('ETH'),/token is not available/);
  assert.equal(called,false);
 });
+
+
+test('collector health and alert reads use authenticated GET endpoints',async()=>{
+ const calls=[];
+ const client=createServerHistoryClient({
+  baseUrl:'https://internal.example',
+  getToken:()=> 'secret',
+  fetchImpl:async(url,init)=>{
+   calls.push({url,init});
+   return {ok:true,status:200,async json(){return {rows:[]}}};
+  }
+ });
+ await client.collectorHealth(12);
+ await client.openAlerts(34);
+ assert.equal(calls[0].url,'https://internal.example/v1/collector-health?limit=12');
+ assert.equal(calls[1].url,'https://internal.example/v1/open-alerts?limit=34');
+ assert.equal(calls[0].init.headers.authorization,'Bearer secret');
+ assert.equal(calls[1].init.headers.authorization,'Bearer secret');
+});
