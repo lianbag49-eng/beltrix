@@ -12,6 +12,7 @@ import {buildMarketIntelligence} from '../market-intelligence.js';
 import {evaluateMarketAlerts,dedupeAlerts} from '../alert-engine.js';
 import {alertsToBdEvents} from '../bd-events.js';
 import {venueTrendSeries,seriesStats,TREND_METRICS} from '../trend-series.js';
+import {createServerHistoryClient} from '../server-history-client.js';
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -29,6 +30,8 @@ const severityClass=v=>v==='critical'?'severity-critical':v==='warning'?'severit
 let autoTimer=null;
 let latestMetrics=[];
 let latestHistory=loadTelemetry(localStorage);
+let historySource='local';
+let serverHistoryClient=null;
 let latestAlerts=[];
 let latestBdEvents=[];
 
@@ -38,6 +41,35 @@ function table(headers,rows){
 
 function currentAsset(){return $('assetSelect')?.value||'BTC'}
 function currentNotional(){return Math.max(100,Number($('notional')?.value)||10000)}
+function serverClient(){
+ const base=$('serverApiBase')?.value||'';
+ const token=$('serverApiToken')?.value||'';
+ serverHistoryClient=createServerHistoryClient({baseUrl:base,getToken:()=>token});
+ return serverHistoryClient;
+}
+function syncHistorySource(){
+ historySource=$('historySource')?.value||'local';
+ $('serverHistoryConfig').hidden=historySource!=='server';
+ $('clearHistory').disabled=historySource!=='local';
+ $('autoRefresh').disabled=historySource!=='local';
+ renderHistory();
+}
+async function loadServerHistory(){
+ const status=$('serverHistoryStatus'),asset=currentAsset(),hours=Number($('serverHistoryHours')?.value)||168;
+ try{
+  status.textContent='Loading authenticated server history…';
+  const client=serverClient();
+  if(!client.enabled)throw Error('Enter the internal API base URL.');
+  await client.health();
+  const result=await client.history({asset,hours,limit:5000});
+  latestHistory=Array.isArray(result?.rows)?result.rows:[];
+  historySource='server';
+  status.textContent=`Loaded ${latestHistory.length} persisted ${asset} snapshots from the server.`;
+  renderHistory();
+ }catch(error){
+  status.textContent='Server history unavailable: '+String(error?.message||error);
+ }
+}
 function feeAssumptions(){
  const out={};
  for(const input of document.querySelectorAll('[data-fee]')){
@@ -222,6 +254,10 @@ function previousVenueStates(history,asset){
 function renderHistory(metricRows=latestMetrics){
  const asset=currentAsset();
  const history=telemetryForAsset(latestHistory,asset);
+ const sourceNote=$('history')?.querySelector('p.note');
+ if(sourceNote)sourceNote.textContent=historySource==='server'
+  ?'Persisted server telemetry. Venue-native units are kept when semantics are not safely comparable.'
+  :'Snapshots are stored locally in this browser for up to 7 days. Venue-native units are kept when semantics are not safely comparable.';
  const healthRows=Object.entries(apiHealthSummary(latestHistory,asset)).map(([venue,v])=>[
   esc(venue),String(v.samples),pct(v.successRatio),fmt(v.avgLatencyMs)+' ms',fmt(v.p95LatencyMs)+' ms',health(v.lastStatus),
   v.lastSeen?new Date(v.lastSeen).toLocaleString():'N/A'
@@ -293,7 +329,7 @@ async function refreshLiquidity({record=true}={}){
    '<br><span class="note">'+esc(gmx.note)+'</span>'
   :'<strong>GMX '+esc(gmx.chain)+'</strong> · <span class="bad">Unavailable</span> · '+esc(gmx.error||'collector error');
 
- if(record){
+ if(record&&historySource==='local'){
   const snapshot=makeTelemetrySnapshot({asset,bookRows:rows,gmxState:gmx,metricRows:metrics,timestamp:Date.now()});
   latestHistory=saveTelemetry(localStorage,snapshot,{maxEntries:720,maxAgeMs:7*24*60*60*1000});
  }
@@ -312,8 +348,11 @@ for(const b of document.querySelectorAll('[data-tab]'))b.onclick=()=>{
 };
 
 $('refresh').onclick=()=>{renderOverview();refreshLiquidity({record:true})};
-$('assetSelect').onchange=()=>{renderOverview();renderHistory();refreshLiquidity({record:true})};
+$('assetSelect').onchange=async()=>{renderOverview();if(historySource==='server')await loadServerHistory();else renderHistory();refreshLiquidity({record:true})};
 $('notional').onchange=()=>refreshLiquidity({record:true});
+$('historySource').onchange=async()=>{syncHistorySource();if($('historySource').value==='server')await loadServerHistory();else{latestHistory=loadTelemetry(localStorage);historySource='local';renderHistory();}};
+$('loadServerHistory').onclick=loadServerHistory;
+$('serverHistoryHours').onchange=()=>{if(historySource==='server')loadServerHistory()};
 $('autoRefresh').onchange=setAutoRefresh;
 $('trendVenue').onchange=renderTrend;
 $('trendMetric').onchange=renderTrend;
@@ -331,5 +370,6 @@ renderExecution();
 renderIntegration();
 renderAlerts();
 renderBdEvents();
+syncHistorySource();
 renderHistory();
 refreshLiquidity({record:true});
