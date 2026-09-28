@@ -200,6 +200,14 @@ const FeeLoop = (() => {
         const data=await api("/api/auth/register",{method:"POST",body:{
           email:$("#email").value.trim(),password:$("#password").value,country:$("#country").value,acceptTerms:$("#acceptTerms").checked
         }});
+        if(data.reviewRequired){
+          form.innerHTML='<div class="eyebrow">Eligibility review</div><h2>Account submitted</h2><div class="notice" style="margin-top:14px">Your account requires eligibility review before login. You will be able to sign in after approval.</div><div style="margin-top:18px"><a class="btn" href="login.html">Back to login</a></div>';
+          return;
+        }
+        if(data.emailVerification==="required"){
+          form.innerHTML='<div class="eyebrow">Email verification</div><h2>Check your inbox</h2><div class="notice" style="margin-top:14px">We sent a verification link to your email address.</div><div style="margin-top:18px"><a class="btn" href="login.html">Back to login</a></div>';
+          return;
+        }
         location.replace(data.user.role==="admin"?"admin.html":"dashboard.html");
       }catch(err){$("#signupError").textContent=errorText(err)}
     });
