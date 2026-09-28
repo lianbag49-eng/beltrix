@@ -20,8 +20,10 @@ const APP_ENV = process.env.APP_ENV || "staging";
 const COOKIE_NAME = "feeloop_session";
 const COOKIE_SECURE = process.env.COOKIE_SECURE !== "false";
 const BLOCKED_COUNTRIES = new Set((process.env.BLOCKED_COUNTRIES || "KR").split(",").map(v=>v.trim().toUpperCase()).filter(Boolean));
-const ADMIN_BOOTSTRAP_HASH = "073f3b223eaea762cf26d12aaf9ef0a47b5897121e62a6ba4e98d190e713f090";
 const SESSION_DAYS = 7;
+const TRUSTED_GEO_HEADER = String(process.env.TRUSTED_GEO_HEADER || "").trim().toLowerCase();
+const MFA_ENCRYPTION_KEY = String(process.env.MFA_ENCRYPTION_KEY || "");
+const IS_PRODUCTION = APP_ENV === "production";
 
 if(!DATABASE_URL){
   console.error("DATABASE_URL is required");
@@ -46,6 +48,27 @@ function now(){ return new Date().toISOString(); }
 function id(prefix){ return prefix + "_" + crypto.randomBytes(9).toString("hex"); }
 function token(){ return crypto.randomBytes(32).toString("base64url"); }
 function hashToken(v){ return crypto.createHash("sha256").update(String(v||"")).digest("hex"); }
+function mfaCipherKey(){ return MFA_ENCRYPTION_KEY ? crypto.createHash("sha256").update(MFA_ENCRYPTION_KEY).digest() : null; }
+function encryptSecret(value){
+  const key=mfaCipherKey();
+  if(!key) throw Object.assign(new Error("MFA_ENCRYPTION_NOT_CONFIGURED"),{code:"MFA_ENCRYPTION_NOT_CONFIGURED"});
+  const iv=crypto.randomBytes(12);
+  const cipher=crypto.createCipheriv("aes-256-gcm",key,iv);
+  const encrypted=Buffer.concat([cipher.update(String(value),"utf8"),cipher.final()]);
+  const tag=cipher.getAuthTag();
+  return ["enc","v1",iv.toString("base64url"),tag.toString("base64url"),encrypted.toString("base64url")].join(":");
+}
+function decryptSecret(value){
+  const raw=String(value||"");
+  if(!raw.startsWith("enc:v1:")) return raw;
+  const key=mfaCipherKey();
+  if(!key) throw Object.assign(new Error("MFA_ENCRYPTION_NOT_CONFIGURED"),{code:"MFA_ENCRYPTION_NOT_CONFIGURED"});
+  const [,version,ivB64,tagB64,dataB64]=raw.split(":");
+  if(version!=="v1") throw new Error("MFA_SECRET_FORMAT");
+  const decipher=crypto.createDecipheriv("aes-256-gcm",key,Buffer.from(ivB64,"base64url"));
+  decipher.setAuthTag(Buffer.from(tagB64,"base64url"));
+  return Buffer.concat([decipher.update(Buffer.from(dataB64,"base64url")),decipher.final()]).toString("utf8");
+}
 function cleanEmail(v){ return String(v||"").trim().toLowerCase(); }
 function cleanCountry(v){ return String(v||"").trim().toUpperCase().slice(0,2); }
 function numeric(v){ const n=Number(v); return Number.isFinite(n)?n:0; }
@@ -62,11 +85,14 @@ function publicUser(u){
   return {
     id:u.id,email:u.email,role:u.role,country:u.country||"",
     emailVerified:!!u.email_verified,mfaEnabled:!!u.mfa_enabled,
+    eligibilityStatus:u.eligibility_status||"active",
+    preferredLanguage:u.preferred_language||"en",
     createdAt:u.created_at
   };
 }
 function countryFromRequest(req){
-  return cleanCountry(req.get("cf-ipcountry") || req.get("x-vercel-ip-country") || req.get("x-country-code") || "");
+  if(!TRUSTED_GEO_HEADER) return "";
+  return cleanCountry(req.get(TRUSTED_GEO_HEADER) || "");
 }
 async function countryStatus(country){
   const code=cleanCountry(country);
@@ -99,6 +125,18 @@ async function audit(actorId,action,target="",meta={}){
     [id("aud"),actorId||null,action,target,JSON.stringify(meta||{})]
   );
 }
+async function notify(userId,type,title,body=""){
+  await q(
+    "INSERT INTO feeloop.notifications(id,user_id,type,title,body,created_at) VALUES($1,$2,$3,$4,$5,NOW())",
+    [id("ntf"),userId,type,String(title).slice(0,180),String(body).slice(0,1000)]
+  );
+}
+async function logSystemError(area,err,meta={}){
+  try{
+    await q("INSERT INTO feeloop.system_errors(id,area,message,meta,created_at) VALUES($1,$2,$3,$4::jsonb,NOW())",
+      [id("err"),String(area).slice(0,120),String(err?.message||err||"unknown").slice(0,2000),JSON.stringify(meta||{})]);
+  }catch{}
+}
 async function getUserById(userId){
   const r=await q("SELECT * FROM feeloop.users WHERE id=$1 LIMIT 1",[userId]);
   return r.rows[0]||null;
@@ -112,8 +150,8 @@ async function createSession(res,user,req){
   const sessionId=id("ses");
   const expiresAt=new Date(Date.now()+SESSION_DAYS*86400000);
   await q(
-    `INSERT INTO feeloop.sessions(id,user_id,token_hash,expires_at,ip,user_agent)
-     VALUES($1,$2,$3,$4,$5,$6)`,
+    `INSERT INTO feeloop.sessions(id,user_id,token_hash,expires_at,ip,user_agent,csrf_token_hash)
+     VALUES($1,$2,$3,$4,$5,$6,NULL)`,
     [sessionId,user.id,hashToken(raw),expiresAt.toISOString(),req.ip,String(req.get("user-agent")||"").slice(0,500)]
   );
   res.cookie(COOKIE_NAME,raw,{
@@ -173,7 +211,7 @@ app.use(async(req,res,next)=>{
   if(!raw) return next();
   try{
     const r=await q(
-      `SELECT u.*, s.id AS session_id
+      `SELECT u.*, s.id AS session_id, s.csrf_token_hash
        FROM feeloop.sessions s
        JOIN feeloop.users u ON u.id=s.user_id
        WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>NOW()
@@ -206,6 +244,22 @@ function sameOriginMutation(req,res,next){
   next();
 }
 app.use(sameOriginMutation);
+
+app.get("/api/auth/csrf",requireAuth,async(req,res)=>{
+  const raw=token();
+  await q("UPDATE feeloop.sessions SET csrf_token_hash=$1,last_seen_at=NOW() WHERE id=$2",[hashToken(raw),req.sessionId]);
+  res.json({csrfToken:raw});
+});
+app.use("/api",async(req,res,next)=>{
+  if(["GET","HEAD","OPTIONS"].includes(req.method)) return next();
+  if(!req.user) return next();
+  if(req.path==="/auth/csrf") return next();
+  const provided=String(req.get("x-csrf-token")||"");
+  if(!provided || !req.user.csrf_token_hash || hashToken(provided)!==req.user.csrf_token_hash){
+    return res.status(403).json({error:"CSRF_INVALID"});
+  }
+  next();
+});
 
 const authLimiter=rateLimit({windowMs:15*60*1000,limit:30,standardHeaders:true,legacyHeaders:false});
 const apiLimiter=rateLimit({windowMs:60*1000,limit:180,standardHeaders:true,legacyHeaders:false});
@@ -240,41 +294,9 @@ app.get("/api/public/config",async(req,res)=>{
 
 app.get("/api/auth/bootstrap-status",async(req,res)=>{
   const r=await q("SELECT EXISTS(SELECT 1 FROM feeloop.users WHERE role='admin') AS exists");
-  res.json({adminExists:!!r.rows[0].exists});
+  res.json({adminExists:!!r.rows[0].exists,bootstrapDisabled:true});
 });
-
-let adminBootstrapInProgress=false;
-app.post("/api/auth/bootstrap-admin",async(req,res)=>{
-  if(adminBootstrapInProgress) return res.status(409).json({error:"ADMIN_SETUP_BUSY"});
-  adminBootstrapInProgress=true;
-  try{
-    const exists=await q("SELECT EXISTS(SELECT 1 FROM feeloop.users WHERE role='admin') AS exists");
-    if(exists.rows[0].exists) return res.status(410).json({error:"ADMIN_ALREADY_CONFIGURED"});
-    const phraseHash=hashToken(req.body.bootstrapPhrase||"");
-    const a=Buffer.from(phraseHash),b=Buffer.from(ADMIN_BOOTSTRAP_HASH);
-    if(a.length!==b.length||!crypto.timingSafeEqual(a,b)) return res.status(403).json({error:"INVALID_BOOTSTRAP_PHRASE"});
-    const email=cleanEmail(req.body.email);
-    const password=String(req.body.password||"");
-    if(!/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({error:"INVALID_EMAIL"});
-    if(password.length<12) return res.status(400).json({error:"PASSWORD_TOO_SHORT"});
-    const passwordHash=await bcrypt.hash(password,12);
-    const userId=id("usr");
-    await q(
-      `INSERT INTO feeloop.users(id,email,password_hash,role,country,email_verified,mfa_enabled,created_at,updated_at)
-       VALUES($1,$2,$3,'admin','',TRUE,FALSE,NOW(),NOW())`,
-      [userId,email,passwordHash]
-    );
-    const user=await getUserById(userId);
-    await audit(userId,"ADMIN_BOOTSTRAPPED",userId,{email});
-    await createSession(res,user,req);
-    res.status(201).json({user:publicUser(user)});
-  }catch(err){
-    if(err.code==="23505") return res.status(409).json({error:"EMAIL_EXISTS"});
-    throw err;
-  }finally{
-    adminBootstrapInProgress=false;
-  }
-});
+app.post("/api/auth/bootstrap-admin",(req,res)=>res.status(410).json({error:"ADMIN_BOOTSTRAP_DISABLED"}));
 
 app.post("/api/auth/register",async(req,res)=>{
   const email=cleanEmail(req.body.email);
@@ -284,23 +306,27 @@ app.post("/api/auth/register",async(req,res)=>{
   if(!/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({error:"INVALID_EMAIL"});
   if(password.length<10) return res.status(400).json({error:"PASSWORD_TOO_SHORT"});
   if(!country) return res.status(400).json({error:"COUNTRY_REQUIRED"});
-  if((await isBlockedCountry(country))||(ipCountry&&(await isBlockedCountry(ipCountry)))) return res.status(451).json({error:"COUNTRY_NOT_SUPPORTED"});
+  const residenceStatus=await countryStatus(country);
+  const ipStatus=ipCountry?await countryStatus(ipCountry):"ALLOW";
+  if(residenceStatus==="BLOCK"||ipStatus==="BLOCK") return res.status(451).json({error:"COUNTRY_NOT_SUPPORTED"});
+  const eligibilityStatus=(residenceStatus==="REVIEW"||ipStatus==="REVIEW")?"review":"active";
   if(req.body.acceptTerms!==true) return res.status(400).json({error:"TERMS_REQUIRED"});
   const passwordHash=await bcrypt.hash(password,12);
   const userId=id("usr");
   const emailNeedsVerification=mailConfigured();
   try{
     await q(
-      `INSERT INTO feeloop.users(id,email,password_hash,role,country,email_verified,mfa_enabled,created_at,updated_at)
-       VALUES($1,$2,$3,'user',$4,$5,FALSE,NOW(),NOW())`,
-      [userId,email,passwordHash,country,!emailNeedsVerification]
+      `INSERT INTO feeloop.users(id,email,password_hash,role,country,email_verified,mfa_enabled,eligibility_status,created_at,updated_at)
+       VALUES($1,$2,$3,'user',$4,$5,FALSE,$6,NOW(),NOW())`,
+      [userId,email,passwordHash,country,!emailNeedsVerification,eligibilityStatus]
     );
   }catch(err){
     if(err.code==="23505") return res.status(409).json({error:"EMAIL_EXISTS"});
     throw err;
   }
   let user=await getUserById(userId);
-  await audit(userId,"USER_REGISTERED",userId,{country,ipCountry:ipCountry||null});
+  await audit(userId,"USER_REGISTERED",userId,{country,ipCountry:ipCountry||null,eligibilityStatus});
+  if(eligibilityStatus==="review") await notify(userId,"eligibility","Account under review","Your account requires eligibility review before login.");
   if(emailNeedsVerification){
     const raw=token();
     await q(
@@ -310,11 +336,15 @@ app.post("/api/auth/register",async(req,res)=>{
     );
     const msg=verificationEmail({origin:`${req.protocol}://${req.get("host")}`,token:raw});
     await sendEmail({to:email,subject:msg.subject,html:msg.html});
-  }else{
+  }else if(eligibilityStatus==="active"){
     await createSession(res,user,req);
   }
   user=await getUserById(userId);
-  res.status(201).json({user:publicUser(user),emailVerification:emailNeedsVerification?"required":"provider-not-configured"});
+  res.status(201).json({
+    user:publicUser(user),
+    reviewRequired:eligibilityStatus==="review",
+    emailVerification:emailNeedsVerification?"required":"provider-not-configured"
+  });
 });
 
 app.post("/api/auth/login",async(req,res)=>{
@@ -323,6 +353,8 @@ app.post("/api/auth/login",async(req,res)=>{
   const user=await getUserByEmail(email);
   if(!user || !(await bcrypt.compare(password,user.password_hash))) return res.status(401).json({error:"INVALID_CREDENTIALS"});
   if(user.role!=="admin" && (await isBlockedCountry(user.country))) return res.status(451).json({error:"COUNTRY_NOT_SUPPORTED"});
+  if(user.role!=="admin" && user.eligibility_status==="review") return res.status(403).json({error:"ACCOUNT_UNDER_REVIEW"});
+  if(user.role!=="admin" && user.eligibility_status==="rejected") return res.status(403).json({error:"ACCOUNT_NOT_ELIGIBLE"});
   if(user.role!=="admin" && mailConfigured() && !user.email_verified) return res.status(403).json({error:"EMAIL_NOT_VERIFIED"});
   if(user.mfa_enabled){
     const mfaRaw=token();
@@ -351,7 +383,9 @@ app.post("/api/auth/mfa-login",async(req,res)=>{
     return res.status(401).json({error:"MFA_SESSION_EXPIRED"});
   }
   const user=await getUserById(info.userId);
-  if(!user?.mfa_enabled || !authenticator.check(String(req.body.code||""),user.mfa_secret||"")){
+  let mfaSecret="";
+  try{mfaSecret=decryptSecret(user?.mfa_secret||"");}catch(err){await logSystemError("mfa-login",err,{userId:user?.id});return res.status(503).json({error:"MFA_ENCRYPTION_NOT_CONFIGURED"});}
+  if(!user?.mfa_enabled || !authenticator.check(String(req.body.code||""),mfaSecret)){
     return res.status(401).json({error:"INVALID_MFA_CODE"});
   }
   await q("DELETE FROM feeloop.system_settings WHERE key=$1",[key]);
@@ -471,17 +505,20 @@ app.post("/api/auth/password-reset/confirm",async(req,res)=>{
 
 app.post("/api/auth/mfa/setup",requireAdmin,async(req,res)=>{
   if(req.user.mfa_enabled) return res.status(409).json({error:"MFA_ALREADY_ENABLED"});
+  if(!MFA_ENCRYPTION_KEY) return res.status(503).json({error:"MFA_ENCRYPTION_NOT_CONFIGURED"});
   const secret=authenticator.generateSecret();
-  await q("UPDATE feeloop.users SET mfa_pending_secret=$1,updated_at=NOW() WHERE id=$2",[secret,req.user.id]);
+  await q("UPDATE feeloop.users SET mfa_pending_secret=$1,updated_at=NOW() WHERE id=$2",[encryptSecret(secret),req.user.id]);
   res.json({secret,otpauthUri:authenticator.keyuri(req.user.email,"FEELOOP",secret)});
 });
 app.post("/api/auth/mfa/enable",requireAdmin,async(req,res)=>{
   const fresh=await getUserById(req.user.id);
   if(!fresh?.mfa_pending_secret) return res.status(400).json({error:"MFA_SETUP_REQUIRED"});
-  if(!authenticator.check(String(req.body.code||""),fresh.mfa_pending_secret)) return res.status(400).json({error:"INVALID_MFA_CODE"});
+  let pendingSecret;
+  try{pendingSecret=decryptSecret(fresh.mfa_pending_secret);}catch{return res.status(503).json({error:"MFA_ENCRYPTION_NOT_CONFIGURED"});}
+  if(!authenticator.check(String(req.body.code||""),pendingSecret)) return res.status(400).json({error:"INVALID_MFA_CODE"});
   await q(
-    "UPDATE feeloop.users SET mfa_secret=mfa_pending_secret,mfa_pending_secret=NULL,mfa_enabled=TRUE,updated_at=NOW() WHERE id=$1",
-    [req.user.id]
+    "UPDATE feeloop.users SET mfa_secret=$1,mfa_pending_secret=NULL,mfa_enabled=TRUE,updated_at=NOW() WHERE id=$2",
+    [encryptSecret(pendingSecret),req.user.id]
   );
   await audit(req.user.id,"MFA_ENABLED",req.user.id,{});
   res.json({ok:true});
