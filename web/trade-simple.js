@@ -113,19 +113,38 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
     const active = root.querySelector('[data-account-tab][aria-selected="true"]');
     if (simple && spot && ['positions','funding'].includes(active?.dataset.accountTab)) root.querySelector('[data-account-tab="balances"]').click();
   }
-  let focusAnchor=null;
+  let focusAnchor=null,focusGuardFrame=0;
   const focusedFinancialInput=()=>document.activeElement?.matches?.('.order-ticket input:not([type=checkbox]):not([type=range])')?document.activeElement:null;
-  const captureFocusAnchor=()=>{
-    if (!matchMedia('(max-width:680px)').matches) { focusAnchor=null; return; }
-    const input=focusedFinancialInput();
-    focusAnchor=input?{input,top:input.getBoundingClientRect().top}:null;
-  };
   const restoreFocusAnchor=()=>{
     const anchor=focusAnchor,input=focusedFinancialInput();
     if (!anchor||input!==anchor.input||!input?.isConnected) return;
     const delta=input.getBoundingClientRect().top-anchor.top;
     if (Math.abs(delta)>0.5) window.scrollBy(0,delta);
-    focusAnchor={input,top:input.getBoundingClientRect().top};
+  };
+  const runFocusGuard=()=>{
+    if(focusGuardFrame)return;
+    const tick=()=>{
+      focusGuardFrame=0;
+      const anchor=focusAnchor,input=focusedFinancialInput();
+      if(!anchor||input!==anchor.input||!input?.isConnected||Date.now()>anchor.until)return;
+      restoreFocusAnchor();
+      focusGuardFrame=requestAnimationFrame(tick);
+    };
+    focusGuardFrame=requestAnimationFrame(tick);
+  };
+  const armFocusAnchor=(input,duration=1100)=>{
+    if(!matchMedia('(max-width:680px)').matches||!input?.isConnected){focusAnchor=null;return;}
+    if(focusAnchor?.input===input){
+      focusAnchor.until=Math.max(focusAnchor.until||0,Date.now()+duration);
+    }else{
+      focusAnchor={input,top:input.getBoundingClientRect().top,until:Date.now()+duration};
+    }
+    runFocusGuard();
+  };
+  const captureFocusAnchor=()=>{
+    if(!matchMedia('(max-width:680px)').matches){focusAnchor=null;return;}
+    const input=focusedFinancialInput();
+    if(input)armFocusAnchor(input);
   };
   function schedule() {
     if (scheduled) return;
@@ -158,12 +177,23 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
     const input = event.target.closest?.('.order-ticket input:not([type=checkbox]):not([type=range])');
     if (!input || input.disabled || input.readOnly || document.activeElement === input) return;
     event.preventDefault();
+    armFocusAnchor(input,1400);
     try { input.focus({ preventScroll: true }); }
     catch { input.focus(); }
   };
   ticket.addEventListener('pointerdown', stableTicketFocus);
-  ticket.addEventListener('focusin',()=>requestAnimationFrame(captureFocusAnchor));
-  ticket.addEventListener('focusout',()=>{focusAnchor=null});
+  ticket.addEventListener('focusin',e=>{
+    const input=e.target.matches?.('input:not([type=checkbox]):not([type=range])')?e.target:null;
+    if(input)armFocusAnchor(input,1200);
+  });
+  ticket.addEventListener('input',e=>{
+    const input=e.target.matches?.('input:not([type=checkbox]):not([type=range])')?e.target:null;
+    if(input)armFocusAnchor(input,900);
+  });
+  ticket.addEventListener('focusout',()=>{
+    focusAnchor=null;
+    if(focusGuardFrame){cancelAnimationFrame(focusGuardFrame);focusGuardFrame=0;}
+  });
   const restoreFocusedInputAfterLayout=()=>{
     if(!focusAnchor)return;
     requestAnimationFrame(restoreFocusAnchor);
