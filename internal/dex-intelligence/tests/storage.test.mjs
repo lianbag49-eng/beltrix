@@ -46,3 +46,16 @@ test('Postgres adapter executes transaction and maps query results',async()=>{
  const rows=await repo.history({asset:'BTC',limit:10});
  assert.equal(rows[0].asset,'BTC');
 });
+
+
+test('Postgres alert updates are limited to acknowledge or resolve states',async()=>{
+ const calls=[];
+ const client={query:async(sql,args)=>{calls.push([sql,args]);return {rows:[{id:7,status:args[1]}]}}};
+ const adapter=createPostgresTelemetryAdapter(client);
+ await assert.rejects(()=>adapter.updateAlertStatus({id:7,status:'deleted'}),/Invalid alert status/);
+ const row=await adapter.updateAlertStatus({id:7,status:'acknowledged'});
+ assert.equal(row.status,'acknowledged');
+ assert.equal(calls.at(-1)[1][0],7);
+ assert.equal(calls.at(-1)[1][1],'acknowledged');
+ assert.match(calls.at(-1)[0],/status in \('open','acknowledged'\)/);
+});
