@@ -55,7 +55,7 @@ test('HIP-3 selection scopes account orders, positions and sizing to its perp DE
  await expect(page.locator('#marketCanvas')).toHaveAttribute('data-chart-bars','2');
 
  await page.locator('#tradeConnect').click();
- await expect(page.locator('#tradeAccount')).toContainText('111111');
+ await expect(page.locator('#tradeAccount')).toContainText('0x1111…1111');
  await expect(page.locator('[data-account-tab=positions]')).toContainText('1');
 
  await expect.poll(()=>requests.some(q=>q.type==='clearinghouseState'&&q.dex==='xyz')).toBe(true);
