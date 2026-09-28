@@ -43,8 +43,11 @@ export const INITIAL_QUALIFICATION=Object.freeze({
  }),
  orderly:qualifyExecutionVenue({
   venue:'orderly',
-  reviewedAt:'2026-09-27',
-  evidence:pass('publicMarketData','canonicalSymbolMapping','normalizedLiquidityModel','feeModel','executionCostModel')
+  reviewedAt:'2026-09-28',
+  evidence:pass(
+   'publicMarketData','canonicalSymbolMapping','normalizedLiquidityModel','feeModel','executionCostModel',
+   'signingModel','orderLifecycle','positionReconciliation','rateLimits'
+  )
  }),
  gmx:qualifyExecutionVenue({
   venue:'gmx',
@@ -53,8 +56,11 @@ export const INITIAL_QUALIFICATION=Object.freeze({
  }),
  paradex:qualifyExecutionVenue({
   venue:'paradex',
-  reviewedAt:'2026-09-27',
-  evidence:pass('publicMarketData','canonicalSymbolMapping','normalizedLiquidityModel','feeModel','executionCostModel')
+  reviewedAt:'2026-09-28',
+  evidence:pass(
+   'publicMarketData','canonicalSymbolMapping','normalizedLiquidityModel','feeModel','executionCostModel',
+   'signingModel','orderLifecycle','positionReconciliation','rateLimits'
+  )
  }),
  dydx:qualifyExecutionVenue({
   venue:'dydx',
