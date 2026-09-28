@@ -33,7 +33,7 @@ export function collectorOperationalState(rows=[],{
  }
  let status='fresh',reason='collector-current';
  if(successfulAssets===0||consecutiveFailedRuns>=2){status='down';reason='collector-failing'}
- else if(ageMs>thresholds.staleMs){status='down';reason:'collector-overdue'}
+ else if(ageMs>thresholds.staleMs){status='down';reason='collector-overdue'}
  else if(ageMs>thresholds.delayedMs){status='stale';reason='collector-stale'}
  else if(ageMs>thresholds.freshMs){status='delayed';reason='collector-delayed'}
  return Object.freeze({
