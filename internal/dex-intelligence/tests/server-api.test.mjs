@@ -121,3 +121,47 @@ test('exact-origin CORS allows configured Admin origin and rejects other origins
  const deniedOrigin=await api.handle({url:'/v1/history?asset=BTC',headers:{origin:'https://evil.example',authorization:'Bearer secret'}});
  assert.equal(deniedOrigin.headers['access-control-allow-origin'],undefined);
 });
+
+
+test('operations quality comparison BD and protocol endpoints are authenticated',async()=>{
+ const now=Date.parse('2026-09-28T08:00:00Z');
+ const snapshot={asset:'BTC',timestamp:now-5*60000,venues:{hyperliquid:{ok:true,health:'healthy',latencyMs:100,spreadBps:1,depth25Usd:100000,minFillRatio:1,metric:{fundingRate:0.0001,openInterestUsd:1000000,volume24hUsd:2000000}}}};
+ const repo={
+  history:async()=>[snapshot],
+  collectorHealth:async()=>[{finished_at:new Date(now-5*60000).toISOString(),successful_assets:3,failed_assets:0}],
+  openAlerts:async()=>[]
+ };
+ const api=createMarketIntelligenceApi({repository:repo,token:'secret',clock:()=>now});
+ for(const path of ['/v1/operations?asset=BTC','/v1/quality?asset=BTC','/v1/comparison?asset=BTC','/v1/bd','/v1/protocol']){
+  const denied=await api.handle({url:path});
+  assert.equal(denied.status,401);
+  const out=await api.handle({url:path,headers:{authorization:'Bearer secret'}});
+  assert.equal(out.status,200,path);
+ }
+ const ops=parse(await api.handle({url:'/v1/operations?asset=BTC',headers:{authorization:'Bearer secret'}}));
+ assert.equal(ops.operations.collector.status,'fresh');
+ const quality=parse(await api.handle({url:'/v1/quality?asset=BTC',headers:{authorization:'Bearer secret'}}));
+ assert.equal(quality.quality.status,'valid');
+ const comparison=parse(await api.handle({url:'/v1/comparison?asset=BTC',headers:{authorization:'Bearer secret'}}));
+ assert.ok(comparison.rows.some(x=>x.venue==='hyperliquid'));
+});
+
+test('execution plan POST is authenticated and plan-only',async()=>{
+ const snapshot={asset:'BTC',timestamp:Date.now(),venues:{hyperliquid:{ok:true,health:'healthy'}}};
+ const repo={history:async()=>[snapshot]};
+ const api=createMarketIntelligenceApi({repository:repo,token:'secret'});
+ const denied=await api.handle({method:'POST',url:'/v1/execution/plan',body:{asset:'BTC',side:'buy',notionalUsd:1000}});
+ assert.equal(denied.status,401);
+ const bad=await api.handle({method:'POST',url:'/v1/execution/plan',headers:{authorization:'Bearer secret'},body:{asset:'BTC',side:'up',notionalUsd:1000}});
+ assert.equal(bad.status,400);
+ const ok=await api.handle({method:'POST',url:'/v1/execution/plan',headers:{authorization:'Bearer secret'},body:{asset:'BTC',side:'buy',notionalUsd:1000}});
+ assert.equal(ok.status,200);
+ assert.equal(parse(ok).plan.executionMode,'plan-only');
+ assert.equal(parse(ok).plan.route.venue,'hyperliquid');
+});
+
+test('CORS preflight advertises execution planner POST',async()=>{
+ const api=createMarketIntelligenceApi({repository:{history:async()=>[]},token:'secret',allowedOrigin:'https://admin.example'});
+ const out=await api.handle({method:'OPTIONS',url:'/v1/execution/plan',headers:{origin:'https://admin.example'}});
+ assert.match(out.headers['access-control-allow-methods'],/POST/);
+});
