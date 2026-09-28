@@ -8,7 +8,7 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const { authenticator } = require("otplib");
 const { Pool } = require("pg");
-const { configured: mailConfigured, sendEmail, verificationEmail, passwordResetEmail } = require("./mail");
+const { configured: mailConfigured, sendEmail, verificationEmail, passwordResetEmail, emailChangeEmail } = require("./mail");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -439,6 +439,77 @@ app.delete("/api/auth/sessions/:id",requireAuth,async(req,res)=>{
   if(!r.rows.length) return res.status(404).json({error:"NOT_FOUND"});
   await audit(req.user.id,"SESSION_REVOKED",req.params.id,{});
   res.json({ok:true});
+});
+
+app.post("/api/auth/change-password",requireAuth,async(req,res)=>{
+  const currentPassword=String(req.body.currentPassword||"");
+  const newPassword=String(req.body.newPassword||"");
+  if(newPassword.length<10) return res.status(400).json({error:"PASSWORD_TOO_SHORT"});
+  const fresh=await getUserById(req.user.id);
+  if(!fresh || !(await bcrypt.compare(currentPassword,fresh.password_hash))) return res.status(401).json({error:"INVALID_CURRENT_PASSWORD"});
+  const passwordHash=await bcrypt.hash(newPassword,12);
+  await tx(async c=>{
+    await c.query("UPDATE feeloop.users SET password_hash=$1,updated_at=NOW() WHERE id=$2",[passwordHash,req.user.id]);
+    await c.query("UPDATE feeloop.sessions SET revoked_at=NOW() WHERE user_id=$1 AND revoked_at IS NULL",[req.user.id]);
+  });
+  clearAuthCookie(res);
+  const user=await getUserById(req.user.id);
+  await createSession(res,user,req);
+  await audit(req.user.id,"PASSWORD_CHANGED",req.user.id,{});
+  res.json({ok:true});
+});
+
+app.patch("/api/account/profile",requireAuth,async(req,res)=>{
+  const lang=String(req.body.preferredLanguage||req.user.preferred_language||"en").trim().toLowerCase().slice(0,12);
+  if(!/^[a-z]{2}(?:-[a-z]{2})?$/.test(lang)) return res.status(400).json({error:"INVALID_LANGUAGE"});
+  await q("UPDATE feeloop.users SET preferred_language=$1,updated_at=NOW() WHERE id=$2",[lang,req.user.id]);
+  const user=await getUserById(req.user.id);
+  await audit(req.user.id,"PROFILE_UPDATED",req.user.id,{preferredLanguage:lang});
+  res.json({user:publicUser(user)});
+});
+
+app.post("/api/auth/change-email/request",requireAuth,async(req,res)=>{
+  if(!mailConfigured()) return res.status(503).json({error:"EMAIL_PROVIDER_NOT_CONFIGURED"});
+  const newEmail=cleanEmail(req.body.newEmail);
+  const password=String(req.body.password||"");
+  if(!/^\S+@\S+\.\S+$/.test(newEmail)) return res.status(400).json({error:"INVALID_EMAIL"});
+  const fresh=await getUserById(req.user.id);
+  if(!fresh || !(await bcrypt.compare(password,fresh.password_hash))) return res.status(401).json({error:"INVALID_CURRENT_PASSWORD"});
+  const existing=await getUserByEmail(newEmail);
+  if(existing) return res.status(409).json({error:"EMAIL_EXISTS"});
+  const raw=token();
+  await q("DELETE FROM feeloop.email_change_tokens WHERE user_id=$1",[req.user.id]);
+  await q(
+    `INSERT INTO feeloop.email_change_tokens(id,user_id,new_email,token_hash,expires_at,used)
+     VALUES($1,$2,$3,$4,NOW()+INTERVAL '30 minutes',FALSE)`,
+    [id("emc"),req.user.id,newEmail,hashToken(raw)]
+  );
+  const msg=emailChangeEmail({origin:`${req.protocol}://${req.get("host")}`,token:raw});
+  await sendEmail({to:newEmail,subject:msg.subject,html:msg.html});
+  await audit(req.user.id,"EMAIL_CHANGE_REQUESTED",req.user.id,{newEmail});
+  res.json({ok:true});
+});
+
+app.post("/api/auth/change-email/confirm",async(req,res)=>{
+  const h=hashToken(req.body.token||"");
+  const r=await q("SELECT * FROM feeloop.email_change_tokens WHERE token_hash=$1 AND used=FALSE AND expires_at>NOW() LIMIT 1",[h]);
+  const rec=r.rows[0];
+  if(!rec) return res.status(400).json({error:"INVALID_OR_EXPIRED_TOKEN"});
+  try{
+    await tx(async c=>{
+      await c.query("UPDATE feeloop.users SET email=$1,email_verified=TRUE,updated_at=NOW() WHERE id=$2",[rec.new_email,rec.user_id]);
+      await c.query("UPDATE feeloop.email_change_tokens SET used=TRUE WHERE id=$1",[rec.id]);
+      await c.query("UPDATE feeloop.sessions SET revoked_at=NOW() WHERE user_id=$1 AND revoked_at IS NULL",[rec.user_id]);
+    });
+  }catch(err){
+    if(err.code==="23505") return res.status(409).json({error:"EMAIL_EXISTS"});
+    throw err;
+  }
+  clearAuthCookie(res);
+  const user=await getUserById(rec.user_id);
+  await createSession(res,user,req);
+  await audit(rec.user_id,"EMAIL_CHANGED",rec.user_id,{email:rec.new_email});
+  res.json({ok:true,user:publicUser(user)});
 });
 
 app.post("/api/auth/verify-email",async(req,res)=>{
