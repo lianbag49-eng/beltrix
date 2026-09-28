@@ -370,7 +370,7 @@ test('Pearl Cobalt typography uses a consistent four-weight scale',async({page})
   return {
    body:weight('body'),
    nav:weight('.pc-rail-nav button'),
-   market:weight('.pc-market-row strong'),
+   market:weight('.pc-market-row strong')||weight('.pc-watchlist header strong'),
    stat:weight('#marketMark'),
    book:weight('.book-level')||weight('.book-head'),
    action:weight('.futures-actions button'),
