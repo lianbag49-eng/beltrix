@@ -46,6 +46,14 @@ export function createTelemetryRepository(adapter){
     since:since?new Date(since).toISOString():null,
     limit:Math.max(1,Math.min(10000,Number(limit)||1000))
    });
+  },
+  async collectorHealth({limit=100}={}){
+   if(typeof adapter.queryCollectorHealth!=='function')return [];
+   return adapter.queryCollectorHealth({limit:Math.max(1,Math.min(500,Number(limit)||100))});
+  },
+  async openAlerts({limit=200}={}){
+   if(typeof adapter.queryOpenAlerts!=='function')return [];
+   return adapter.queryOpenAlerts({limit:Math.max(1,Math.min(1000,Number(limit)||200))});
   }
  });
 }
