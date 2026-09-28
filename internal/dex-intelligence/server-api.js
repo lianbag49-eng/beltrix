@@ -55,6 +55,16 @@ export function createMarketIntelligenceApi({repository,token,clock=()=>Date.now
     const latest=rows.length?rows[rows.length-1]:null;
     return json(200,{asset,latest});
    }
+   if(url.pathname==='/v1/collector-health'){
+    const limit=cleanLimit(url.searchParams.get('limit'),100);
+    const rows=typeof repository.collectorHealth==='function'?await repository.collectorHealth({limit}):[];
+    return json(200,{count:rows.length,rows});
+   }
+   if(url.pathname==='/v1/open-alerts'){
+    const limit=cleanLimit(url.searchParams.get('limit'),200);
+    const rows=typeof repository.openAlerts==='function'?await repository.openAlerts({limit}):[];
+    return json(200,{count:rows.length,rows});
+   }
    return json(404,{error:'not_found'});
   }
  });
