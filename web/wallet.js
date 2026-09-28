@@ -353,6 +353,7 @@ function tab(name){if(!['crypto','stocks','positions','dapps','approvals'].inclu
 function navigate(page){closeDialog();window.openPage(page);}
 const actions={
  connect:showAccounts,accounts:showAccounts,networks:showNetworks,send:()=>showSend(),receive:showReceive,history:showHistory,more:showMore,search:showSearch,notifications:showNotifications,preferences:showPreferences,contacts:showContacts,approvals:showApprovals,
+ 'beltrix-wallet':()=>window.dispatchEvent(new Event('beltrix:open-local-wallet')),
  'copy-address':()=>s.account&&copy(s.account),'copy-site':()=>copy(location.origin+location.pathname),'hide-balances':()=>{prefs.hide=!prefs.hide;savePrefs();renderHome();},refresh:()=>{notify('Refreshing wallet…');return refreshWallet();},'import-token':showImport,
  'open-defi':()=>navigate('defi'),explore:()=>navigate('explore'),bridge:()=>showDapp('across'),practice:()=>navigate('swap'),'refresh-stocks':()=>loadStocks(true),'refresh-yields':()=>loadPools(true),'hyper-account':()=>showHyperAccount(false),
  'testnet-trade':()=>{navigate('markets');$('marketNetwork').value='testnet';$('marketNetwork').dispatchEvent(new Event('change'));}
@@ -365,7 +366,8 @@ document.addEventListener('click',e=>{
 });
 window.addEventListener('beltrix:page',e=>{if(e.detail==='defi')loadPools();});
 window.addEventListener('beltrix:wallet',e=>{const d=e.detail;if(s.account||!d?.account||!d.provider||!NETWORKS.some(n=>n.chain.id===d.chainId))return;detachProvider();s.provider=d.provider;s.providerName=$('walletProvider')?.value==='okx'?'OKX Wallet':'Browser wallet';s.net=network(d.chainId);prefs.network=d.chainId;s.provider.on?.('accountsChanged',accountEvent);s.provider.on?.('chainChanged',chainEvent);s.provider.on?.('disconnect',disconnectEvent);setAccount(d.account,false);});
-window.beltrixWallet={get provider(){return s.provider},get account(){return s.account},openAccounts:showAccounts};
+const localWalletManager=window.beltrixWallet?.manager||null;
+window.beltrixWallet={manager:localWalletManager,get provider(){return s.provider},get account(){return s.account},openAccounts:showAccounts};
 renderDapps();renderHome();
 const route=location.hash.slice(1),initial=route==='assets'?'wallet':route==='discover'?'explore':route;window.openPage(['markets','swap','settings','wallet','explore','defi','boost'].includes(initial)?initial:'markets');
 // Poll confirmations only; never retry a write or trigger a wallet request in the background.
