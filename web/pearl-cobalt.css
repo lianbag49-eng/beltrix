@@ -216,22 +216,45 @@ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] .chart-fullscreen .cha
  background:var(--pc-canvas);color:var(--text)
 }
 
-
-/* Pearl Cobalt wallet surfaces — replace legacy black/gold wallet presentation. */
+/* Pearl Cobalt wallet workspace — canonical non-trading surface rules. */
 html[data-beltrix-ui="pearl-cobalt"]{
  --accent:var(--pc-accent);
  --wallet-muted:var(--muted);
  --wallet-line:var(--line);
 }
-html[data-beltrix-ui="pearl-cobalt"] #wallet.page.active,
-html[data-beltrix-ui="pearl-cobalt"] #explore.page.active,
-html[data-beltrix-ui="pearl-cobalt"] #defi.page.active,
-html[data-beltrix-ui="pearl-cobalt"] #boost.page.active{
- grid-column:1/-1;grid-row:2;min-width:0;width:100%;
+
+/* Wallet-family pages own the content area; trading rails remain trading-only. */
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="wallet"] .pc-sidebar,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="explore"] .pc-sidebar,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] .pc-sidebar,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] .pc-sidebar,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="wallet"] .pc-right-rail,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="explore"] .pc-right-rail,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] .pc-right-rail,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] .pc-right-rail{display:none!important}
+
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="wallet"] .pc-market-search,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="explore"] .pc-market-search,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] .pc-market-search,
+html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] .pc-market-search{display:none!important}
+
+html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav[hidden]{display:none!important}
+html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav{
+ display:flex;align-items:center;gap:6px;padding:6px;
+ border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:var(--pc-shadow);
 }
+html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-link{
+ min-height:36px;padding:7px 12px;border:0;border-radius:8px;background:transparent;
+ color:var(--muted);font-size:11px;font-weight:650;
+}
+html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-link:hover,
+html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-link.active{
+ background:var(--pc-accent-soft);color:var(--pc-accent)
+}
+
 html[data-beltrix-ui="pearl-cobalt"] .wallet-home,
 html[data-beltrix-ui="pearl-cobalt"] .wallet-subpage{
- width:min(100%,1180px);max-width:1180px;margin:0 auto;color:var(--text);
+ width:min(100%,1180px);max-width:1180px;margin:0 auto;color:var(--text)
 }
 html[data-beltrix-ui="pearl-cobalt"] .w-toolbar,
 html[data-beltrix-ui="pearl-cobalt"] .w-account-row,
@@ -240,6 +263,7 @@ html[data-beltrix-ui="pearl-cobalt"] .w-actions,
 html[data-beltrix-ui="pearl-cobalt"] .w-tabs,
 html[data-beltrix-ui="pearl-cobalt"] .w-list-head,
 html[data-beltrix-ui="pearl-cobalt"] .w-subtitle{color:var(--text)}
+
 html[data-beltrix-ui="pearl-cobalt"] .w-search-button,
 html[data-beltrix-ui="pearl-cobalt"] .w-chain-button,
 html[data-beltrix-ui="pearl-cobalt"] .w-action-circle,
@@ -256,43 +280,51 @@ html[data-beltrix-ui="pearl-cobalt"] .w-address-box,
 html[data-beltrix-ui="pearl-cobalt"] .w-field input,
 html[data-beltrix-ui="pearl-cobalt"] .w-field select,
 html[data-beltrix-ui="pearl-cobalt"] .w-input{
- background:var(--card2);border-color:var(--line);color:var(--text);
+ background:var(--card2)!important;border-color:var(--line)!important;color:var(--text)!important;
 }
-html[data-beltrix-ui="pearl-cobalt"] .w-search-button{border-color:var(--line)}
+html[data-beltrix-ui="pearl-cobalt"] .w-search-button{border-color:var(--line)!important;border-radius:12px}
+html[data-beltrix-ui="pearl-cobalt"] .w-chain-button{border-radius:10px}
 html[data-beltrix-ui="pearl-cobalt"] .w-search-button:hover,
 html[data-beltrix-ui="pearl-cobalt"] .w-chain-button:hover,
 html[data-beltrix-ui="pearl-cobalt"] .w-dapp:hover,
 html[data-beltrix-ui="pearl-cobalt"] .w-quick-grid button:hover,
 html[data-beltrix-ui="pearl-cobalt"] .w-secondary:hover,
 html[data-beltrix-ui="pearl-cobalt"] .w-provider:hover{
- border-color:var(--pc-accent-border);background:var(--pc-accent-soft);
+ border-color:var(--pc-accent-border)!important;background:var(--pc-accent-soft)!important;
 }
+
 html[data-beltrix-ui="pearl-cobalt"] .w-icon-button,
 html[data-beltrix-ui="pearl-cobalt"] .w-account-button,
 html[data-beltrix-ui="pearl-cobalt"] .w-action,
 html[data-beltrix-ui="pearl-cobalt"] .w-token-row,
-html[data-beltrix-ui="pearl-cobalt"] .w-history-row{
- color:var(--text);
-}
+html[data-beltrix-ui="pearl-cobalt"] .w-history-row{color:var(--text)!important}
 html[data-beltrix-ui="pearl-cobalt"] .w-icon-button:hover,
-html[data-beltrix-ui="pearl-cobalt"] .w-token-row:hover{
- background:var(--pc-accent-soft);
-}
+html[data-beltrix-ui="pearl-cobalt"] .w-token-row:hover{background:var(--pc-accent-soft)!important}
+
 html[data-beltrix-ui="pearl-cobalt"] .w-identicon{
- background:linear-gradient(135deg,var(--pc-accent) 25%,var(--pc-accent-soft) 25%,var(--pc-accent-soft) 50%,var(--pc-accent-2) 50%,var(--pc-accent-2) 75%,var(--pc-accent-border) 75%);
+ background:linear-gradient(135deg,var(--pc-accent) 25%,var(--pc-accent-soft) 25%,var(--pc-accent-soft) 50%,var(--pc-accent-2) 50%,var(--pc-accent-2) 75%,var(--pc-accent-border) 75%)!important;
 }
-html[data-beltrix-ui="pearl-cobalt"] .w-pixel-mark{color:var(--pc-accent);filter:drop-shadow(0 8px 18px color-mix(in srgb,var(--pc-accent) 22%,transparent))}
+html[data-beltrix-ui="pearl-cobalt"] .w-pixel-mark{
+ color:var(--pc-accent);filter:drop-shadow(0 8px 18px color-mix(in srgb,var(--pc-accent) 22%,transparent))
+}
+html[data-beltrix-ui="pearl-cobalt"] .w-pixel-mark img{max-width:100%;max-height:100%;object-fit:contain}
 html[data-beltrix-ui="pearl-cobalt"] .w-action-circle{
- color:var(--pc-accent);background:var(--card);border:1px solid var(--line);
- box-shadow:var(--pc-shadow);
+ color:var(--pc-accent)!important;background:var(--card)!important;background-image:none!important;
+ border:1px solid var(--line)!important;box-shadow:var(--pc-shadow)
 }
 html[data-beltrix-ui="pearl-cobalt"] .w-action:hover .w-action-circle{
- background:var(--pc-accent-soft);border-color:var(--pc-accent-border);
+ background:var(--pc-accent-soft)!important;border-color:var(--pc-accent-border)!important
+}
+html[data-beltrix-ui="pearl-cobalt"] .w-hero{
+ padding:22px;border:1px solid var(--line);border-radius:18px;
+ background:linear-gradient(135deg,var(--card),var(--pc-accent-soft));box-shadow:var(--pc-shadow)
 }
 html[data-beltrix-ui="pearl-cobalt"] .w-banner{
- background:linear-gradient(135deg,var(--card),var(--pc-accent-soft));
- border-color:var(--pc-accent-border);color:var(--text);box-shadow:var(--pc-shadow);
+ background:linear-gradient(135deg,var(--card),var(--pc-accent-soft))!important;
+ border-color:var(--pc-accent-border)!important;color:var(--text)!important;box-shadow:var(--pc-shadow)
 }
+html[data-beltrix-ui="pearl-cobalt"] .w-banner .w-icon{color:var(--pc-accent)!important}
+
 html[data-beltrix-ui="pearl-cobalt"] .w-banner small,
 html[data-beltrix-ui="pearl-cobalt"] .w-mini-label,
 html[data-beltrix-ui="pearl-cobalt"] .w-value-caption,
@@ -306,71 +338,97 @@ html[data-beltrix-ui="pearl-cobalt"] .w-dapp small,
 html[data-beltrix-ui="pearl-cobalt"] .w-section-card p,
 html[data-beltrix-ui="pearl-cobalt"] .w-pool-row small,
 html[data-beltrix-ui="pearl-cobalt"] .w-history-copy small,
-html[data-beltrix-ui="pearl-cobalt"] .w-history-amount small{
- color:var(--muted);
-}
+html[data-beltrix-ui="pearl-cobalt"] .w-history-amount small{color:var(--muted)!important}
+
+html[data-beltrix-ui="pearl-cobalt"] .w-tab{border:1px solid var(--line)!important}
 html[data-beltrix-ui="pearl-cobalt"] .w-tab.active,
 html[data-beltrix-ui="pearl-cobalt"] .w-pills button.active,
-html[data-beltrix-ui="pearl-cobalt"] .w-primary{
- background:var(--pc-accent);border-color:var(--pc-accent);color:#fff;
+html[data-beltrix-ui="pearl-cobalt"] .w-primary,
+html[data-beltrix-ui="pearl-cobalt"] .bottom-nav .dex-circle{
+ background:var(--pc-accent)!important;background-image:none!important;
+ border-color:var(--pc-accent)!important;color:#fff!important;
 }
-html[data-beltrix-ui="pearl-cobalt"] .w-primary:hover:not(:disabled){background:var(--pc-accent-2)}
+html[data-beltrix-ui="pearl-cobalt"] .w-primary:hover:not(:disabled){background:var(--pc-accent-2)!important}
 html[data-beltrix-ui="pearl-cobalt"] .w-text-button,
 html[data-beltrix-ui="pearl-cobalt"] .w-link,
 html[data-beltrix-ui="pearl-cobalt"] .w-pool-apy,
-html[data-beltrix-ui="pearl-cobalt"] .w-inline-chip{
- color:var(--pc-accent);
-}
+html[data-beltrix-ui="pearl-cobalt"] .w-inline-chip{color:var(--pc-accent)!important}
 html[data-beltrix-ui="pearl-cobalt"] .w-badge{
- background:var(--pc-accent-soft);color:var(--pc-accent);border:1px solid var(--pc-accent-border);
+ background:var(--pc-accent-soft)!important;color:var(--pc-accent)!important;
+ border:1px solid var(--pc-accent-border)!important
 }
-html[data-beltrix-ui="pearl-cobalt"] .w-badge.neutral{background:var(--card2);color:var(--muted);border-color:var(--line)}
+html[data-beltrix-ui="pearl-cobalt"] .w-badge.neutral{
+ background:var(--card2)!important;color:var(--muted)!important;border-color:var(--line)!important
+}
 html[data-beltrix-ui="pearl-cobalt"] .w-empty{
- border-color:var(--line);color:var(--muted);background:var(--card);
+ border-color:var(--line)!important;color:var(--muted)!important;background:var(--card)!important
 }
-html[data-beltrix-ui="pearl-cobalt"] .w-empty strong{color:var(--text)}
+html[data-beltrix-ui="pearl-cobalt"] .w-empty strong{color:var(--text)!important}
 html[data-beltrix-ui="pearl-cobalt"] .w-section-card,
 html[data-beltrix-ui="pearl-cobalt"] .w-dapp{box-shadow:var(--pc-shadow)}
 html[data-beltrix-ui="pearl-cobalt"] .w-pool-row,
 html[data-beltrix-ui="pearl-cobalt"] .w-history-row,
-html[data-beltrix-ui="pearl-cobalt"] .w-tabs{border-color:var(--line)}
-html[data-beltrix-ui="pearl-cobalt"] .wallet-modal{
- background:var(--card);border-color:var(--line);color:var(--text);box-shadow:0 24px 80px rgba(6,18,35,.22);
+html[data-beltrix-ui="pearl-cobalt"] .w-tabs{border-color:var(--line)!important}
+html[data-beltrix-ui="pearl-cobalt"] .w-token-mark,
+html[data-beltrix-ui="pearl-cobalt"] .w-history-symbol{
+ background:var(--pc-accent-soft)!important;color:var(--pc-accent)!important
 }
-html[data-beltrix-ui="pearl-cobalt"] .wallet-modal::backdrop{background:rgba(5,14,28,.56);backdrop-filter:blur(6px)}
-html[data-beltrix-ui="pearl-cobalt"] .w-field{color:var(--muted)}
-html[data-beltrix-ui="pearl-cobalt"] .w-review-lines>div,
-html[data-beltrix-ui="pearl-cobalt"] .w-divider,
-html[data-beltrix-ui="pearl-cobalt"] .w-approval{border-color:var(--line)}
-html[data-beltrix-ui="pearl-cobalt"] .w-review-lines dt,
-html[data-beltrix-ui="pearl-cobalt"] .w-check{color:var(--muted)}
-html[data-beltrix-ui="pearl-cobalt"] .w-network-option.selected{
- background:var(--pc-accent-soft);border-color:var(--pc-accent-border);
-}
-html[data-beltrix-ui="pearl-cobalt"] .w-history-symbol{background:var(--pc-accent-soft);color:var(--pc-accent)}
-html[data-beltrix-ui="pearl-cobalt"] .w-history-row .w-history-symbol.in{background:var(--pc-accent-soft);color:var(--green)}
+html[data-beltrix-ui="pearl-cobalt"] .w-history-row .w-history-symbol.in{color:var(--green)!important}
+html[data-beltrix-ui="pearl-cobalt"] .w-network-dot{background:var(--pc-accent)!important}
+html[data-beltrix-ui="pearl-cobalt"] .w-inline-status.success{color:var(--green)!important}
+html[data-beltrix-ui="pearl-cobalt"] .w-inline-status.error{color:var(--red)!important}
 html[data-beltrix-ui="pearl-cobalt"] .w-error{
- background:color-mix(in srgb,var(--red) 8%,var(--card));border-color:color-mix(in srgb,var(--red) 35%,var(--line));color:var(--red);
+ background:color-mix(in srgb,var(--red) 8%,var(--card))!important;
+ border-color:color-mix(in srgb,var(--red) 35%,var(--line))!important;color:var(--red)!important
 }
 
-/* USDT wallet follows Pearl Cobalt rather than the legacy champagne wallet palette. */
-html[data-beltrix-ui="pearl-cobalt"] .usdt-modal{background:var(--card);border-color:var(--line);color:var(--text)}
-html[data-beltrix-ui="pearl-cobalt"] .usdt-modal>.w-modal-head{background:var(--card)}
-html[data-beltrix-ui="pearl-cobalt"] .usdt-route-note{
- background:var(--pc-accent-soft);border:1px solid var(--pc-accent-border);color:var(--text);
+/* Wallet and USDT dialogs share the same theme tokens. */
+html[data-beltrix-ui="pearl-cobalt"] .wallet-modal,
+html[data-beltrix-ui="pearl-cobalt"] .usdt-modal{
+ background:var(--card)!important;border-color:var(--line)!important;color:var(--text)!important;
+ box-shadow:0 24px 80px rgba(6,18,35,.22)
 }
-html[data-beltrix-ui="pearl-cobalt"] .usdt-route-note span{color:var(--muted)}
-html[data-beltrix-ui="pearl-cobalt"] .usdt-tabs{border-color:var(--line)}
-html[data-beltrix-ui="pearl-cobalt"] .usdt-tabs button{color:var(--muted)}
-html[data-beltrix-ui="pearl-cobalt"] .usdt-tabs button[aria-selected="true"]{color:var(--pc-accent);border-bottom-color:var(--pc-accent)}
+html[data-beltrix-ui="pearl-cobalt"] .wallet-modal::backdrop,
+html[data-beltrix-ui="pearl-cobalt"] .usdt-modal::backdrop{
+ background:rgba(5,14,28,.56);backdrop-filter:blur(6px)
+}
+html[data-beltrix-ui="pearl-cobalt"] .w-field,
+html[data-beltrix-ui="pearl-cobalt"] .w-review-lines dt,
+html[data-beltrix-ui="pearl-cobalt"] .w-check{color:var(--muted)!important}
+html[data-beltrix-ui="pearl-cobalt"] .w-review-lines>div,
+html[data-beltrix-ui="pearl-cobalt"] .w-divider,
+html[data-beltrix-ui="pearl-cobalt"] .w-approval{border-color:var(--line)!important}
+html[data-beltrix-ui="pearl-cobalt"] .w-network-option.selected{
+ background:var(--pc-accent-soft)!important;border-color:var(--pc-accent-border)!important
+}
+html[data-beltrix-ui="pearl-cobalt"] .usdt-modal>.w-modal-head{background:var(--card)!important}
+html[data-beltrix-ui="pearl-cobalt"] .usdt-route-note{
+ background:var(--pc-accent-soft)!important;border:1px solid var(--pc-accent-border)!important;color:var(--text)!important
+}
+html[data-beltrix-ui="pearl-cobalt"] .usdt-route-note span{color:var(--muted)!important}
+html[data-beltrix-ui="pearl-cobalt"] .usdt-tabs,
 html[data-beltrix-ui="pearl-cobalt"] .usdt-history-row,
 html[data-beltrix-ui="pearl-cobalt"] .usdt-network-row,
 html[data-beltrix-ui="pearl-cobalt"] .usdt-token-details,
-html[data-beltrix-ui="pearl-cobalt"] .usdt-session-details{border-color:var(--line)}
+html[data-beltrix-ui="pearl-cobalt"] .usdt-session-details{border-color:var(--line)!important}
+html[data-beltrix-ui="pearl-cobalt"] .usdt-tabs button{color:var(--muted)!important}
+html[data-beltrix-ui="pearl-cobalt"] .usdt-tabs button[aria-selected="true"]{
+ color:var(--pc-accent)!important;border-bottom-color:var(--pc-accent)!important
+}
 html[data-beltrix-ui="pearl-cobalt"] .usdt-history-row a,
-html[data-beltrix-ui="pearl-cobalt"] .usdt-modal .w-link{color:var(--pc-accent)}
+html[data-beltrix-ui="pearl-cobalt"] .usdt-modal .w-link{color:var(--pc-accent)!important}
 
 @media(min-width:901px){
+ html[data-beltrix-ui="pearl-cobalt"] #pcWalletSurfaceNav:not([hidden]){
+  display:flex!important;grid-column:1/-1;grid-row:2;width:min(100%,1180px);margin:0 auto 12px;
+  position:sticky;top:88px;z-index:30
+ }
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="wallet"] #wallet.page.active,
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="explore"] #explore.page.active,
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] #defi.page.active,
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] #boost.page.active{
+  grid-column:1/-1;grid-row:3;min-width:0;width:100%;margin-top:0
+ }
  html[data-beltrix-ui="pearl-cobalt"] .bottom-nav{display:none!important}
  html[data-beltrix-ui="pearl-cobalt"] body[data-page="wallet"] .app,
  html[data-beltrix-ui="pearl-cobalt"] body[data-page="explore"] .app,
@@ -378,167 +436,16 @@ html[data-beltrix-ui="pearl-cobalt"] .usdt-modal .w-link{color:var(--pc-accent)}
  html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] .app{padding-bottom:36px}
 }
 @media(max-width:900px){
+ html[data-beltrix-ui="pearl-cobalt"] #pcWalletSurfaceNav{display:none!important}
  html[data-beltrix-ui="pearl-cobalt"] #wallet.page.active,
  html[data-beltrix-ui="pearl-cobalt"] #explore.page.active,
  html[data-beltrix-ui="pearl-cobalt"] #defi.page.active,
- html[data-beltrix-ui="pearl-cobalt"] #boost.page.active{width:100%}
+ html[data-beltrix-ui="pearl-cobalt"] #boost.page.active{width:100%;max-width:none}
  html[data-beltrix-ui="pearl-cobalt"] .wallet-home,
  html[data-beltrix-ui="pearl-cobalt"] .wallet-subpage{max-width:none}
-}
-
-
-/* Non-trading routes own the full shell: prevent trading rails/sticky header from covering wallet controls. */
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="wallet"] .pc-sidebar,
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="explore"] .pc-sidebar,
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] .pc-sidebar,
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] .pc-sidebar,
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="wallet"] .pc-right-rail,
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="explore"] .pc-right-rail,
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] .pc-right-rail,
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] .pc-right-rail{display:none!important}
-
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="wallet"] .top,
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="explore"] .top,
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] .top,
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] .top{
- position:relative;top:auto;
-}
-
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="wallet"] .pc-market-search,
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="explore"] .pc-market-search,
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] .pc-market-search,
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] .pc-market-search{
- display:none!important;
-}
-
-html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav{
- display:flex;align-items:center;gap:6px;margin:0 0 16px;padding:6px;
- border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:var(--pc-shadow);
- position:sticky;top:88px;z-index:8;
-}
-html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav button{
- border:0;background:transparent;color:var(--muted);padding:8px 12px;border-radius:8px;font-size:11px;font-weight:650;
-}
-html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav button:hover,
-html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav button.active{
- background:var(--pc-accent-soft);color:var(--pc-accent);
-}
-@media(max-width:900px){
- html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav{display:none}
-}
-
-
-/* Desktop wallet workspace navigation */
-html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav{
- grid-column:1/-1;grid-row:2;display:flex;align-items:center;gap:6px;width:min(100%,1180px);
- margin:0 auto 12px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--card);
- box-shadow:var(--pc-shadow);position:sticky;top:88px;z-index:30;
-}
-html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav[hidden]{display:none!important}
-html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-link{
- min-height:36px;padding:7px 12px;border:0;border-radius:8px;background:transparent;color:var(--muted);
- font-size:11px;font-weight:650;
-}
-html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-link:hover,
-html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-link.active{
- background:var(--pc-accent-soft);color:var(--pc-accent);
-}
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="wallet"] #wallet.page.active,
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="explore"] #explore.page.active,
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] #defi.page.active,
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] #boost.page.active{
- margin-top:58px;
-}
-html[data-beltrix-ui="pearl-cobalt"] .w-hero{
- padding:22px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(135deg,var(--card),var(--pc-accent-soft));
- box-shadow:var(--pc-shadow);
-}
-html[data-beltrix-ui="pearl-cobalt"] .w-toolbar{margin-top:0}
-html[data-beltrix-ui="pearl-cobalt"] .w-actions{max-width:720px}
-html[data-beltrix-ui="pearl-cobalt"] .w-tab{
- border:1px solid var(--line);background:var(--card2);color:var(--muted);
-}
-html[data-beltrix-ui="pearl-cobalt"] .w-tab.active{color:#fff;border-color:var(--pc-accent)}
-html[data-beltrix-ui="pearl-cobalt"] .w-chain-button{border-radius:10px}
-html[data-beltrix-ui="pearl-cobalt"] .w-search-button{border-radius:10px}
-html[data-beltrix-ui="pearl-cobalt"] .w-pixel-mark{opacity:.9}
-html[data-beltrix-ui="pearl-cobalt"] .w-pixel-mark img{max-width:100%;max-height:100%;object-fit:contain}
-html[data-beltrix-ui="pearl-cobalt"] .w-total{color:var(--text)}
-html[data-beltrix-ui="pearl-cobalt"] .w-token-mark{background:var(--pc-accent-soft);color:var(--pc-accent)}
-html[data-beltrix-ui="pearl-cobalt"] .w-network-dot{background:var(--pc-accent)}
-html[data-beltrix-ui="pearl-cobalt"] .w-inline-status.success{color:var(--green)}
-html[data-beltrix-ui="pearl-cobalt"] .w-inline-status.error{color:var(--red)}
-
-@media(max-width:900px){
- html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav{display:none!important}
- html[data-beltrix-ui="pearl-cobalt"] body[data-page="wallet"] #wallet.page.active,
- html[data-beltrix-ui="pearl-cobalt"] body[data-page="explore"] #explore.page.active,
- html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] #defi.page.active,
- html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] #boost.page.active{margin-top:0}
-}
-
-/* Pearl Cobalt wallet surface validation sync. */
-
-
-/* Final wallet workspace normalization: one in-page navigation, no legacy grid offsets. */
-html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav{
- position:static!important;top:auto!important;z-index:auto!important;
- display:flex!important;align-items:center;gap:6px;width:100%!important;
- margin:0 0 16px!important;padding:6px!important;
- border:1px solid var(--line)!important;border-radius:12px!important;
- background:var(--card)!important;box-shadow:var(--pc-shadow)!important;
- grid-column:auto!important;grid-row:auto!important;
-}
-html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav button{
- min-height:36px;padding:7px 12px;border:0;border-radius:8px;
- background:transparent;color:var(--muted);font-size:11px;font-weight:650;
-}
-html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav button:hover,
-html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav button.active{
- background:var(--pc-accent-soft);color:var(--pc-accent);
-}
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="wallet"] #wallet.page.active,
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="explore"] #explore.page.active,
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] #defi.page.active,
-html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] #boost.page.active{
- margin-top:0!important;
-}
-@media(max-width:900px){
- html[data-beltrix-ui="pearl-cobalt"] .pc-wallet-surface-nav{display:none!important}
-}
-
-
-/* Single desktop Wallet workspace navigation. */
-@media(min-width:901px){
- html[data-beltrix-ui="pearl-cobalt"] #pcWalletSurfaceNav:not([hidden]){
-  display:flex!important;grid-column:1/-1!important;grid-row:2!important;
-  width:min(100%,1180px)!important;margin:0 auto 12px!important;
-  position:sticky!important;top:88px!important;z-index:30!important;
+ html[data-beltrix-ui="pearl-cobalt"] .bottom-nav{
+  background:var(--pc-header)!important;border-color:var(--line)!important
  }
- html[data-beltrix-ui="pearl-cobalt"] body[data-page="wallet"] #wallet.page.active,
- html[data-beltrix-ui="pearl-cobalt"] body[data-page="explore"] #explore.page.active,
- html[data-beltrix-ui="pearl-cobalt"] body[data-page="defi"] #defi.page.active,
- html[data-beltrix-ui="pearl-cobalt"] body[data-page="boost"] #boost.page.active{
-  grid-column:1/-1!important;grid-row:3!important;margin-top:0!important;
- }
-}
-@media(max-width:900px){
- html[data-beltrix-ui="pearl-cobalt"] #pcWalletSurfaceNav{display:none!important}
+ html[data-beltrix-ui="pearl-cobalt"] .bottom-nav .dex-circle{border-color:var(--pc-header)!important}
 }
 
-
-/* Explicit theme-state surfaces: beat legacy wallet gradient shorthands after theme toggles. */
-html[data-beltrix-ui="pearl-cobalt"][data-theme="light"] .w-action-circle{
- background-color:#ffffff!important;background-image:none!important;
-}
-html[data-beltrix-ui="pearl-cobalt"][data-theme="dark"] .w-action-circle{
- background-color:#0f1d30!important;background-image:none!important;
-}
-html[data-beltrix-ui="pearl-cobalt"][data-theme="light"] .wallet-modal,
-html[data-beltrix-ui="pearl-cobalt"][data-theme="light"] .usdt-modal{
- background-color:#ffffff!important;
-}
-html[data-beltrix-ui="pearl-cobalt"][data-theme="dark"] .wallet-modal,
-html[data-beltrix-ui="pearl-cobalt"][data-theme="dark"] .usdt-modal{
- background-color:#0b1728!important;
-}
