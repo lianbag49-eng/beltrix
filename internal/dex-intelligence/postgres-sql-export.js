@@ -28,7 +28,7 @@ export function batchToPostgresSql(batch,{includeRetention=false}={}){
  for(const row of batch.rows){
   if(!row?.ok||!row.snapshot)continue;
   const snap=row.snapshot,flagsByVenue=Object.fromEntries((row.intelligence?.rows||[]).map(x=>[x.venue,x.flags||[]])),entries=Object.entries(snap.venues||{}).map(([venue,state])=>[venue,{...state,flags:flagsByVenue[venue]||state?.flags||[]}]);
-  const values=entries.map(([venue,state])=>'('+observationTuple('s.id',venue,state)+')').join(',\n');
+  const values=entries.map(([venue,state])=>'('+observationTuple('(select id from s)',venue,state)+')').join(',\n');
   let stmt='with s as (\n'+
    ' insert into mi_snapshots(asset,captured_at,source,payload)\n'+
    ' values ('+text(snap.asset)+','+ts(snap.timestamp)+',\'scheduled-collector\','+json(snap)+')\n'+
