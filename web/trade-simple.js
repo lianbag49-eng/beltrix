@@ -113,10 +113,29 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
     const active = root.querySelector('[data-account-tab][aria-selected="true"]');
     if (simple && spot && ['positions','funding'].includes(active?.dataset.accountTab)) root.querySelector('[data-account-tab="balances"]').click();
   }
+  let focusAnchor=null;
+  const focusedFinancialInput=()=>document.activeElement?.matches?.('.order-ticket input:not([type=checkbox]):not([type=range])')?document.activeElement:null;
+  const captureFocusAnchor=()=>{
+    if (!matchMedia('(max-width:680px)').matches) { focusAnchor=null; return; }
+    const input=focusedFinancialInput();
+    focusAnchor=input?{input,top:input.getBoundingClientRect().top}:null;
+  };
+  const restoreFocusAnchor=()=>{
+    const anchor=focusAnchor,input=focusedFinancialInput();
+    if (!anchor||input!==anchor.input||!input?.isConnected) return;
+    const delta=input.getBoundingClientRect().top-anchor.top;
+    if (Math.abs(delta)>0.5) window.scrollBy(0,delta);
+    focusAnchor={input,top:input.getBoundingClientRect().top};
+  };
   function schedule() {
     if (scheduled) return;
+    captureFocusAnchor();
     scheduled = true;
-    requestAnimationFrame(() => { scheduled = false; sync(); });
+    requestAnimationFrame(() => {
+      scheduled = false;
+      sync();
+      requestAnimationFrame(restoreFocusAnchor);
+    });
   }
   toolbar.addEventListener('click', e => {
     const b = e.target.closest('button');
@@ -143,6 +162,8 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
     catch { input.focus(); }
   };
   ticket.addEventListener('pointerdown', stableTicketFocus);
+  ticket.addEventListener('focusin',()=>requestAnimationFrame(captureFocusAnchor));
+  ticket.addEventListener('focusout',()=>{focusAnchor=null});
 
   for (const event of ['input','change']) root.addEventListener(event, schedule);
   for (const event of ['beltrix:market','beltrix:wallet']) window.addEventListener(event, schedule);
