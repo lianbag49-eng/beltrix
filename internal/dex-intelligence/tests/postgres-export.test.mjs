@@ -17,6 +17,7 @@ test('postgres export persists snapshots observations and deduplicated alerts',(
  assert.match(sql,/insert into mi_alert_events/);
  assert.match(sql,/on conflict \(asset,venue,alert_key\)/);
  assert.match(sql,/can''t fetch/);
+ assert.match(sql,/delete from mi_snapshots where captured_at < now\(\)-interval '90 days'/);
  assert.match(sql,/commit;/);
 });
 
