@@ -44,7 +44,14 @@ export function batchToPostgresSql(batch){
     ');';
   }else stmt+='select id from s;';
   statements.push(stmt);
-  for(const alert of row.alerts||[]){
+  const activeAlerts=(row.alerts||[]).filter(x=>x?.venue&&x?.key);
+  const activePairs=activeAlerts.map(x=>'('+text(x.venue)+','+text(x.key)+')').join(',');
+  statements.push(
+   'update mi_alert_events set status=\'resolved\',resolved_at='+ts(snap.timestamp)+',last_seen_at='+ts(snap.timestamp)+
+   ' where asset='+text(snap.asset)+' and status in (\'open\',\'acknowledged\')'+
+   (activePairs?' and (venue,alert_key) not in ('+activePairs+');':';')
+  );
+  for(const alert of activeAlerts){
    statements.push(
     'insert into mi_alert_events(asset,venue,alert_key,severity,status,message,evidence,opened_at,last_seen_at)\n'+
     'values ('+text(snap.asset)+','+text(alert.venue)+','+text(alert.key)+','+text(alert.severity)+',\'open\','+text(alert.message)+','+json(alert.evidence||{})+','+ts(snap.timestamp)+','+ts(snap.timestamp)+')\n'+
