@@ -1,0 +1,49 @@
+name: BELTRIX Market Intelligence Runtime
+
+on:
+  pull_request:
+    paths:
+      - 'internal/dex-intelligence/**'
+      - 'Dockerfile.market-intelligence'
+      - 'deploy/render-market-intelligence.yaml'
+      - 'package.json'
+      - '.github/workflows/market-intelligence-runtime.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'internal/dex-intelligence/**'
+      - 'Dockerfile.market-intelligence'
+      - 'deploy/render-market-intelligence.yaml'
+      - 'package.json'
+      - '.github/workflows/market-intelligence-runtime.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: beltrix-market-intelligence-runtime
+  cancel-in-progress: true
+
+jobs:
+  verify-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm run verify:intelligence
+      - name: Build isolated API container
+        run: docker build -f Dockerfile.market-intelligence -t beltrix-market-intelligence:test .
+      - name: Verify container fails closed without secrets
+        run: |
+          set +e
+          docker run --rm beltrix-market-intelligence:test > /tmp/out.txt 2>/tmp/err.txt
+          code=$?
+          set -e
+          test "$code" -ne 0
+          grep -q "MI_DATABASE_URL missing" /tmp/err.txt
+          grep -q "MI_API_TOKEN missing" /tmp/err.txt
