@@ -133,6 +133,8 @@ function updateTicket(reset=false){
  $('tradeAvailable').textContent=active?.availableToTrade?fmt(active.availableToTrade[side?0:1],2)+' USDC':'—';
  const cash=market?.contextReceived&&Date.now()-market.contextReceived<90000?fundingCashflow(currentPosition()?.szi,market.context?.oraclePx,market.context?.funding):null;
  $('tradeFundingEstimate').textContent=spot?'Not applicable':cash===null?'—':`${cash>=0?'Receive':'Pay'} ${fmt(Math.abs(cash),4)} USDC`;
+ const draftPrice=trigger?Number($('tradeTrigger').value):type==='Market'||type==='Twap'?Number(reference):Number($('tradePrice').value);
+ window.dispatchEvent(new CustomEvent('beltrix:order-draft',{detail:{coin:meta?.value||null,type,side:$('tradeSide').value,price:Number.isFinite(draftPrice)&&draftPrice>0?draftPrice:null,trigger,reduceOnly:$('tradeReduce').checked}}));
  availability();
 }
 window.addEventListener('beltrix:market',e=>{
