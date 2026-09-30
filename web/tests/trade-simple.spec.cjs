@@ -103,7 +103,7 @@ test('typing and expanding settings preserve focus without invoking page navigat
  const beforeScroll=await page.evaluate(()=>scrollY);expect(beforeScroll).toBeGreaterThan(0);
  const beforeBox=await $(page,'tradeSize').boundingBox();
  await page.evaluate(()=>{window.simpleScrolls=[];const f=window.scrollTo;window.scrollTo=(...a)=>{window.simpleScrolls.push(a);return f(...a);};});
- await $(page,'tradeSize').click();await page.keyboard.type('0.5');await page.waitForTimeout(350);
+ await page.mouse.click(beforeBox.x+beforeBox.width/2,beforeBox.y+beforeBox.height/2);await page.keyboard.type('0.5');await page.waitForTimeout(350);
  await expect($(page,'tradeSize')).toBeFocused();
  const afterBox=await $(page,'tradeSize').boundingBox();
  expect(Math.abs(afterBox.y-beforeBox.y)).toBeLessThanOrEqual(2);
