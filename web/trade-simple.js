@@ -115,11 +115,19 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
   }
   let focusAnchor=null,focusGuardFrame=0;
   const focusedFinancialInput=()=>document.activeElement?.matches?.('.order-ticket input:not([type=checkbox]):not([type=range])')?document.activeElement:null;
+  const releaseFocusGuard=()=>{
+    focusAnchor=null;
+    if(focusGuardFrame){cancelAnimationFrame(focusGuardFrame);focusGuardFrame=0;}
+  };
   const restoreFocusAnchor=()=>{
     const anchor=focusAnchor,input=focusedFinancialInput();
     if (!anchor||input!==anchor.input||!input?.isConnected) return;
     const delta=input.getBoundingClientRect().top-anchor.top;
-    if (Math.abs(delta)>0.5) window.scrollBy(0,delta);
+    if(Math.abs(delta)>0.5){
+      const scroller=document.scrollingElement||document.documentElement;
+      const next=Math.max(0,scroller.scrollTop+delta);
+      if(Math.abs(next-scroller.scrollTop)>0.5)scroller.scrollTop=next;
+    }
   };
   const runFocusGuard=()=>{
     if(focusGuardFrame)return;
@@ -181,6 +189,11 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
     try { input.focus({ preventScroll: true }); }
     catch { input.focus(); }
   };
+  document.addEventListener('pointerdown',event=>{
+    if(!focusAnchor)return;
+    const target=event.target;
+    if(target!==focusAnchor.input&&!focusAnchor.input?.contains?.(target))releaseFocusGuard();
+  },true);
   ticket.addEventListener('pointerdown', stableTicketFocus);
   ticket.addEventListener('focusin',e=>{
     const input=e.target.matches?.('input:not([type=checkbox]):not([type=range])')?e.target:null;
@@ -190,10 +203,7 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
     const input=e.target.matches?.('input:not([type=checkbox]):not([type=range])')?e.target:null;
     if(input)armFocusAnchor(input,900);
   });
-  ticket.addEventListener('focusout',()=>{
-    focusAnchor=null;
-    if(focusGuardFrame){cancelAnimationFrame(focusGuardFrame);focusGuardFrame=0;}
-  });
+  ticket.addEventListener('focusout',releaseFocusGuard);
   const restoreFocusedInputAfterLayout=()=>{
     if(!focusAnchor)return;
     requestAnimationFrame(restoreFocusAnchor);
