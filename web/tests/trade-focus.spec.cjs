@@ -74,3 +74,27 @@ test('a late layout insertion and chart resize preserve a focused quantity',asyn
  expect(await page.evaluate(()=>window.calls.filter(x=>/sign|send/i.test(x.method)))).toEqual([]);
  await page.locator('#tradeClose').click();
 });
+
+test('a delayed book response cannot scroll a focused input after the guard deadline',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.addInitScript(()=>{window.stopBook=true});
+ const {posted}=await setup(page);
+ if(await page.locator('#markets').getAttribute('data-trade-layout')!=='simple')await page.locator('#tradeLayoutMode').click();
+ await expect(page.locator('#wBeltrixVault')).toBeAttached();
+ await page.addStyleTag({content:'.page{min-height:2600px}'});
+ const input=page.locator('#tradeSize');
+ await input.evaluate(e=>scrollTo(0,e.getBoundingClientRect().top+scrollY-180));
+ await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+ await input.click();await page.keyboard.type('0.5');
+ await expect(page.locator('#marketAsks .book-level')).toHaveCount(0);
+ const before=await input.boundingBox(),scroll=await page.evaluate(()=>scrollY);
+ await page.waitForTimeout(1600);
+ await page.evaluate(()=>{window.stopBook=false});
+ await expect(page.locator('#marketAsks .book-level')).toHaveCount(5);
+ await page.waitForTimeout(350);
+ expect(Math.abs((await input.boundingBox()).y-before.y)).toBeLessThanOrEqual(2);
+ expect(Math.abs(await page.evaluate(()=>scrollY)-scroll)).toBeLessThanOrEqual(2);
+ await expect(input).toBeFocused();await expect(input).toHaveValue('0.5');
+ expect(posted).toHaveLength(0);
+ expect(await page.evaluate(()=>window.calls.filter(x=>/sign|send/i.test(x.method)))).toEqual([]);
+});
