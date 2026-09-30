@@ -57,7 +57,7 @@ export function installTradeFocusGuard({ticket, layoutRoot = ticket, win = windo
   };
   const arm = input => {
     if (!mobile() || !input?.isConnected) { release(); return; }
-    if (anchor?.input === input) anchor.until = clock() + 1400;
+    if (anchor?.input === input && clock() <= anchor.until) anchor.until = clock() + 1400;
     else anchor = {input, previous: sample(input), until: clock() + 1400};
     schedule();
   };
@@ -66,8 +66,7 @@ export function installTradeFocusGuard({ticket, layoutRoot = ticket, win = windo
     if (input !== anchor?.input) release();
     if (!input || !mobile() || doc.activeElement === input) return;
     const before = sample(input);
-    // Avoid intercepting off-screen or keyboard-obscured inputs: the browser
-    // must be free to bring them into the visual viewport.
+    // Off-screen and keyboard-obscured inputs must be free to scroll into view.
     const top = before.documentTop - before.scrollY - before.viewportOffset;
     if (top < 0 || top + before.height > before.viewportHeight) return;
     event.preventDefault();
@@ -77,6 +76,16 @@ export function installTradeFocusGuard({ticket, layoutRoot = ticket, win = windo
   const focusIn = event => { const input = financialInput(event.target); if (input) arm(input); };
   const inputEvent = event => { const input = financialInput(event.target); if (input) arm(input); };
   const keyDown = event => { if (['Tab','Escape','PageUp','PageDown'].includes(event.key)) release(); };
+  const viewportChanged = () => {
+    if (!anchor) return;
+    const current = sample(anchor.input), previous = anchor.previous;
+    // Charts dispatch synthetic resize events while mounting. Only a real
+    // visual viewport change should release a focused field's layout guard.
+    if (!mobile() || Math.abs(current.viewportHeight - previous.viewportHeight) > 0.5 ||
+        Math.abs(current.viewportOffset - previous.viewportOffset) > 0.5 ||
+        current.viewportScale !== previous.viewportScale) release();
+    else schedule();
+  };
   doc.addEventListener('pointerdown', pointerDown, true);
   ticket.addEventListener('focusin', focusIn);
   ticket.addEventListener('input', inputEvent);
@@ -84,8 +93,8 @@ export function installTradeFocusGuard({ticket, layoutRoot = ticket, win = windo
   doc.addEventListener('keydown', keyDown, true);
   win.addEventListener('wheel', release, {passive: true});
   win.addEventListener('touchmove', release, {passive: true});
-  win.addEventListener('resize', release);
-  win.visualViewport?.addEventListener('resize', release);
+  win.addEventListener('resize', viewportChanged);
+  win.visualViewport?.addEventListener('resize', viewportChanged);
   // Market updates can request a layout check but never renew the deadline.
   // There is no perpetual animation-frame loop or scroll event write handler.
   const mutation = new win.MutationObserver(schedule);
@@ -101,7 +110,7 @@ export function installTradeFocusGuard({ticket, layoutRoot = ticket, win = windo
     doc.removeEventListener('keydown', keyDown, true);
     win.removeEventListener('wheel', release);
     win.removeEventListener('touchmove', release);
-    win.removeEventListener('resize', release);
-    win.visualViewport?.removeEventListener('resize', release);
+    win.removeEventListener('resize', viewportChanged);
+    win.visualViewport?.removeEventListener('resize', viewportChanged);
   };
 }
