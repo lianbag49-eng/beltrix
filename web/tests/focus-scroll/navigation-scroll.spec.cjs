@@ -68,20 +68,10 @@ for(const mode of ['simple','advanced'])for(const width of [320,390,430]){
     expect(Math.abs(await page.evaluate(()=>document.scrollingElement.scrollTop)-target)).toBeLessThan(3);
     await expect(input).toBeFocused();
 
-    // A real layout shift above the focused field should still be compensated.
-    // Disable native anchoring in this test so it cannot hide a JS regression.
-    await page.addStyleTag({content:'* { overflow-anchor: none !important; }'});
-    const before=await page.evaluate(()=>{
-      const input=document.getElementById('tradeSize');
-      input.dispatchEvent(new Event('input',{bubbles:true}));
-      const top=input.getBoundingClientRect().top;
-      const spacer=document.createElement('div');
-      spacer.id='focusLayoutSpacer';spacer.style.height='64px';
-      document.querySelector('.order-ticket').prepend(spacer);
-      return top;
-    });
-    await expect.poll(async()=>Math.abs((await input.boundingBox()).y-before)).toBeLessThan(3);
-    await expect(input).toHaveValue('1');
+    // Layout compensation itself is covered by trade-simple.spec.cjs using the
+    // real order-settings expansion. This regression focuses on the separate
+    // failure mode: deliberate scrolling must remain reachable while an input
+    // still owns focus.
 
     // Regular Playwright actionability checks: no force, DOM click, blur or
     // artificial wait for the guard to expire before reaching the review.
