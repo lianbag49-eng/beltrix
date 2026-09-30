@@ -1,0 +1,49 @@
+name: BELTRIX iPhone Trading Regression
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'web/trade-simple.js'
+      - 'web/pearl-cobalt.css'
+      - 'web/futures-ux.js'
+      - 'web/trading.js'
+      - 'web/tests/futures-ux.spec.cjs'
+      - 'web/tests/trading.spec.cjs'
+      - 'web/tests/trade-simple.spec.cjs'
+      - '.github/workflows/iphone-trading-regression.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: beltrix-iphone-trading-regression
+  cancel-in-progress: true
+
+jobs:
+  iphone-webkit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm run build
+      - name: Install WebKit
+        run: npx playwright install --with-deps webkit
+      - name: Run iPhone trading regressions
+        run: >
+          npx playwright test
+          web/tests/futures-ux.spec.cjs
+          web/tests/trading.spec.cjs
+          web/tests/trade-simple.spec.cjs
+          --config=web/playwright.ios.config.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: iphone-trading-regression
+          path: test-results-ios/
+          retention-days: 7
