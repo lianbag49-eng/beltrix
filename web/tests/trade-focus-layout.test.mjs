@@ -1,0 +1,15 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {focusedLayoutDecision} from '../trade-focus-layout.js';
+const anchor={documentTop:600,scrollTop:420,viewport:'390:844:844:0:1',until:1500};
+const sample=change=>({documentTop:600,scrollTop:420,viewport:anchor.viewport,now:500,...change});
+test('unchanged layout never scrolls',()=>assert.equal(focusedLayoutDecision(anchor,sample()).kind,'rebase'));
+test('late wallet layout insertion compensates actual document shift',()=>assert.deepEqual(focusedLayoutDecision(anchor,sample({documentTop:730})),{kind:'adjust',top:550}));
+test('layout removal compensates the inverse shift',()=>assert.deepEqual(focusedLayoutDecision(anchor,sample({documentTop:530})),{kind:'adjust',top:350}));
+test('scrolling to the review button releases instead of snapping back',()=>assert.equal(focusedLayoutDecision(anchor,sample({scrollTop:800})).kind,'release'));
+test('simultaneous navigation and reflow do not fight the scroll',()=>assert.equal(focusedLayoutDecision(anchor,sample({documentTop:650,scrollTop:800})).kind,'release'));
+test('browser native layout compensation is not applied twice',()=>assert.equal(focusedLayoutDecision(anchor,sample({documentTop:730,scrollTop:550})).kind,'rebase'));
+test('keyboard and visual viewport changes release anchoring',()=>assert.equal(focusedLayoutDecision(anchor,sample({viewport:'390:844:500:0:1'})).kind,'release'));
+test('expiry remains effective even when market mutations keep arriving',()=>assert.equal(focusedLayoutDecision(anchor,sample({now:1500,documentTop:730})).kind,'release'));
+test('malformed samples cannot request a scroll',()=>assert.equal(focusedLayoutDecision(anchor,sample({documentTop:NaN})).kind,'release'));
+test('subpixel noise does not cause scroll jitter',()=>assert.equal(focusedLayoutDecision(anchor,sample({documentTop:600.2,scrollTop:420.1})).kind,'rebase'));
