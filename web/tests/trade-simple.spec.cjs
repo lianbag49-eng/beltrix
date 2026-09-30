@@ -99,7 +99,14 @@ test('compact view reduces ticket height for both products without overflow or r
 
 test('typing and expanding settings preserve focus without invoking page navigation',async({page})=>{
  await setup(page);await page.addStyleTag({content:'.page{min-height:2600px}'});await page.setViewportSize({width:390,height:844});
+ // Take the baseline after wallet mounting and the responsive layout complete,
+ // not halfway through the viewport change. Late layout changes DURING focus
+ // are separately injected and asserted in trade-focus.spec.cjs.
+ await expect($(page,'wBeltrixVault')).toBeAttached();
+ await expect(page.locator('#markets [data-usdt-open]')).toBeAttached();
+ await page.evaluate(async()=>{await document.fonts.ready;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
  await $(page,'tradeSize').evaluate(e=>scrollTo(0,e.getBoundingClientRect().top+scrollY-180));
+ await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
  const beforeScroll=await page.evaluate(()=>scrollY);expect(beforeScroll).toBeGreaterThan(0);
  const beforeBox=await $(page,'tradeSize').boundingBox();
  await page.evaluate(()=>{window.simpleScrolls=[];const f=window.scrollTo;window.scrollTo=(...a)=>{window.simpleScrolls.push(a);return f(...a);};});
