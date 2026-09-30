@@ -59,6 +59,8 @@ jobs:
         run: node web/prepare-site.mjs --root
       - name: Publish public read-only release evidence
         run: cp test-results/testnet-liquidity.json public/release-evidence.json
+      - name: Fingerprint the validated public release
+        run: node web/release-manifest.mjs public
       - uses: actions/configure-pages@v5
         if: github.ref == 'refs/heads/main'
         with:
@@ -84,6 +86,8 @@ jobs:
         uses: actions/deploy-pages@v4
       - name: Verify published BELTRIX page and assets
         run: node web/tests/deployment-smoke.mjs "${{ steps.deployment.outputs.page_url }}"
+      - name: Verify exact published revision and bundle hashes
+        run: node web/tests/release-manifest-smoke.mjs "${{ steps.deployment.outputs.page_url }}"
       - name: Install live-site browser checks
         run: |
           npm ci
