@@ -3,47 +3,68 @@ name: BELTRIX iPhone Trading Regression
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, 'fix/multichain-ios-scroll-*']
     paths:
       - 'web/trade-simple.js'
+      - 'web/trade-focus-layout.js'
+      - 'web/beltrix-*.js'
+      - 'web/wallet.js'
+      - 'web/usdt-providers.js'
       - 'web/pearl-cobalt.css'
       - 'web/futures-ux.js'
       - 'web/trading.js'
+      - 'web/playwright*.cjs'
       - 'web/tests/futures-ux.spec.cjs'
       - 'web/tests/trading.spec.cjs'
       - 'web/tests/trade-simple.spec.cjs'
+      - 'web/tests/trade-focus-layout*'
+      - 'web/tests/beltrix-local-wallet.spec.cjs'
+      - 'package.json'
       - '.github/workflows/iphone-trading-regression.yml'
 
 permissions:
   contents: read
 
 concurrency:
-  group: beltrix-iphone-trading-regression
+  group: beltrix-iphone-trading-regression-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  iphone-webkit:
+  wallet-trading:
     runs-on: ubuntu-latest
     timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - browser: chromium
+            config: web/playwright.config.cjs
+            output: test-results
+          - browser: webkit
+            config: web/playwright.ios.config.cjs
+            output: test-results-ios
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - run: npm ci
+      - run: npm run test:unit
       - run: npm run build
-      - name: Install WebKit
-        run: npx playwright install --with-deps webkit
-      - name: Run iPhone trading regressions
+      - name: Install browser
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Run wallet and trading regressions
         run: >
           npx playwright test
           web/tests/futures-ux.spec.cjs
           web/tests/trading.spec.cjs
           web/tests/trade-simple.spec.cjs
-          --config=web/playwright.ios.config.cjs
+          web/tests/trade-focus-layout.spec.cjs
+          web/tests/beltrix-local-wallet.spec.cjs
+          --config=${{ matrix.config }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: iphone-trading-regression
-          path: test-results-ios/
+          name: wallet-trading-regression-${{ matrix.browser }}
+          path: ${{ matrix.output }}/
           retention-days: 7
