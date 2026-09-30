@@ -28,7 +28,7 @@ function parseRecovery(value){
 }
 
 export function createBeltrixWalletManager({win=window,cryptoImpl=globalThis.crypto}={}){
- let active=null;
+ let active=null,pendingCreate=null;
 
  const publicState=()=>Object.freeze({
   locked:!active,
@@ -87,6 +87,36 @@ export function createBeltrixWalletManager({win=window,cryptoImpl=globalThis.cry
  const api={
   async list(){return listVaults()},
   state:publicState,
+  async beginCreate({name='BELTRIX Wallet'}={}){
+   // Keep uncommitted recovery material in memory only. Nothing is written to
+   // IndexedDB or sent over the network until the user backs it up and chooses
+   // a local vault password.
+   const material=Object.freeze({type:'mnemonic',secret:generateMnemonic(english,128)});
+   const account=accountFromMaterial(material);
+   await ensureUnique(account.address);
+   const solana=await createBeltrixSolanaWallet(material.secret,{cryptoImpl});
+   pendingCreate={token:cryptoImpl.randomUUID(),name:cleanName(name),material,address:account.address,solanaAddress:solana.address};
+   return Object.freeze({token:pendingCreate.token,name:pendingCreate.name,address:pendingCreate.address,solanaAddress:pendingCreate.solanaAddress,recoveryPhrase:material.secret});
+  },
+  cancelCreate({token}={}){
+   if(!pendingCreate||pendingCreate.token!==token)return false;
+   pendingCreate=null;
+   return true;
+  },
+  async finishCreate({token,password,chainId=1}={}){
+   const draft=pendingCreate;
+   if(!draft||draft.token!==token)throw Error('Wallet creation session expired. Start again.');
+   const now=new Date().toISOString();
+   const record={
+    id:cryptoImpl.randomUUID(),name:draft.name,address:draft.address,solanaAddress:draft.solanaAddress,
+    createdAt:now,updatedAt:now,backupConfirmedAt:now,
+    encrypted:await encryptWalletMaterial(draft.material,password,{cryptoImpl})
+   };
+   await putVault(record);
+   pendingCreate=null;
+   await activate(record,draft.material,chainId);
+   return publicState();
+  },
   async create({name='BELTRIX Wallet',password,chainId=1,strength=128}={}){
    const mnemonic=generateMnemonic(english,Number(strength)===256?256:128);
    const material=Object.freeze({type:'mnemonic',secret:mnemonic});
