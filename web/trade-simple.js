@@ -1,4 +1,5 @@
 // Presentation only: keep the original inputs, events, account state and signing guards.
+import {installTradeFocusLayout} from './trade-focus-layout.js';
 const $ = id => document.getElementById(id);
 const root = $('markets'), ticket = root?.querySelector('.order-ticket');
 const KEY = 'beltrix-trade-layout-v1';
@@ -113,56 +114,10 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
     const active = root.querySelector('[data-account-tab][aria-selected="true"]');
     if (simple && spot && ['positions','funding'].includes(active?.dataset.accountTab)) root.querySelector('[data-account-tab="balances"]').click();
   }
-  let focusAnchor=null,focusGuardFrame=0;
-  const focusedFinancialInput=()=>document.activeElement?.matches?.('.order-ticket input:not([type=checkbox]):not([type=range])')?document.activeElement:null;
-  const releaseFocusGuard=()=>{
-    focusAnchor=null;
-    if(focusGuardFrame){cancelAnimationFrame(focusGuardFrame);focusGuardFrame=0;}
-  };
-  const restoreFocusAnchor=()=>{
-    const anchor=focusAnchor,input=focusedFinancialInput();
-    if (!anchor||input!==anchor.input||!input?.isConnected) return;
-    const delta=input.getBoundingClientRect().top-anchor.top;
-    if(Math.abs(delta)>0.5){
-      const scroller=document.scrollingElement||document.documentElement;
-      const next=Math.max(0,scroller.scrollTop+delta);
-      if(Math.abs(next-scroller.scrollTop)>0.5)scroller.scrollTop=next;
-    }
-  };
-  const runFocusGuard=()=>{
-    if(focusGuardFrame)return;
-    const tick=()=>{
-      focusGuardFrame=0;
-      const anchor=focusAnchor,input=focusedFinancialInput();
-      if(!anchor||input!==anchor.input||!input?.isConnected||Date.now()>anchor.until)return;
-      restoreFocusAnchor();
-      focusGuardFrame=requestAnimationFrame(tick);
-    };
-    focusGuardFrame=requestAnimationFrame(tick);
-  };
-  const armFocusAnchor=(input,duration=1100)=>{
-    if(!matchMedia('(max-width:680px)').matches||!input?.isConnected){focusAnchor=null;return;}
-    if(focusAnchor?.input===input){
-      focusAnchor.until=Math.max(focusAnchor.until||0,Date.now()+duration);
-    }else{
-      focusAnchor={input,top:input.getBoundingClientRect().top,until:Date.now()+duration};
-    }
-    runFocusGuard();
-  };
-  const captureFocusAnchor=()=>{
-    if(!matchMedia('(max-width:680px)').matches){focusAnchor=null;return;}
-    const input=focusedFinancialInput();
-    if(input)armFocusAnchor(input);
-  };
   function schedule() {
     if (scheduled) return;
-    captureFocusAnchor();
     scheduled = true;
-    requestAnimationFrame(() => {
-      scheduled = false;
-      sync();
-      requestAnimationFrame(restoreFocusAnchor);
-    });
+    requestAnimationFrame(() => { scheduled = false; sync(); });
   }
   toolbar.addEventListener('click', e => {
     const b = e.target.closest('button');
@@ -175,45 +130,9 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
     $('marketType').dispatchEvent(new Event('change', { bubbles: true }));
     sync();
   });
-  // Mobile WebKit may scroll a financial input into the visual-viewport center on
-  // pointer focus even when the field is already fully visible. Intercept the first
-  // pointer focus for the compact ticket and request focus without scrolling.
-  // We only do this for editable decimal/text transaction fields, never checkboxes,
-  // ranges, buttons or selects.
-  const stableTicketFocus = event => {
-    if (!matchMedia('(max-width:680px)').matches) return;
-    const input = event.target.closest?.('.order-ticket input:not([type=checkbox]):not([type=range])');
-    if (!input || input.disabled || input.readOnly || document.activeElement === input) return;
-    event.preventDefault();
-    armFocusAnchor(input,1400);
-    try { input.focus({ preventScroll: true }); }
-    catch { input.focus(); }
-  };
-  document.addEventListener('pointerdown',event=>{
-    if(!focusAnchor)return;
-    const target=event.target;
-    if(target!==focusAnchor.input&&!focusAnchor.input?.contains?.(target))releaseFocusGuard();
-  },true);
-  ticket.addEventListener('pointerdown', stableTicketFocus);
-  ticket.addEventListener('focusin',e=>{
-    const input=e.target.matches?.('input:not([type=checkbox]):not([type=range])')?e.target:null;
-    if(input)armFocusAnchor(input,1200);
-  });
-  ticket.addEventListener('input',e=>{
-    const input=e.target.matches?.('input:not([type=checkbox]):not([type=range])')?e.target:null;
-    if(input)armFocusAnchor(input,900);
-  });
-  ticket.addEventListener('focusout',releaseFocusGuard);
-  const restoreFocusedInputAfterLayout=()=>{
-    if(!focusAnchor)return;
-    requestAnimationFrame(restoreFocusAnchor);
-  };
-  new MutationObserver(restoreFocusedInputAfterLayout).observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','open','class']});
-  if(typeof ResizeObserver!=='undefined'){
-    const focusResizeObserver=new ResizeObserver(restoreFocusedInputAfterLayout);
-    focusResizeObserver.observe(root);
-    focusResizeObserver.observe(ticket);
-  }
+  // Bounded focus protection is armed by focus/typing only. Market refreshes must
+  // never re-arm a viewport lock or prevent scrolling to the next order control.
+  installTradeFocusLayout(ticket);
 
   for (const event of ['input','change']) root.addEventListener(event, schedule);
   for (const event of ['beltrix:market','beltrix:wallet']) window.addEventListener(event, schedule);
