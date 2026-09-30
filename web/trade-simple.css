@@ -43,6 +43,11 @@
  #markets[data-trade-layout=simple] .futures-available{font-size:11px;margin:8px 0}.simple-fee-note{font-size:9px}
  #markets[data-trade-layout=simple] .futures-actions button{font-size:13px;min-height:44px}
  #markets[data-trade-layout=simple] #tradeStatus{font-size:11px}
+ /* A late book response may make the browser anchor a lower account row and
+    shift the viewport despite the input's document position being unchanged.
+    Disable only native anchoring while editing; this never blocks manual
+    scrolling, scrollIntoView, keyboard focus or the original order review. */
+ html:has(.order-ticket input:focus),body:has(.order-ticket input:focus){overflow-anchor:none}
 }
 @media(max-width:350px){
  #markets[data-trade-layout=simple] .market-card>.market-controls{grid-template-columns:minmax(0,1fr) minmax(0,110px);gap:4px}
