@@ -1,18 +1,29 @@
 const {test,expect}=require('@playwright/test');
 
-test('BELTRIX local wallet creates locks unlocks and registers as trading provider',async({page})=>{
+async function createMnemonicFirst(page,{name='BELTRIX Wallet',password}={}){
+ await page.locator('#wLocalCreate').click();
+ if(name)await page.locator('#wLocalName').fill(name);
+ await page.locator('#wLocalCreateConfirm').click();
+ const recovery=await page.locator('#wLocalRecovery').inputValue();
+ expect(recovery.trim().split(/\s+/)).toHaveLength(12);
+ // Draft recovery material must not be persisted before explicit backup.
+ expect(await page.evaluate(secret=>Object.entries(localStorage).some(([,v])=>String(v).includes(secret)),recovery)).toBe(false);
+ expect(await page.evaluate(()=>new Promise(resolve=>{const q=indexedDB.open('beltrix-wallet-v1');q.onsuccess=()=>{const db=q.result;if(!db.objectStoreNames.contains('vaults'))return resolve(0);const tx=db.transaction('vaults','readonly');const r=tx.objectStore('vaults').count();r.onsuccess=()=>resolve(r.result);r.onerror=()=>resolve(-1)};q.onerror=()=>resolve(0)}))).toBe(0);
+ await page.locator('#wLocalRecoverySaved').check();
+ await page.locator('#wLocalRecoveryNext').click();
+ await page.locator('#wLocalPassword').fill(password);
+ await page.locator('#wLocalPassword2').fill(password);
+ await page.locator('#wLocalFinishCreate').click();
+ await expect(page.locator('#wAccountMode')).toContainText('BELTRIX Wallet');
+ return recovery;
+}
+
+test('BELTRIX local wallet creates mnemonic first then locks unlocks and registers as trading provider',async({page})=>{
  await page.goto('/web/#wallet');
  await expect(page.locator('#wBeltrixVault')).toBeVisible();
  await page.locator('#wBeltrixVault').click();
- await page.locator('#wLocalCreate').click();
- await page.locator('#wLocalName').fill('Primary BELTRIX');
- await page.locator('#wLocalPassword').fill('beltrix-wallet-pass-2026');
- await page.locator('#wLocalPassword2').fill('beltrix-wallet-pass-2026');
- await page.locator('#wLocalCreateConfirm').click();
+ const recovery=await createMnemonicFirst(page,{name:'Primary BELTRIX',password:'beltrix-wallet-pass-2026'});
 
- const recovery=await page.locator('#wLocalRecovery').inputValue();
- expect(recovery.trim().split(/\s+/)).toHaveLength(12);
- await expect(page.locator('#wAccountMode')).toContainText('BELTRIX Wallet');
  await expect(page.locator('#walletProvider')).toContainText('BELTRIX Wallet');
  await expect(page.locator('#wBeltrixMultichain')).toBeVisible();
  await expect(page.locator('#wBeltrixMultichain')).toContainText('EVM');
@@ -23,12 +34,8 @@ test('BELTRIX local wallet creates locks unlocks and registers as trading provid
  }));
  expect(chainState.evm).toMatch(/^0x[0-9a-f]{40}$/i);
  expect(chainState.sol).toMatch(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/);
+ expect(await page.evaluate(secret=>Object.entries(localStorage).some(([,v])=>String(v).includes(secret)),recovery)).toBe(false);
 
- const storageLeak=await page.evaluate(secret=>Object.entries(localStorage).some(([,v])=>String(v).includes(secret)),recovery);
- expect(storageLeak).toBe(false);
-
- await page.locator('#wLocalRecoverySaved').check();
- await page.locator('#wLocalRecoveryDone').click();
  await page.locator('#wLocalLock').click();
  await expect(page.locator('#wAccountMode')).toContainText('Connect a wallet');
  await expect(page.locator('#wBeltrixMultichain')).toBeHidden();
@@ -46,15 +53,10 @@ test('BELTRIX local wallet creates locks unlocks and registers as trading provid
  expect(await page.evaluate(()=>window.beltrixWallet?.provider||null)).toBeNull();
 });
 
-test('BELTRIX local wallet rejects wrong password after reload',async({page})=>{
+test('BELTRIX mnemonic-first wallet rejects wrong local password after reload',async({page})=>{
  await page.goto('/web/#wallet');
  await page.locator('#wBeltrixVault').click();
- await page.locator('#wLocalCreate').click();
- await page.locator('#wLocalPassword').fill('another-wallet-pass-2026');
- await page.locator('#wLocalPassword2').fill('another-wallet-pass-2026');
- await page.locator('#wLocalCreateConfirm').click();
- await page.locator('#wLocalRecoverySaved').check();
- await page.locator('#wLocalRecoveryDone').click();
+ await createMnemonicFirst(page,{password:'another-wallet-pass-2026'});
  await page.locator('#wLocalLock').click();
  await page.locator('[data-unlock]').first().click();
  await page.locator('#wLocalUnlockPassword').fill('definitely-wrong-password');
