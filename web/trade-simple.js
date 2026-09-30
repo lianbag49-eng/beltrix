@@ -121,10 +121,16 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
   };
   const restoreFocusAnchor=()=>{
     const anchor=focusAnchor,input=focusedFinancialInput();
-    if (!anchor||input!==anchor.input||!input?.isConnected) return;
-    const delta=input.getBoundingClientRect().top-anchor.top;
+    if (!anchor) return;
+    if(input!==anchor.input||!input?.isConnected||Date.now()>anchor.until){releaseFocusGuard();return;}
+    const scroller=document.scrollingElement||document.documentElement;
+    // Document coordinates distinguish a layout shift from intentional scrolling.
+    // A viewport-only anchor would undo Safari/Playwright scrolling before a
+    // button receives pointerdown, leaving lower order controls unreachable.
+    const documentTop=input.getBoundingClientRect().top+scroller.scrollTop;
+    const delta=documentTop-anchor.documentTop;
+    anchor.documentTop=documentTop;
     if(Math.abs(delta)>0.5){
-      const scroller=document.scrollingElement||document.documentElement;
       const next=Math.max(0,scroller.scrollTop+delta);
       if(Math.abs(next-scroller.scrollTop)>0.5)scroller.scrollTop=next;
     }
@@ -133,30 +139,24 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
     if(focusGuardFrame)return;
     const tick=()=>{
       focusGuardFrame=0;
-      const anchor=focusAnchor,input=focusedFinancialInput();
-      if(!anchor||input!==anchor.input||!input?.isConnected||Date.now()>anchor.until)return;
       restoreFocusAnchor();
-      focusGuardFrame=requestAnimationFrame(tick);
+      if(focusAnchor)focusGuardFrame=requestAnimationFrame(tick);
     };
     focusGuardFrame=requestAnimationFrame(tick);
   };
   const armFocusAnchor=(input,duration=1100)=>{
-    if(!matchMedia('(max-width:680px)').matches||!input?.isConnected){focusAnchor=null;return;}
+    if(!matchMedia('(max-width:680px)').matches||!input?.isConnected){releaseFocusGuard();return;}
     if(focusAnchor?.input===input){
       focusAnchor.until=Math.max(focusAnchor.until||0,Date.now()+duration);
     }else{
-      focusAnchor={input,top:input.getBoundingClientRect().top,until:Date.now()+duration};
+      const scroller=document.scrollingElement||document.documentElement;
+      focusAnchor={input,documentTop:input.getBoundingClientRect().top+scroller.scrollTop,until:Date.now()+duration};
     }
     runFocusGuard();
   };
-  const captureFocusAnchor=()=>{
-    if(!matchMedia('(max-width:680px)').matches){focusAnchor=null;return;}
-    const input=focusedFinancialInput();
-    if(input)armFocusAnchor(input);
-  };
   function schedule() {
     if (scheduled) return;
-    captureFocusAnchor();
+    // Quote/wallet refreshes must not keep re-arming a user-input focus guard.
     scheduled = true;
     requestAnimationFrame(() => {
       scheduled = false;
