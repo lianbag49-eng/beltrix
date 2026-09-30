@@ -1,0 +1,26 @@
+name: BELTRIX Focus Geometry Diagnostic
+on:
+  push:
+    branches: [debug/focus-geometry-2026-09-30]
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Observe focus geometry
+        run: npx playwright test web/tests/focus-geometry.spec.cjs --config=web/playwright.config.cjs --project=advanced-regressions --workers=1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: focus-geometry-diagnostic
+          path: test-results/
+          retention-days: 3
