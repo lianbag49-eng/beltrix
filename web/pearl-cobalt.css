@@ -160,7 +160,7 @@ html[data-beltrix-ui="pearl-cobalt"] .terminal-venue a{color:var(--pc-accent)}
 }
 @media(max-width:680px){
  html[data-beltrix-ui="pearl-cobalt"] .app{padding:6px 9px 110px;max-width:100%;overflow-x:clip}
- html[data-beltrix-ui="pearl-cobalt"] .top{min-height:50px;padding:5px 6px;gap:5px;max-width:100%;overflow:hidden;flex-wrap:nowrap}
+ html[data-beltrix-ui="pearl-cobalt"] .top{position:relative;top:auto;min-height:50px;padding:5px 6px;gap:5px;max-width:100%;overflow:hidden;flex-wrap:nowrap}
  html[data-beltrix-ui="pearl-cobalt"] .brand{min-width:0;flex:0 1 auto}
  html[data-beltrix-ui="pearl-cobalt"] .pc-market-search{display:none}
  html[data-beltrix-ui="pearl-cobalt"] .pc-theme-toggle{margin-left:auto;flex:0 0 36px}
