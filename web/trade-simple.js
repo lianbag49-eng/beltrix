@@ -161,7 +161,9 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
   // viewport anchor instead of fighting the scroll; DOM layout changes do not
   // emit this event and are still compensated by restoreFocusAnchor().
   document.addEventListener('scroll',()=>{
-    if(!focusAnchor||focusGuardAdjusting)return;\n    if(Date.now()<(focusAnchor.ignoreScrollUntil||0)){restoreFocusAnchor();return;}\n    const input=focusedFinancialInput();
+    if(!focusAnchor||focusGuardAdjusting)return;
+    if(Date.now()<(focusAnchor.ignoreScrollUntil||0)){restoreFocusAnchor();return;}
+    const input=focusedFinancialInput();
     if(input!==focusAnchor.input)return;
     const scroller=document.scrollingElement||document.documentElement;
     focusAnchor.viewportTop=input.getBoundingClientRect().top;
@@ -199,7 +201,10 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
     if (!input || input.disabled || input.readOnly || document.activeElement === input) return;
     event.preventDefault();
     armFocusAnchor(input,1400);
-    try { input.focus({ preventScroll: true }); }\n    catch { input.focus(); }\n    if(focusAnchor?.input===input)focusAnchor.ignoreScrollUntil=Date.now()+180;\n  };
+    try { input.focus({ preventScroll: true }); }
+    catch { input.focus(); }
+    if(focusAnchor?.input===input)focusAnchor.ignoreScrollUntil=Date.now()+180;
+  };
   document.addEventListener('pointerdown',event=>{
     if(!focusAnchor)return;
     const target=event.target;
