@@ -107,36 +107,56 @@ export function installBeltrixLocalWalletUI({manager=beltrixWalletManager,win=wi
  function showCreate(){
   title('Create BELTRIX Wallet');
   body().innerHTML=
-   '<p class="w-note">A new 12-word BIP-39 recovery phrase is generated on this device. BELTRIX derives the first EVM account and a Solana account locally, then encrypts the phrase before storage.</p>'+
+   '<p class="w-note">Create a new BELTRIX self-custody wallet on this device. Your recovery phrase is generated locally and is never sent to BELTRIX, Neon or Render.</p>'+
    '<label class="w-field">Wallet name<input id="wLocalName" maxlength="40" value="BELTRIX Wallet" autocomplete="off"></label>'+
-   '<label class="w-field">Wallet password<input id="wLocalPassword" type="password" minlength="10" autocomplete="new-password"></label>'+
-   '<label class="w-field">Confirm password<input id="wLocalPassword2" type="password" minlength="10" autocomplete="new-password"></label>'+
    '<button id="wLocalCreateConfirm" class="w-primary full">Create wallet</button><button id="wLocalBack" class="w-text-button">Back</button>'+
-   '<p id="wLocalWalletStatus" class="w-inline-status" role="status"></p><p class="w-note">The password is not recoverable. Save the 12-word recovery phrase shown after creation.</p>';
+   '<p id="wLocalWalletStatus" class="w-inline-status" role="status"></p>';
   doc.getElementById('wLocalBack').onclick=render;
   doc.getElementById('wLocalCreateConfirm').onclick=async()=>{
    try{
-    const password=doc.getElementById('wLocalPassword').value;
-    if(password!==doc.getElementById('wLocalPassword2').value)return status('Passwords do not match.','error');
-    status('Generating and encrypting wallet…');
-    const result=await manager.create({name:doc.getElementById('wLocalName').value,password,chainId:preferredChainId(win)});
-    showRecovery(result.recoveryPhrase||result.recoveryKey,result.wallet);
+    status('Generating recovery phrase on this device…');
+    const draft=await manager.beginCreate({name:doc.getElementById('wLocalName').value});
+    showRecovery(draft);
    }catch(error){status(error.message||error,'error')}
   };
  }
 
- function showRecovery(recoveryKey,wallet){
+ function showRecovery(draft){
   title('Back up your recovery phrase');
   body().innerHTML=
-   '<div class="w-error">These words control the wallet. Anyone with them can move the assets. BELTRIX cannot recover them for you.</div>'+
-   '<p class="w-note">'+esc(wallet.name)+'<br>EVM · '+esc(wallet.address)+(wallet.solanaAddress?'<br>Solana · '+esc(wallet.solanaAddress):'')+'</p>'+
-   '<label class="w-field">Recovery phrase<textarea id="wLocalRecovery" class="w-input w-local-secret" rows="4" readonly spellcheck="false">'+esc(recoveryKey)+'</textarea></label>'+
+   '<div class="w-error">These 12 words control the wallet. Anyone with them can move the assets. BELTRIX cannot recover them for you.</div>'+
+   '<p class="w-note">'+esc(draft.name)+'<br>EVM · '+esc(draft.address)+(draft.solanaAddress?'<br>Solana · '+esc(draft.solanaAddress):'')+'</p>'+
+   '<label class="w-field">12-word recovery phrase<textarea id="wLocalRecovery" class="w-input w-local-secret" rows="4" readonly spellcheck="false">'+esc(draft.recoveryPhrase)+'</textarea></label>'+
    '<button id="wLocalCopyRecovery" class="w-secondary full">Copy recovery phrase</button>'+
-   '<label class="w-check"><input id="wLocalRecoverySaved" type="checkbox">I saved the recovery phrase somewhere safe.</label>'+
-   '<button id="wLocalRecoveryDone" class="w-primary full" disabled>Finish</button><p id="wLocalWalletStatus" class="w-inline-status" role="status"></p>';
-  doc.getElementById('wLocalCopyRecovery').onclick=()=>copy(recoveryKey);
-  doc.getElementById('wLocalRecoverySaved').onchange=e=>{doc.getElementById('wLocalRecoveryDone').disabled=!e.target.checked};
-  doc.getElementById('wLocalRecoveryDone').onclick=async()=>{await manager.confirmBackup({id:wallet.id});await render();updateBadge()};
+   '<label class="w-check"><input id="wLocalRecoverySaved" type="checkbox">I saved these 12 words somewhere safe.</label>'+
+   '<button id="wLocalRecoveryNext" class="w-primary full" disabled>Continue</button><button id="wLocalCreateCancel" class="w-text-button">Cancel</button>'+
+   '<p id="wLocalWalletStatus" class="w-inline-status" role="status"></p>';
+  doc.getElementById('wLocalCopyRecovery').onclick=()=>copy(draft.recoveryPhrase);
+  doc.getElementById('wLocalRecoverySaved').onchange=e=>{doc.getElementById('wLocalRecoveryNext').disabled=!e.target.checked};
+  doc.getElementById('wLocalCreateCancel').onclick=()=>{manager.cancelCreate({token:draft.token});render()};
+  doc.getElementById('wLocalRecoveryNext').onclick=()=>showDeviceLock(draft);
+ }
+
+ function showDeviceLock(draft){
+  title('Secure this device');
+  body().innerHTML=
+   '<p class="w-note">Set a local password to encrypt this wallet on this device. This password is not your recovery phrase and cannot restore the wallet on another device.</p>'+
+   '<label class="w-field">Local wallet password<input id="wLocalPassword" type="password" minlength="10" autocomplete="new-password"></label>'+
+   '<label class="w-field">Confirm password<input id="wLocalPassword2" type="password" minlength="10" autocomplete="new-password"></label>'+
+   '<button id="wLocalFinishCreate" class="w-primary full">Activate BELTRIX Wallet</button><button id="wLocalDeviceBack" class="w-text-button">Back to recovery phrase</button>'+
+   '<p id="wLocalWalletStatus" class="w-inline-status" role="status"></p>';
+  doc.getElementById('wLocalDeviceBack').onclick=()=>showRecovery(draft);
+  doc.getElementById('wLocalFinishCreate').onclick=async()=>{
+   try{
+    const password=doc.getElementById('wLocalPassword').value;
+    if(password!==doc.getElementById('wLocalPassword2').value)return status('Passwords do not match.','error');
+    status('Encrypting wallet on this device…');
+    await manager.finishCreate({token:draft.token,password,chainId:preferredChainId(win)});
+    status('BELTRIX Wallet is ready.','success');
+    updateBadge();
+    setTimeout(render,120);
+   }catch(error){status(error.message||error,'error')}
+  };
  }
 
  async function showUnlock(id){
