@@ -113,27 +113,30 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
     const active = root.querySelector('[data-account-tab][aria-selected="true"]');
     if (simple && spot && ['positions','funding'].includes(active?.dataset.accountTab)) root.querySelector('[data-account-tab="balances"]').click();
   }
-  let focusAnchor=null,focusGuardFrame=0;
+  let focusAnchor=null,focusGuardFrame=0,focusGuardAdjusting=false;
   const focusedFinancialInput=()=>document.activeElement?.matches?.('.order-ticket input:not([type=checkbox]):not([type=range])')?document.activeElement:null;
   const releaseFocusGuard=()=>{
     focusAnchor=null;
     if(focusGuardFrame){cancelAnimationFrame(focusGuardFrame);focusGuardFrame=0;}
   };
+  const snapshotFocusAnchor=input=>{
+    const scroller=document.scrollingElement||document.documentElement;
+    return {input,viewportTop:input.getBoundingClientRect().top,scrollTop:scroller.scrollTop,until:Date.now()+1100};
+  };
   const restoreFocusAnchor=()=>{
     const anchor=focusAnchor,input=focusedFinancialInput();
-    if (!anchor) return;
+    if(!anchor)return;
     if(input!==anchor.input||!input?.isConnected||Date.now()>anchor.until){releaseFocusGuard();return;}
     const scroller=document.scrollingElement||document.documentElement;
-    // Document coordinates distinguish a layout shift from intentional scrolling.
-    // A viewport-only anchor would undo Safari/Playwright scrolling before a
-    // button receives pointerdown, leaving lower order controls unreachable.
-    const documentTop=input.getBoundingClientRect().top+scroller.scrollTop;
-    const delta=documentTop-anchor.documentTop;
-    anchor.documentTop=documentTop;
+    const top=input.getBoundingClientRect().top;
+    const delta=top-anchor.viewportTop;
     if(Math.abs(delta)>0.5){
-      const next=Math.max(0,scroller.scrollTop+delta);
-      if(Math.abs(next-scroller.scrollTop)>0.5)scroller.scrollTop=next;
+      focusGuardAdjusting=true;
+      scroller.scrollTop=Math.max(0,scroller.scrollTop+delta);
+      focusGuardAdjusting=false;
     }
+    anchor.viewportTop=input.getBoundingClientRect().top;
+    anchor.scrollTop=scroller.scrollTop;
   };
   const runFocusGuard=()=>{
     if(focusGuardFrame)return;
@@ -149,11 +152,22 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
     if(focusAnchor?.input===input){
       focusAnchor.until=Math.max(focusAnchor.until||0,Date.now()+duration);
     }else{
-      const scroller=document.scrollingElement||document.documentElement;
-      focusAnchor={input,documentTop:input.getBoundingClientRect().top+scroller.scrollTop,until:Date.now()+duration};
+      focusAnchor=snapshotFocusAnchor(input);
+      focusAnchor.until=Date.now()+duration;
     }
     runFocusGuard();
   };
+  // Treat a real document scroll as user/browser intent. Re-baseline the
+  // viewport anchor instead of fighting the scroll; DOM layout changes do not
+  // emit this event and are still compensated by restoreFocusAnchor().
+  document.addEventListener('scroll',()=>{
+    if(!focusAnchor||focusGuardAdjusting)return;
+    const input=focusedFinancialInput();
+    if(input!==focusAnchor.input)return;
+    const scroller=document.scrollingElement||document.documentElement;
+    focusAnchor.viewportTop=input.getBoundingClientRect().top;
+    focusAnchor.scrollTop=scroller.scrollTop;
+  },{passive:true});
   function schedule() {
     if (scheduled) return;
     // Quote/wallet refreshes must not keep re-arming a user-input focus guard.
@@ -201,7 +215,7 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
   });
   ticket.addEventListener('input',e=>{
     const input=e.target.matches?.('input:not([type=checkbox]):not([type=range])')?e.target:null;
-    if(input)armFocusAnchor(input,900);
+    if(input&&input===focusedFinancialInput())armFocusAnchor(input,900);
   });
   ticket.addEventListener('focusout',releaseFocusGuard);
   const restoreFocusedInputAfterLayout=()=>{
