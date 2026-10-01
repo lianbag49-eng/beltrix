@@ -34,3 +34,16 @@ The independent futures run 36824190134 reported one scroll assertion failure, a
 The regression now checks the input's actual viewport displacement, retaining the existing greater-than-100-pixel threshold. It also verifies the input remains focused and its value stays `0.5`. The typing position tolerance remains 2 px. No production behavior, funds, signing or order controls change.
 
 The corrected assertion passed six consecutive local runs. A direct page-level wheel-blocking control failed with 0 px movement as expected; that temporary control was removed. The final branch must pass the existing complete Chromium and iPhone WebKit workflows before merge and publication.
+
+## Mark price continuity
+
+The follow-up screenshot exposed a separate defect: the top ETH Mark remained available, but the order-book center replaced the same Mark with `—` whenever the book missed its five-second freshness window. A deterministic regression reproduced that mismatch. A second regression reproduced a delayed REST context rolling a newer streamed Mark back from 2700 to 2400. Both failed before the product fix and passed afterward.
+
+- Both Mark displays now share the actual asset context and its own freshness state. Order-book status has its own label; order and sizing locks still depend on a fresh book.
+- Mark updates render as they arrive. Five seconds without a valid streamed context activates a bounded, single-flight REST fallback. Fifteen seconds without a valid context resubscribes only that channel, preserving healthy book traffic. Returning online or to the foreground also refreshes context.
+- An older REST request cannot overwrite a context received while it was pending. Generation checks and cancellation isolate coin/network changes; invalid, nonpositive and wrong-coin Marks are rejected.
+- Refreshing or changing chart interval/book depth for the same market preserves the last real Mark. A real outage retains that value with the time since receipt and a reconnecting/stale label; it never invents a price or resets freshness without data.
+- Coverage includes a healthy Mark with a stalled book, live/REST races, silent-channel recovery, refresh continuity, a 95-second outage and recovery, and old/invalid data across market changes. All 29 focused Chromium chart, futures and desktop/mobile checks and 118 unit checks passed locally.
+- The published-site smoke now samples both Mark displays every second for 30 seconds against actual public venue data, checking matching values and ongoing fresh receipts without connecting a wallet.
+
+The normal full Chromium and iPhone WebKit release gates remain required. Network availability cannot be guaranteed by a browser application; last-known values are identified and stale-book trading locks remain intact.
