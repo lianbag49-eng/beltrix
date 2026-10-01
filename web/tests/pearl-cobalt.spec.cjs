@@ -1,4 +1,5 @@
 const {test,expect}=require('@playwright/test');
+const {setup:setupMarketFixture}=require('./simple-trade-fixture.cjs');
 
 test('Pearl Cobalt defaults to light, toggles dark, and persists',async({page})=>{
  await page.goto('/web/#markets');
@@ -10,7 +11,7 @@ test('Pearl Cobalt defaults to light, toggles dark, and persists',async({page})=
   await expect(page.locator('#pcSidebar')).toBeHidden();
   await expect(page.locator('#pcRightRail')).toBeHidden();
  }else{
-  await expect(page.locator('#pcSidebar')).toBeVisible();
+  await expect(page.locator('#pcSidebar')).toBeHidden();
   await expect(page.locator('#pcProtocolCard')).toBeVisible();
   await expect(page.locator('#pcMarketIntel')).toBeVisible();
  }
@@ -23,7 +24,7 @@ test('Pearl Cobalt defaults to light, toggles dark, and persists',async({page})=
 });
 
 test('Pearl Cobalt keeps trading controls available and market intelligence synchronized',async({page})=>{
- await page.goto('/web/#markets');
+ await setupMarketFixture(page);
  await expect(page.locator('#marketPickerButton')).toBeVisible();
  await expect(page.locator('.order-ticket')).toBeVisible();
  await expect(page.locator('.terminal-account')).toBeVisible();
@@ -56,7 +57,7 @@ test('root route opens the Pearl Cobalt trading dashboard, not Wallet',async({pa
   await expect(page.locator('#pcSidebar')).toBeHidden();
   await expect(page.locator('.bottom-nav')).toBeVisible();
  }else{
-  await expect(page.locator('#pcSidebar')).toBeVisible();
+  await expect(page.locator('#pcSidebar')).toBeHidden();
   await expect(page.locator('.bottom-nav')).toBeHidden();
  }
  await expect(page.locator('.order-ticket')).toBeVisible();
@@ -328,7 +329,7 @@ test('Pearl Cobalt mobile Wallet keeps bottom navigation and avoids desktop work
 test('Pearl Cobalt 1224px desktop reflows insight rail without text or viewport overlap',async({page})=>{
  await page.setViewportSize({width:1224,height:800});
  await page.goto('/web/#markets');
- await expect(page.locator('#pcSidebar')).toBeVisible();
+ await expect(page.locator('#pcSidebar')).toBeHidden();
  await expect(page.locator('#pcRightRail')).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  const bounds=await page.locator('#markets .market-stats').evaluate(el=>{
@@ -344,19 +345,20 @@ test('Pearl Cobalt 1224px desktop reflows insight rail without text or viewport 
  }
 });
 
-test('Pearl Cobalt desktop sidebar destinations are clickable and routed',async({page})=>{
+test('Pearl Cobalt desktop header destinations are clickable and routed',async({page})=>{
  await page.setViewportSize({width:1224,height:800});
  await page.goto('/web/#markets');
- await page.locator('[data-pc-action="analytics"]').click();
+ await page.locator('.pc-header-link[aria-label="Analytics"]').click();
  await expect(page.locator('#pcMarketIntel')).toBeVisible();
- await page.locator('[data-pc-action="protocol"]').click();
+ await page.locator('.pc-header-link[aria-label="Protocol"]').click();
  await expect(page.locator('#pcProtocolCard')).toBeVisible();
- await page.locator('[data-pc-action="wallet"]').click();
+ await page.locator('.pc-header-link[aria-label="Wallet"]').click();
  await expect(page.locator('body')).toHaveAttribute('data-page','wallet');
  await expect(page.locator('#wallet')).toBeVisible();
  await page.locator('#pcWalletSurfaceNav [data-pc-wallet-route="markets"]').click();
  await expect(page.locator('body')).toHaveAttribute('data-page','markets');
- await page.locator('[data-pc-action="settings"]').click();
+ await page.locator('#cleanMore').click();
+ await page.locator('[data-clean-route="settings"]').click();
  await expect(page.locator('body')).toHaveAttribute('data-page','settings');
  await expect(page.locator('#settings')).toBeVisible();
 });

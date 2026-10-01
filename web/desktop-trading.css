@@ -1,0 +1,117 @@
+/* Desktop terminal composition; all colors belong to the existing Pearl Cobalt theme. */
+@media (min-width:1024px){
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .app{
+  display:grid;max-width:none;padding:10px 14px 28px;
+  grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto;gap:12px;
+ }
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .top{
+  grid-column:1;grid-row:1;position:relative;top:auto;margin:0;min-height:60px;flex-wrap:wrap;
+ }
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .pc-sidebar{display:none!important}
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] #markets.page.active{
+  grid-column:1;grid-row:2;width:100%;max-width:none;margin:0;
+ }
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .pc-right-rail{
+  display:grid!important;grid-column:1;grid-row:3;position:static;top:auto;
+  grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;
+ }
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .pc-header-nav{display:flex;margin-left:8px;gap:0}
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .pc-header-link{font-size:14px;padding:8px}
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .pc-market-search{
+  min-width:38px;width:38px;padding:0;justify-content:center;margin-left:auto;
+ }
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .pc-market-search span:nth-child(2),
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .pc-market-search kbd,
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .testnet{display:none}
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .top .wallet,
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .top .select,
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .pc-theme-toggle{font-size:13px}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .market-card{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:16px;
+  padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--card);
+ }
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .market-card>.section-title{display:none}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .market-card>.market-controls{
+  grid-column:1;grid-row:1;display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 10px;
+ }
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .market-picker{order:-1;min-width:180px}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets #marketNetwork{width:auto;font-size:12px;min-height:36px}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .simple-trade-toolbar{
+  grid-column:2;grid-row:1;margin:0 0 10px;padding:0;border:0;gap:12px;
+ }
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .simple-products button{font-size:15px;min-height:38px}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .simple-view-toggle{font-size:12px;max-width:none;white-space:nowrap}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .market-card>:not(.market-controls):not(.simple-trade-toolbar){grid-column:1/-1}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .simple-market-details{position:relative;border-block:1px solid var(--line);margin:0;padding-right:80px}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .simple-market-details>#marketRefresh{position:absolute;right:0;top:12px;min-height:34px;padding:6px 10px;font-size:12px}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .simple-market-details>summary{display:none}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .market-stats{
+  display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:14px;margin:0;padding:12px 0;border:0;
+ }
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .market-stats>div{min-height:0}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .market-stats small,
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .market-stats span{font-size:12px}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .market-stats strong{font-size:15px;line-height:1.4}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .funding-bar{justify-content:flex-end;margin:8px 0;gap:6px}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .funding-bar button{flex:0 1 auto;padding:6px 12px;font-size:12px;min-height:32px}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .trade-layout{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(210px,20%) minmax(280px,25%);
+  grid-template-areas:"chart depth ticket";align-items:start;gap:0;margin-top:8px;
+ }
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .trade-layout>.chart-panel{
+  grid-area:chart;width:100%;min-width:0;align-self:start;padding-right:14px;box-sizing:border-box;
+ }
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .trade-layout>.depth{
+  grid-area:depth;width:auto;min-width:0;border-left:1px solid var(--line);padding:12px 14px 0;box-sizing:border-box;
+ }
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .trade-layout>.order-ticket{
+  grid-area:ticket;width:auto;min-width:0;border:0;border-left:1px solid var(--line);border-radius:0;
+  padding:12px 0 0 16px;background:var(--card);box-sizing:border-box;
+ }
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .book-head,
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .book-level{grid-template-columns:1.1fr 1fr 1fr;gap:8px}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .book-head>span:nth-child(3),
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .book-level>span:nth-child(3){display:block}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .book-level{min-height:26px;padding:4px 0;font-size:13px}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .book-head{font-size:12px}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .depth .terminal-section-head h3{font-size:14px;color:var(--text)}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets #bookDepth{font-size:12px}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .order-ticket label,
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .order-ticket summary,
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .futures-available,
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .order-estimate,
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .fast-row button,
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .fast-types button,
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .fast-open-close button{font-size:13px;line-height:1.5}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .order-ticket input:not([type=checkbox]):not([type=range]){font-size:16px;min-height:42px}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .order-ticket .fast-row button{min-height:34px}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .terminal-account{margin-top:14px;padding-top:12px;min-width:0}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .terminal-account>.terminal-section-head h3,
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .account-tabs button{font-size:14px}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .terminal-table{font-size:13px}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .trade-layout .chart-studio{--chart-height:clamp(340px,43vh,600px);border-top:0}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .chart-heading{padding-left:0}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .chart-readout{font-size:12px;min-height:48px}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .chart-indicator-chips{gap:4px}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .chart-indicator-chips button{min-width:0;font-size:12px}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .terminal-jump{display:none}
+}
+@media (min-width:1024px) and (max-width:1250px){
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .top{gap:7px}
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .brand b{font-size:15px;letter-spacing:2px}
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .pc-header-link{font-size:12px;padding:6px}
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] #walletProvider{max-width:110px}
+ html[data-clean-terminal][data-beltrix-ui="pearl-cobalt"] #markets .market-stats{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:8px}
+}
+@media (min-width:901px) and (max-width:1023px){
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .app{display:block;padding:10px 12px 110px}
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .pc-sidebar,
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .pc-right-rail{display:none!important}
+ html[data-beltrix-ui="pearl-cobalt"] body[data-page="markets"] .bottom-nav{display:flex!important}
+}
+.w-wallet-capacity{padding:14px;margin:14px 0;border:1px solid var(--line);border-radius:10px;background:var(--card2)}
+.w-wallet-capacity dl{margin:10px 0;font-size:13px}
+.w-wallet-capacity dl>div{display:flex;justify-content:space-between;gap:14px;margin:8px 0}
+.w-wallet-capacity dd{margin:0;text-align:right}
+.w-wallet-capacity .w-note{line-height:1.6;margin-bottom:0}
+.w-local-actions button:disabled{opacity:.5;cursor:not-allowed}

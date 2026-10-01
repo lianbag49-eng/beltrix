@@ -1,5 +1,5 @@
 import {privateKeyToAccount,generateMnemonic,mnemonicToAccount,english} from 'viem/accounts';
-import {encryptWalletMaterial,decryptWalletMaterial,putVault,getVault,listVaults,deleteVault} from './beltrix-wallet-vault.js';
+import {encryptWalletMaterial,decryptWalletMaterial,putVault,getVault,listVaults,deleteVault,BELTRIX_LOCAL_WALLET_LIMIT,BELTRIX_WALLET_LIMIT_MESSAGE} from './beltrix-wallet-vault.js';
 import {createBeltrixLocalProvider,announceBeltrixProvider} from './beltrix-local-provider.js';
 import {createBeltrixSolanaWallet} from './beltrix-solana-wallet.js';
 
@@ -49,6 +49,7 @@ export function createBeltrixWalletManager({win=window,cryptoImpl=globalThis.cry
  async function ensureUnique(address){
   const rows=await listVaults();
   if(rows.some(x=>x.address.toLowerCase()===address.toLowerCase()))throw Error('This wallet already exists in BELTRIX.');
+  if(rows.length>=BELTRIX_LOCAL_WALLET_LIMIT)throw Error(BELTRIX_WALLET_LIMIT_MESSAGE);
  }
 
  async function activate(record,material,chainId=1){

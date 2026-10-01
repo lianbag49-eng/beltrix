@@ -33,7 +33,7 @@ test('responsive product navigation exposes the correct single primary navigatio
   await expect(page.locator('.bottom-nav')).toBeVisible();
   expect(await page.locator('nav').evaluateAll(ns=>ns.filter(n=>n.getClientRects().length).length)).toBe(1);
  }else{
-  await expect(page.locator('#pcSidebar')).toBeVisible();
+  await expect(page.locator('#pcSidebar')).toBeHidden();
   await expect(page.locator('.bottom-nav')).toBeHidden();
   await expect(page.getByRole('button',{name:'Trade',exact:true})).toBeVisible();
  }

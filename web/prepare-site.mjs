@@ -16,7 +16,7 @@ const seedAssets=[
   'builder-config.js','builder-core.js',
   'chart-core.js','chart-ui.js','chart-studio.css',
   'terminal-clean.js','terminal-clean.css','terminal-core.js',
-  'pearl-cobalt.js','pearl-cobalt.css','ui-theme-core.js',
+  'pearl-cobalt.js','pearl-cobalt.css','desktop-trading.css','ui-theme-core.js',
   'trading.bundle.js','wallet.bundle.js','usdt.bundle.js',
   'usdt.css','wallet.css','funding.css','terminal.css',
   'mobile-futures.css','trade-simple.css','futures-ux.js',

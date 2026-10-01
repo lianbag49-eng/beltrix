@@ -11,7 +11,8 @@ test('Simple is the default; redundant selectors and generic review are not visi
  for(const id of ['tradeSize','marketNetwork','futuresLong','tradeStatus'])await expect($(page,id)).toBeVisible();
  await expect($(page,'futuresShort')).toBeHidden();await expect($(page,'tradeModeNote')).toBeHidden();
  await page.locator('#futuresExtra > summary').click();await expect($(page,'tradeModeNote')).toBeVisible();await page.locator('#futuresExtra > summary').click();
- await expect($(page,'simpleMarketDetails')).not.toHaveAttribute('open','');
+ if((page.viewportSize()?.width||1280)>=1024)await expect($(page,'simpleMarketDetails')).toHaveAttribute('open','');
+ else await expect($(page,'simpleMarketDetails')).not.toHaveAttribute('open','');
  await expect($(page,'futuresExtra')).not.toHaveAttribute('open','');
  await expect($(page,'futuresLong')).toBeDisabled();await expect($(page,'futuresShort')).toBeDisabled();
 });
