@@ -100,6 +100,9 @@ test('compact view reduces ticket height for both products without overflow or r
 
 test('typing and expanding settings preserve focus without invoking page navigation',async({page})=>{
  await setup(page);await page.addStyleTag({content:'.page{min-height:2600px}'});await page.setViewportSize({width:390,height:844});
+ // Resize switches the chart and statistics composition on the next frame.
+ // Measure typing stability only after the requested mobile surface has mounted.
+ await expect($(page,'markets')).toHaveAttribute('data-trade-surface','mobile');
  await $(page,'tradeSize').evaluate(e=>scrollTo(0,e.getBoundingClientRect().top+scrollY-180));
  const beforeScroll=await page.evaluate(()=>scrollY);expect(beforeScroll).toBeGreaterThan(0);
  const beforeBox=await $(page,'tradeSize').boundingBox();
@@ -109,6 +112,10 @@ test('typing and expanding settings preserve focus without invoking page navigat
  const afterBox=await $(page,'tradeSize').boundingBox();
  expect(Math.abs(afterBox.y-beforeBox.y)).toBeLessThanOrEqual(2);
  expect(await page.evaluate(()=>window.simpleScrolls)).toEqual([]);
+ // Keeping a caret visible must never trap an intentional scroll gesture.
+ const beforeWheel=await page.evaluate(()=>scrollY);
+ await page.mouse.wheel(0,180);
+ await expect.poll(()=>page.evaluate(()=>scrollY)).toBeGreaterThan(beforeWheel+100);
 });
 
 // Product selection emits a transient empty market before loading its metadata.

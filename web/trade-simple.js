@@ -121,12 +121,22 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
   };
   const snapshotFocusAnchor=input=>{
     const scroller=document.scrollingElement||document.documentElement;
-    return {input,viewportTop:input.getBoundingClientRect().top,scrollTop:scroller.scrollTop,until:Date.now()+1100};
+    const now=Date.now();
+    return {input,viewportTop:input.getBoundingClientRect().top,scrollTop:scroller.scrollTop,until:now+1100,lastCheckAt:now};
   };
   const restoreFocusAnchor=()=>{
     const anchor=focusAnchor,input=focusedFinancialInput();
     if(!anchor)return;
-    if(input!==anchor.input||!input?.isConnected||Date.now()>anchor.until){releaseFocusGuard();return;}
+    if(input!==anchor.input||!input?.isConnected||document.hidden){releaseFocusGuard();return;}
+    const now=Date.now(),gap=now-anchor.lastCheckAt;
+    // A blocked render can defer the browser's focus scroll past a wall-clock
+    // deadline. Keep the remaining guard window until rendering resumes.
+    if(gap>250&&anchor.until>=anchor.lastCheckAt){
+      anchor.until+=gap;
+      if((anchor.ignoreScrollUntil||0)>=anchor.lastCheckAt)anchor.ignoreScrollUntil+=gap;
+    }
+    anchor.lastCheckAt=now;
+    if(now>anchor.until){releaseFocusGuard();return;}
     const scroller=document.scrollingElement||document.documentElement;
     const top=input.getBoundingClientRect().top;
     const delta=top-anchor.viewportTop;
@@ -155,11 +165,13 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
       focusAnchor=snapshotFocusAnchor(input);
       focusAnchor.until=Date.now()+duration;
     }
+    focusAnchor.ignoreScrollUntil=focusAnchor.until;
     runFocusGuard();
   };
-  // Treat a real document scroll as user/browser intent. Re-baseline the
-  // viewport anchor instead of fighting the scroll; DOM layout changes do not
-  // emit this event and are still compensated by restoreFocusAnchor().
+  // Explicit user scrolling always wins. Browser focus/caret scrolling during
+  // typing remains guarded, including a delayed scroll after a render stall.
+  for(const event of ['wheel','touchmove'])document.addEventListener(event,releaseFocusGuard,{passive:true});
+  document.addEventListener('keydown',event=>{if(['PageUp','PageDown','Home','End'].includes(event.key))releaseFocusGuard();});
   document.addEventListener('scroll',()=>{
     if(!focusAnchor||focusGuardAdjusting)return;
     if(Date.now()<(focusAnchor.ignoreScrollUntil||0)){restoreFocusAnchor();return;}
@@ -203,7 +215,7 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
     armFocusAnchor(input,1400);
     try { input.focus({ preventScroll: true }); }
     catch { input.focus(); }
-    if(focusAnchor?.input===input)focusAnchor.ignoreScrollUntil=Date.now()+180;
+    if(focusAnchor?.input===input)focusAnchor.ignoreScrollUntil=focusAnchor.until;
   };
   document.addEventListener('pointerdown',event=>{
     if(!focusAnchor)return;

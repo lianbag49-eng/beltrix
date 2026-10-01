@@ -32,3 +32,7 @@ Source baseline: `2e9d34e9952a4e599a0276d0292f0d78e27a1e20`. Production release 
 ## Release dependency repair
 
 The existing production audit gate rejected TronWeb's pinned Axios 1.18.0 dependency. The override and lockfile now resolve Axios 1.20.0, the patched version identified by the upstream advisories (including GHSA-vh66-26gq-q6x8 and GHSA-r4gj-5m52-g5wh). TronWeb remains 6.5.1; the audit gate and financial safeguards are unchanged. Moderate Node-only stream-json findings remain outside the shipped browser bundle, whose build checks already reject that dependency.
+
+## Mobile focus release regression
+
+The full Chromium gate exposed a delayed browser caret scroll after a long render stall. The existing focus guard could expire while the main thread was blocked. Its remaining window now survives the stall and guards caret scrolling during typing, while wheel, touch scrolling and page-scroll keys release it immediately. The original input-position assertion remains unchanged, and the regression now also checks that an intentional wheel gesture moves the page. The failing typing case passed five consecutive local runs after the fix. The isolated iPhone sizing readiness failure passed on one rerun without changing trading safeguards or the test.
