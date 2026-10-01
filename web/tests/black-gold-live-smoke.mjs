@@ -14,10 +14,11 @@ try{
   await page.locator('[data-gold-direction=buy]').click();
   for(const width of [320,390,430,1280]){
    await page.setViewportSize({width,height:844});await page.waitForTimeout(200);
-   const a=await page.locator('.order-ticket').boundingBox(),b=await page.locator('.depth').boundingBox();assert.ok(a.x+a.width<=b.x+1,'Ticket must be left of book');
+   const a=await page.locator('.order-ticket').boundingBox(),b=await page.locator('.depth').boundingBox();assert.ok(width>=1024?b.x+b.width<=a.x+1:a.x+a.width<=b.x+1,'Desktop book precedes ticket; mobile ticket precedes book');
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Horizontal overflow');
    await expect(page.locator('#futuresLong')).toBeVisible();await expect(page.locator('#futuresShort')).toBeHidden();
-   await expect(page.locator('#futuresLong')).toBeDisabled();await expect(page.locator('#marketCanvas')).toBeHidden();
+   await expect(page.locator('#futuresLong')).toBeDisabled();
+   if(width>=1024)await expect(page.locator('#marketCanvas')).toBeVisible();else await expect(page.locator('#marketCanvas')).toBeHidden();
   }
   await page.setViewportSize({width:390,height:844});await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:`test-results/black-gold-${product}-live.png`,fullPage:true});
   await page.locator('[data-gold-direction=sell]').click();await page.waitForFunction(()=>document.querySelector('#markets').dataset.compactDirection==='sell');

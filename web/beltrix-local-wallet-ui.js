@@ -1,5 +1,6 @@
 
 import {beltrixWalletManager} from './beltrix-local-wallet.js';
+import {BELTRIX_LOCAL_WALLET_LIMIT} from './beltrix-wallet-vault.js';
 
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const short=a=>typeof a==='string'?a.slice(0,6)+'…'+a.slice(-4):'—';
@@ -76,6 +77,8 @@ export function installBeltrixLocalWalletUI({manager=beltrixWalletManager,win=wi
  async function render(){
   title('BELTRIX Wallet');
   const vaults=await manager.list(),state=manager.state();
+  const full=vaults.length>=BELTRIX_LOCAL_WALLET_LIMIT;
+  const solanaCount=vaults.filter(v=>v.solanaAddress).length;
   let list='';
   for(const v of vaults){
    const active=state.active?.id===v.id;
@@ -88,8 +91,12 @@ export function installBeltrixLocalWalletUI({manager=beltrixWalletManager,win=wi
    '<div class="w-local-state '+(state.active?'unlocked':'locked')+'"><strong>'+(state.active?'Unlocked':'Locked')+'</strong><span>'+
    (state.active?esc(state.active.name)+' · '+esc(short(state.active.address))+(state.active.solanaAddress?' · SOL '+esc(short(state.active.solanaAddress)):''):'Recovery material remains encrypted in this browser.')+'</span></div>'+
    (state.active?'<div class="w-form-row"><button id="wLocalLock" class="w-secondary">Lock now</button><button id="wLocalActiveBackup" class="w-secondary">Backup recovery</button></div>':'')+
-   '<div class="w-local-actions"><button id="wLocalCreate" class="w-primary">Create BELTRIX Wallet</button><button id="wLocalImport" class="w-secondary">Import wallet</button></div>'+
-   '<hr class="w-divider"><div class="w-list-head"><span>Wallets in this browser</span><span>'+vaults.length+'</span></div>'+
+   '<div class="w-local-actions"><button id="wLocalCreate" class="w-primary"'+(full?' disabled':'')+'>Create BELTRIX Wallet</button><button id="wLocalImport" class="w-secondary"'+(full?' disabled':'')+'>Import wallet</button></div>'+
+   '<section class="w-wallet-capacity" aria-label="Wallet address limits"><div class="w-list-head"><span>Wallets in this browser</span><strong id="wLocalWalletCount">'+vaults.length+' / '+BELTRIX_LOCAL_WALLET_LIMIT+'</strong></div>'+
+   '<dl><div><dt>EVM networks</dt><dd>'+vaults.length+' / '+BELTRIX_LOCAL_WALLET_LIMIT+' addresses per network</dd></div><div><dt>Solana</dt><dd>'+solanaCount+' / '+BELTRIX_LOCAL_WALLET_LIMIT+' addresses</dd></div></dl>'+
+   '<p class="w-note">Each new wallet has its own recovery phrase, one shared address across supported EVM networks, and one Solana address. Imported private keys are EVM-only. The 10-wallet limit is shared by creation and import on this browser and site.</p>'+
+   (full?'<p class="w-note">Wallet limit reached. Existing wallets remain available. Back up a wallet before removing it to make room.</p>':'')+'</section>'+
+   '<hr class="w-divider">'+
    '<div class="w-local-vault-list">'+(list||'<p class="w-note">No BELTRIX Local Wallet exists in this browser yet.</p>')+'</div>'+
    '<p id="wLocalWalletStatus" class="w-inline-status" role="status"></p>'+
    '<p class="w-note">BELTRIX Local Wallet is non-custodial. The encrypted vault stays in this browser. BELTRIX servers, Neon and Render never receive the recovery phrase or private key.</p>';

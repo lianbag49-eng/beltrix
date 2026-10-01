@@ -38,7 +38,7 @@ function mount() {
   const homes = new Map();
   for (const el of [modeNote, hint]) { const marker = document.createComment('compact-note-home'); el.before(marker); homes.set(el, marker); }
   const panel = root.querySelector('.chart-panel'), drawer = $('futuresChart'), layout = root.querySelector('.trade-layout');
-  let queued = false;
+  let queued = false, previousDesktop = null, mobileStatsOpen = false;
   const set = (el, key, value) => { if (el.getAttribute(key) !== value) el.setAttribute(key, value); };
   const text = (el, value) => { if (el.textContent !== value) el.textContent = value; };
   function sync() {
@@ -58,14 +58,21 @@ function mount() {
       if (simple) { if (!$('futuresExtra').contains(el)) $('futuresExtra').append(el); }
       else if (el.previousSibling !== homes.get(el)) homes.get(el).after(el);
     }
-    // Both products start with a ticket + book, not a permanently expanded chart.
+    // Desktop always exposes the chart, book and the same live order form together.
+    // Mobile retains the compact ticket/book and expandable chart. Never clone inputs.
+    const desktop = matchMedia('(min-width:1024px)').matches;
+    set(root, 'data-trade-surface', desktop ? 'desktop' : 'mobile');
     if (!panel.closest('dialog[open]')) {
-      const folded = simple || matchMedia('(max-width:680px)').matches;
+      const folded = !desktop;
       drawer.hidden = !folded;
       if (folded && panel.parentNode !== drawer) drawer.append(panel);
       else if (!folded && panel.parentNode !== layout) layout.prepend(panel);
     }
     const stats = $('simpleMarketDetails');
+    if (stats && desktop && previousDesktop !== true) mobileStatsOpen = stats.open;
+    if (stats && !desktop && previousDesktop === true) stats.open = mobileStatsOpen;
+    if (desktop && stats && !stats.open) stats.open = true;
+    previousDesktop = desktop;
     for (const funding of root.querySelectorAll('.market-card > .funding-bar')) {
       if (stats && stats.nextElementSibling !== funding) stats.after(funding);
     }

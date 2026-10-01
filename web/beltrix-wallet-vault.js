@@ -5,6 +5,10 @@ const AAD_V1=new TextEncoder().encode('BELTRIX-LOCAL-WALLET-V1');
 const AAD_V2=new TextEncoder().encode('BELTRIX-LOCAL-WALLET-V2');
 export const BELTRIX_VAULT_VERSION=2;
 export const BELTRIX_KDF_ITERATIONS=310000;
+// Product limit per browser profile and site origin, not a blockchain limit.
+// Existing vaults remain readable/updatable even if they predate this limit.
+export const BELTRIX_LOCAL_WALLET_LIMIT=10;
+export const BELTRIX_WALLET_LIMIT_MESSAGE='This browser already has 10 BELTRIX wallets. Back up an existing wallet before removing it to make room.';
 
 const bytesToBase64=bytes=>{
  let s='';for(const b of bytes)s+=String.fromCharCode(b);
@@ -156,7 +160,29 @@ export async function putVault(record,options={}){
  };
  if(!value.id||!/^0x[0-9a-fA-F]{40}$/.test(value.address)||!value.encrypted)throw Error('Invalid BELTRIX wallet vault record.');
  if(value.solanaAddress&&!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value.solanaAddress))throw Error('Invalid BELTRIX Solana address.');
- await transact('readwrite',store=>store.put(value),options);
+ // Count, duplicate detection and insertion share one write transaction. This
+ // also serializes competing tabs; a UI-only check would allow an 11th vault.
+ const db=await openDb(options.indexedDBImpl);
+ try{
+  await new Promise((resolve,reject)=>{
+   const tx=db.transaction(STORE,'readwrite'),store=tx.objectStore(STORE);
+   let failure;
+   const rows=store.getAll();
+   rows.onsuccess=()=>{
+    const existing=rows.result||[],update=existing.some(x=>x.id===value.id);
+    if(existing.some(x=>x.id!==value.id&&x.address.toLowerCase()===value.address.toLowerCase())){
+     failure=Error('This wallet already exists in BELTRIX.');
+    }else if(!update&&existing.length>=BELTRIX_LOCAL_WALLET_LIMIT){
+     failure=Error(BELTRIX_WALLET_LIMIT_MESSAGE);
+    }
+    if(failure){tx.abort();return;}
+    store.put(value);
+   };
+   tx.oncomplete=()=>resolve();
+   tx.onerror=()=>reject(failure||tx.error||Error('BELTRIX wallet vault operation failed.'));
+   tx.onabort=()=>reject(failure||tx.error||Error('BELTRIX wallet vault operation was aborted.'));
+  });
+ }finally{db.close()}
  return Object.freeze({...value});
 }
 
