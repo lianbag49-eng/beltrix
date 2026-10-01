@@ -116,9 +116,14 @@ test('typing and expanding settings preserve focus without invoking page navigat
  // Mobile WebKit does not expose wheel input through Playwright; its existing
  // focus-scroll suite separately verifies scrolling while a field has focus.
  if(!(isMobile&&browserName==='webkit')){
-  const beforeWheel=await page.evaluate(()=>scrollY);
+  // Incoming book/layout updates can change document coordinates while the
+  // focus guard keeps the field visually stationary. Measure the gesture in
+  // viewport coordinates, just like the typing-stability assertion above.
+  const beforeWheel=await $(page,'tradeSize').boundingBox();
   await page.mouse.wheel(0,180);
-  await expect.poll(()=>page.evaluate(()=>scrollY)).toBeGreaterThan(beforeWheel+100);
+  await expect.poll(async()=>beforeWheel.y-(await $(page,'tradeSize').boundingBox()).y).toBeGreaterThan(100);
+  await expect($(page,'tradeSize')).toBeFocused();
+  await expect($(page,'tradeSize')).toHaveValue('0.5');
  }
 });
 

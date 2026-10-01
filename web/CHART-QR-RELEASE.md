@@ -26,3 +26,11 @@ User request: keep the chart live on a one-second cadence, fix interruptions, an
 - Official API reference: https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/websocket/subscriptions and /timeouts-and-heartbeats.
 
 Live prices require incoming venue data. During an actual outage, retained prices are marked stale and new orders remain locked; no fabricated prices are generated. Camera tests use synthetic local streams and do not access a user's physical camera or real funds. Chromium exercises canvas.captureStream; Linux WebKit uses a deterministic media-frame adapter to deliver real QR pixels to the same scan loop because its synthetic capture stream did not deliver frames in CI.
+
+## Resumed scroll verification
+
+The independent futures run 36824190134 reported one scroll assertion failure, although the release pipeline passed. Its trace shows document scroll offsets moving from 536 to 406 and then 586 as the first order-book layout update overlaps a 180 px wheel gesture. The input moves upward in the viewport; comparing only the document offset misclassifies that movement.
+
+The regression now checks the input's actual viewport displacement, retaining the existing greater-than-100-pixel threshold. It also verifies the input remains focused and its value stays `0.5`. The typing position tolerance remains 2 px. No production behavior, funds, signing or order controls change.
+
+The corrected assertion passed six consecutive local runs. A direct page-level wheel-blocking control failed with 0 px movement as expected; that temporary control was removed. The final branch must pass the existing complete Chromium and iPhone WebKit workflows before merge and publication.
