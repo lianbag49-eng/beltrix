@@ -56,8 +56,7 @@ test('camera decodes real QR pixels and stops after finding a recipient',async({
  const image=await QRCode.toDataURL(B,{width:420,margin:4});
  await page.evaluate(async({src,frameAdapter})=>{
   const img=new Image();img.src=src;await img.decode();const canvas=document.createElement('canvas');canvas.width=420;canvas.height=420;canvas.getContext('2d').drawImage(img,0,0);
-  const stream=canvas.captureStream(10),frames=setInterval(()=>canvas.getContext('2d').drawImage(img,0,0),100);window.cameraCanvas=canvas;window.qrStopped=0;window.qrCameraRequests=0;
-  for(const track of stream.getTracks()){const stop=track.stop.bind(track);track.stop=()=>{window.qrStopped++;clearInterval(frames);stop();};}
+  const stream=canvas.captureStream(10),frames=setInterval(()=>canvas.getContext('2d').drawImage(img,0,0),100);window.cameraCanvas=canvas;window.cameraStream=stream;window.stopQRFrames=()=>clearInterval(frames);window.qrCameraRequests=0;
   Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>{window.qrCameraRequests++;return stream;}}});
   // Linux WebKit's synthetic capture stream did not deliver frames in CI.
   // Supply real QR pixels at the media boundary while exercising the same scan,
@@ -68,10 +67,14 @@ test('camera decodes real QR pixels and stops after finding a recipient',async({
    CanvasRenderingContext2D.prototype.drawImage=function(source,...args){return draw.call(this,source instanceof HTMLVideoElement&&source.getAttribute('aria-label')==='QR camera preview'?canvas:source,...args);};
   }
  },{src:image,frameAdapter:browserName==='webkit'});
+ await expect.poll(()=>page.evaluate(()=>window.cameraStream.getTracks().map(track=>track.readyState))).toEqual(['live']);
  await page.locator('[data-qr-camera]').click();
  await expect.poll(()=>page.evaluate(()=>window.qrCameraRequests)).toBe(1);
  await expect(page.locator('#fundingPaymentText')).toHaveValue(B);
- await expect.poll(()=>page.evaluate(()=>qrStopped)).toBe(1);await expect(page.locator('[data-qr-preview]')).toBeHidden();
+ // Read the actual source track state: WebKit can return a fresh JS wrapper
+ // from getTracks(), so replacing one wrapper's stop() is not reliable.
+ await expect.poll(()=>page.evaluate(()=>window.cameraStream.getTracks().map(track=>track.readyState))).toEqual(['ended']);
+ await page.evaluate(()=>window.stopQRFrames());await expect(page.locator('[data-qr-preview]')).toBeHidden();
  expect(await page.evaluate(()=>walletFixture.sent.length)).toBe(0);
 });
 
