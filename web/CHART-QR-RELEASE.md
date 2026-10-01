@@ -47,3 +47,5 @@ The follow-up screenshot exposed a separate defect: the top ETH Mark remained av
 - The published-site smoke now samples both Mark displays every second for 30 seconds against actual public venue data, checking matching values and ongoing fresh receipts without connecting a wallet.
 
 The normal full Chromium and iPhone WebKit release gates remain required. Network availability cannot be guaranteed by a browser application; last-known values are identified and stale-book trading locks remain intact.
+
+The first full PC run caught a funding regression: retaining the entire context across a same-market refresh also retained a funding rate after that refresh failed. Retention now applies only to Mark; funding/statistics keep their separate refresh timestamp and unavailable behavior. The original funding assertion is preserved and now also verifies that both Mark displays remain populated.

@@ -9,7 +9,7 @@ const $=id=>document.getElementById(id);
 const marketPicker=createMarketPicker($('marketSymbol'));
 const intervals={'1m':60000,'3m':180000,'5m':300000,'15m':900000,'30m':1800000,'1h':3600000,'4h':14400000,'1d':86400000,'1w':604800000};
 let generation=0,controller,socket,retry,heartbeat,lastUpdate=0,candles=[],book=null,trades=[],lastTradeTime=0,streamReceived=0,dirty=false;
-let marketMeta=[],assetContext=null,contextReceived=0,candleFeed='snapshot',catalogSignature='';
+let marketMeta=[],assetContext=null,contextReceived=0,statisticsReceived=0,candleFeed='snapshot',catalogSignature='';
 let contextSource='',contextStreamAt=0,contextRequestAt=0,contextSubscribeAt=0,contextBusy=false,contextRevision=0,loadedContextKey='';
 let socketAt=0,socketReceived=0,reconnectAttempt=0,snapshotBusy=false,snapshotAt=0,candleRevision=0,loadedKey='';
 const liveCandleRevisions=new Map();
@@ -20,7 +20,7 @@ function contextDetail(){return {network:$('marketNetwork').value,context:assetC
 function emit(){window.dispatchEvent(new CustomEvent('beltrix:market',{detail:{...contextDetail(),market:selection(),book,received:streamReceived}}))}
 function acceptContext(ctx,source){
  if(!finite(ctx?.markPx)||Number(ctx.markPx)<=0)return false;
- assetContext=ctx;contextReceived=Date.now();contextSource=source;contextRevision++;
+ assetContext=ctx;contextReceived=statisticsReceived=Date.now();contextSource=source;contextRevision++;
  if(source==='live')contextStreamAt=contextReceived;
  paintContext();emit();return true;
 }
@@ -36,14 +36,14 @@ function paintBook(){
  const box=$('marketTrades');box.replaceChildren();for(const t of trades.slice(-10).reverse()){const row=document.createElement('div');row.className='row space pair '+(t.side==='B'?'green':'red');row.textContent=`${new Date(t.time).toLocaleTimeString('en-US')}  ${t.side==='B'?'Buy':'Sell'}  ${t.px} · ${t.sz}`;box.append(row)}
 }
 function paintContext(){
- const spot=selection()?.spot,ctx=assetContext,stale=!contextReceived||Date.now()-contextReceived>90000;
+ const spot=selection()?.spot,ctx=assetContext,stale=!statisticsReceived||Date.now()-statisticsReceived>90000;
  const display=(id,v,suffix='')=>{$(id).textContent=!stale&&finite(v)?Number(v).toLocaleString('en-US',{maximumFractionDigits:8})+suffix:'—'};
  const mark=markView(contextDetail());$('marketMark').textContent=mark.price;$('marketMark').dataset.state=mark.state;$('marketMark').title=mark.label;
  display('marketOracle',ctx?.oraclePx);display('marketVolume',ctx?.dayNtlVlm,' USDC');display('marketOI',ctx?.openInterest,selection()?' '+selection().value:'');
  const change=!stale&&Number(ctx?.prevDayPx)>0?(Number(ctx.markPx)/Number(ctx.prevDayPx)-1)*100:null;$('marketChange').textContent=finite(change)?`${change>=0?'+':''}${change.toFixed(2)}%`:'—';$('marketChange').className=finite(change)?change>=0?'green':'red':'';
  $('marketFundingCard').hidden=!!spot;$('marketFundingTime').hidden=!!spot;
  const f=fundingView(stale?null:ctx?.funding);$('marketFunding').textContent=f.label;$('marketFundingDirection').textContent=f.direction;$('marketFundingCountdown').textContent=f.countdown;$('marketFundingAt').textContent=new Date(f.next).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
- $('marketContextStatus').textContent=stale?'Market statistics unavailable or stale. Funding is not assumed to be zero.':`${spot?'Spot market · No funding or leverage':'Perpetual funding settles hourly · Current rate is indicative'} · Statistics updated ${Math.floor((Date.now()-contextReceived)/1000)}s ago`;
+ $('marketContextStatus').textContent=stale?'Market statistics unavailable or stale. Funding is not assumed to be zero.':`${spot?'Spot market · No funding or leverage':'Perpetual funding settles hourly · Current rate is indicative'} · Statistics updated ${Math.floor((Date.now()-statisticsReceived)/1000)}s ago`;
 }
 async function refreshContext(token,coin){
  if(token!==generation||contextBusy)return;
@@ -124,6 +124,10 @@ async function selectMarket(){
  const coin=$('marketSymbol').value,interval=$('marketInterval').value,key=[$('marketNetwork').value,coin,interval].join(':');
  const contextKey=[$('marketNetwork').value,$('marketType').value,coin].join(':');
  if(contextKey!==loadedContextKey){assetContext=null;contextReceived=0;contextSource='';}
+ else if(assetContext)assetContext={markPx:assetContext.markPx};
+ // Preserve only the Mark across a refresh. Funding/statistics must be loaded
+ // again so a failed refresh cannot present a retained rate as current.
+ statisticsReceived=0;
  loadedContextKey=contextKey;contextBusy=false;contextRequestAt=contextStreamAt=contextSubscribeAt=0;contextRevision=0;
  const changed=key!==loadedKey;loadedKey=key;
  if(changed){candles=[];candleFeed='snapshot';lastUpdate=0;liveCandleRevisions.clear();candleRevision=0;$('marketPrice').textContent='—';$('marketOHLC').textContent='';}
@@ -194,7 +198,7 @@ async function refreshCatalog(){
  }finally{clearTimeout(timeout)}
 }
 async function loadSymbols(){
- ++generation;cleanup();marketMeta=[];book=null;assetContext=null;contextReceived=0;paintContext();streamReceived=0;trades=[];pendingTrades=[];lastCandleAt=0;lastTradeTime=0;lastUpdate=0;candleFeed='snapshot';$('marketPrice').textContent='—';$('marketSymbol').replaceChildren();emit();paintBook();candles=[];draw();status('Loading markets');
+ ++generation;cleanup();marketMeta=[];book=null;assetContext=null;contextReceived=statisticsReceived=0;paintContext();streamReceived=0;trades=[];pendingTrades=[];lastCandleAt=0;lastTradeTime=0;lastUpdate=0;candleFeed='snapshot';$('marketPrice').textContent='—';$('marketSymbol').replaceChildren();emit();paintBook();candles=[];draw();status('Loading markets');
  const mode=$('marketType').value,token=generation;const abort=new AbortController(),timeout=setTimeout(()=>abort.abort(),15000);
  try{
   const catalog=await fetchCatalog(mode,abort.signal);if(token!==generation)return;
