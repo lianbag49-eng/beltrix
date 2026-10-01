@@ -120,10 +120,12 @@ function marketOptions(){
   label:(o.textContent||o.value).trim()
  }));
 }
+let watchlistKey='';
 function renderWatchlist(sidebar){
  const list=sidebar?.querySelector('.pc-watchlist-list');if(!list)return;
  const rows=marketOptions();
  const active=$('marketSymbol')?.value;
+ const key=JSON.stringify([active,rows]);if(key===watchlistKey)return;watchlistKey=key;
  list.replaceChildren();
  for(const row of rows){
   const b=node('button','pc-market-row');
@@ -263,7 +265,7 @@ function syncIntel(){
   change:safeText('marketChange')
  };
  for(const entry of Object.entries(values)){
-  const el=rail.querySelector('[data-pc-intel="'+entry[0]+'"]');if(el)el.textContent=entry[1];
+  const el=rail.querySelector('[data-pc-intel="'+entry[0]+'"]');if(el&&el.textContent!==entry[1])el.textContent=entry[1];
  }
  const change=rail.querySelector('[data-pc-intel="change"]');
  const source=$('marketChange');

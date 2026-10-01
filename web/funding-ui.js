@@ -4,7 +4,7 @@ import {network} from './wallet-data.js';
 import {fundingRoute,DOCUMENTED_WITHDRAWAL_FEE} from './funding-core.js';
 import {FundingService} from './funding-service.js';
 import {readFundingJournal,TERMINAL} from './funding-journal.js';
-import {showFundingReceive,installPaymentRequestImport,escapeHTML as esc} from './funding-qr-ui.js';
+import {showFundingReceive,installPaymentRequestImport,installWithdrawalQR,escapeHTML as esc} from './funding-qr-ui.js';
 
 export function installFundingUI(){
  if(document.getElementById('fundingDialog'))return;
@@ -65,13 +65,17 @@ export function installFundingUI(){
     const guard=()=>{if(token!==scope||env!==currentEnv||!dialog.open)throw Error('Funding session changed or closed. Review again.');const now=window.beltrixWallet?.account;if(now&&!same(now,account))throw Error('Selected wallet address changed.');};
     service=new FundingService({provider:p,account,env,assertCurrent:guard});
     by('fundingAccount').textContent=account;
-    if(kind==='withdraw')by('fundingDestination').value=account;
+    if(kind==='withdraw'&&!by('fundingDestination').value.trim())by('fundingDestination').value=account;
     const data=await service.balances();if(!v.valid()||token!==scope)return;
     by('fundingWalletBalance').textContent=data.wallet===null?'Unavailable':data.wallet+' USDC';by('fundingAvailable').textContent=data.withdrawable===null?'Unavailable':data.withdrawable+' USDC';
     by('fundingReview').disabled=false;note('Connected. Check the full address and selected network.');
    }catch(e){if(v.valid())note(e.shortMessage||e.message);}finally{busy=false;if(v.valid())by('fundingConnect').disabled=false;}
   };
-  if(kind==='withdraw')by('fundingUseSelf').onclick=()=>{if(service)by('fundingDestination').value=service.account;};
+  if(kind==='withdraw'){
+   by('fundingUseSelf').onclick=()=>{if(service)by('fundingDestination').value=service.account;};
+   const scanner=installWithdrawalQR({recipient:by('fundingDestination'),quantity:by('fundingAmount'),route:()=>fundingRoute(currentEnv),valid:v.valid});
+   by('fundingEnv').addEventListener('change',()=>scanner.stop());
+  }
   if(kind==='deposit')by('fundingWalletQR').onclick=()=>receive(fundingRoute(currentEnv).chainId);
   by('fundingReview').onclick=async()=>{
    if(busy||!service)return;const client=service;busy=true;by('fundingReview').disabled=true;

@@ -73,7 +73,10 @@ export function createMarketChart(canvas) {
   const on=id=>prefs[id]&&!prefs.muted,w=Math.floor(canvas.clientWidth),priceHeight=fullscreen?Math.max(230,Math.min(440,innerHeight-380)):w>680?300:230;
   const panes=[{name:'Price',height:priceHeight}];if(on('volume'))panes.push({name:'VOL',height:64});if(on('rsi'))panes.push({name:'RSI',height:94});if(on('macd'))panes.push({name:'MACD',height:100});
   const h=panes.reduce((s,p)=>s+p.height,0)+25,dpr=Math.min(devicePixelRatio||1,3);
-  canvas.style.setProperty('--chart-height',h+'px');canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);ctx.fillStyle=colors.bg;ctx.fillRect(0,0,w,h);ctx.font='10px system-ui';
+  if(canvas.style.getPropertyValue('--chart-height')!==h+'px')canvas.style.setProperty('--chart-height',h+'px');
+  if(canvas.width!==Math.round(w*dpr))canvas.width=Math.round(w*dpr);
+  if(canvas.height!==Math.round(h*dpr))canvas.height=Math.round(h*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);ctx.fillStyle=colors.bg;ctx.fillRect(0,0,w,h);ctx.font='10px system-ui';
   if(!candles.length){ctx.fillStyle=colors.muted;ctx.textAlign='center';ctx.fillText('Candle data is not available yet.',w/2,priceHeight/2-8);ctx.fillText('Use Retry data to reconnect.',w/2,priceHeight/2+12);ctx.textAlign='left';geometry=null;readout.firstChild.textContent='No candles loaded';readout.lastChild.textContent='Indicators need historical candles.';return;}
   const win=visibleWindow(candles.length,count,offset);offset=win.offset;const {start,end}=win;const rows=candles.slice(start,end),right=w-68,left=8,step=(right-left)/rows.length,x=i=>left+(i-start+.5)*step;
   let low=Math.min(...rows.map(c=>c.l)),high=Math.max(...rows.map(c=>c.h));
@@ -158,11 +161,11 @@ export function createMarketChart(canvas) {
  window.addEventListener('beltrix:page',()=>{if(fullscreen)modal.close();schedule();});document.addEventListener('visibilitychange',schedule);window.addEventListener('resize',schedule);
  window.addEventListener('beltrix:theme',schedule);
  window.addEventListener('beltrix:position',e=>{const p=e.detail?.position;positionMarker=p?{coin:e.detail?.coin,entryPx:p.entryPx,liquidationPx:p.liquidationPx}:null;canvas.dataset.positionMarker=positionMarker?String(positionMarker.entryPx||''):'';schedule();});
- window.addEventListener('beltrix:order-draft',e=>{draftMarker=e.detail||null;canvas.dataset.orderDraft=draftMarker?.price?String(draftMarker.price):'';schedule();});
+ window.addEventListener('beltrix:order-draft',e=>{const next=e.detail||null;if(['coin','price','type','trigger'].every(k=>next?.[k]===draftMarker?.[k]))return;draftMarker=next;canvas.dataset.orderDraft=draftMarker?.price?String(draftMarker.price):'';schedule();});
  window.addEventListener('beltrix:market',sync);
  return {
   update(rows,next={}){
-   const key=[next.network,next.coin,next.interval].join(':');if(key!==marketKey){count=60;offset=0;cross=-1;marketKey=key;}else if(offset>0&&rows.length>candles.length)offset+=rows.length-candles.length;
+   const key=[next.network,next.coin,next.interval].join(':');if(key!==marketKey){count=60;offset=0;cross=-1;marketKey=key;}else if(offset>0){const anchor=candles[visibleWindow(candles.length,count,offset).end-1]?.t,index=rows.findIndex(c=>c.t===anchor);if(index>=0)offset=rows.length-index-1;}
    candles=rows;meta=next;sourceAt=next.received||0;feed=next.feed||'snapshot';values=calculateIndicators(candles,prefs);
    $('chartPairLabel').textContent=next.label||'Chart';$('chartProductLabel').textContent=`${next.spot?'Spot':'Perpetual'} · ${next.interval||$('marketInterval').value} · Hyperliquid ${next.network||'Connecting'}`;
    const logo=$('chartAssetLogo'),wrap=$('chartAssetLogoWrap'),fallback=String(next.base||'?').replace(/[^A-Za-z0-9]/g,'').slice(0,3).toUpperCase()||'?';wrap.dataset.fallback=fallback;if(next.logo){logo.hidden=false;logo.alt=(next.base||'Asset')+' logo';logo.onload=()=>{logo.hidden=false;wrap.classList.remove('logo-fallback')};logo.onerror=()=>{logo.hidden=true;wrap.classList.add('logo-fallback')};if(logo.src!==next.logo)logo.src=next.logo;}else{logo.hidden=true;wrap.classList.add('logo-fallback')}

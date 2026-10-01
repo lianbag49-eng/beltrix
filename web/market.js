@@ -10,6 +10,9 @@ const marketPicker=createMarketPicker($('marketSymbol'));
 const intervals={'1m':60000,'3m':180000,'5m':300000,'15m':900000,'30m':1800000,'1h':3600000,'4h':14400000,'1d':86400000,'1w':604800000};
 let generation=0,controller,socket,retry,heartbeat,lastUpdate=0,candles=[],book=null,trades=[],lastTradeTime=0,streamReceived=0,dirty=false;
 let marketMeta=[],assetContext=null,contextReceived=0,contextTimer,candleFeed='snapshot',catalogSignature='';
+let socketAt=0,socketReceived=0,reconnectAttempt=0,snapshotBusy=false,snapshotAt=0,candleRevision=0,loadedKey='';
+const liveCandleRevisions=new Map();
+let pendingTrades=[],lastCandleAt=0;
 function endpoint(){return hyperliquidNetwork($('marketNetwork').value).http}
 function selection(){return marketMeta.find(x=>x.value===$('marketSymbol').value)}
 function emit(){window.dispatchEvent(new CustomEvent('beltrix:market',{detail:{network:$('marketNetwork').value,market:selection(),book,received:streamReceived,context:assetContext,contextReceived}}))}
@@ -51,28 +54,69 @@ function draw(){
  chart.update(candles,{network:$('marketNetwork').value,coin:selected?.value,label:selected?.label,base:selected?.base||selected?.label?.split('/')[0].trim(),logo:selected?.logo||null,spot:!!selected?.spot,interval:$('marketInterval').value,received:lastUpdate,feed:candleFeed});
  const c=candles.at(-1);if(c){if(!lastTradeTime)$('marketPrice').textContent=c.c.toLocaleString(undefined,{maximumFractionDigits:8});$('marketOHLC').textContent=`O ${c.o}  H ${c.h}  L ${c.l}  C ${c.c}  V ${c.v}`;}
 }
-function cleanup(){clearTimeout(retry);clearInterval(heartbeat);clearInterval(contextTimer);controller?.abort();if(socket){socket.onclose=null;socket.close();socket=null}}
-async function selectMarket(){
- const token=++generation;cleanup();controller=new AbortController();candles=[];candleFeed='snapshot';book=null;assetContext=null;contextReceived=0;paintContext();trades=[];lastTradeTime=0;streamReceived=0;emit();paintBook();lastUpdate=0;$('marketPrice').textContent='—';$('marketOHLC').textContent='';draw();status('Connecting');
- const coin=$('marketSymbol').value,interval=$('marketInterval').value;if(!coin){status('No markets available');return}
- refreshContext(token,coin);contextTimer=setInterval(()=>{if(!document.hidden)refreshContext(token,coin)},30000);
- const ownController=controller;const timeout=setTimeout(()=>ownController.abort(),15000);
+function applyLatestTrade(){
+ const ms=intervals[$('marketInterval').value],now=Date.now();
+ // Only actual executions are projected. Keep the venue's volume until the next
+ // authoritative candle/backfill, avoiding double-counted trade snapshots.
+ for(const trade of pendingTrades.splice(0).sort((a,b)=>a.time-b.time)){
+  if(now-trade.time>5000||trade.time>now)continue;
+  const t=Math.floor(trade.time/ms)*ms,price=Number(trade.px),last=candles.at(-1);
+  if(last&&t<last.t)continue;
+  const c=last?.t===t?{...last,c:price,h:Math.max(last.h,price),l:Math.min(last.l,price)}:{t,o:price,h:price,l:price,c:price,v:Number(trade.sz)};
+  candles=last?.t===t?[...candles.slice(0,-1),c]:[...candles,c].slice(-1000);
+  liveCandleRevisions.set(t,++candleRevision);lastUpdate=now;candleFeed='live';
+ }
+}
+function closeSocket(){clearInterval(heartbeat);if(socket){socket.onopen=socket.onmessage=socket.onerror=socket.onclose=null;socket.close();socket=null;}}
+function cleanup(){clearTimeout(retry);retry=null;clearInterval(contextTimer);controller?.abort();closeSocket();}
+async function refreshCandles(token,coin,interval){
+ if(token!==generation||snapshotBusy)return;
+ snapshotBusy=true;snapshotAt=Date.now();const revision=candleRevision;
  try{
- const endTime=Date.now();const rows=await info({type:'candleSnapshot',req:{coin,interval,startTime:endTime-intervals[interval]*600,endTime}},controller.signal);
+ const endTime=Date.now(),startTime=candles.length?Math.max(endTime-intervals[interval]*600,candles.at(-1).t-intervals[interval]*2):endTime-intervals[interval]*600;
+ const rows=await info({type:'candleSnapshot',req:{coin,interval,startTime,endTime}},AbortSignal.any([controller.signal,AbortSignal.timeout(15000)]));
  if(token!==generation)return;
- candles=normalizeCandles(rows);lastUpdate=Date.now();draw();status(candles.length?'Snapshot received · Connecting live feed':'No candles for this market');
- socket=new WebSocket(hyperliquidNetwork($('marketNetwork').value).ws);
- socket.onopen=()=>{if(token!==generation)return;for(const subscription of [{type:'candle',coin,interval},{type:'l2Book',coin,fast:$('bookDepth').value==='fast'},{type:'trades',coin},{type:'activeAssetCtx',coin}])socket.send(JSON.stringify({method:'subscribe',subscription}));heartbeat=setInterval(()=>{if(socket?.readyState===1)socket.send(JSON.stringify({method:'ping'}))},25000)};
- socket.onmessage=e=>{if(token!==generation)return;try{
+ const incoming=normalizeCandles(rows);
+ // REST backfill must never overwrite candles received while the request was in flight.
+ const newer=candles.filter(c=>(liveCandleRevisions.get(c.t)||0)>revision);
+ candles=normalizeCandles([...candles,...incoming,...newer]);
+ if(incoming.length){lastUpdate=Date.now();if(!newer.length)candleFeed='snapshot';}
+ draw();if(!streamReceived)status(candles.length?'Snapshot received · Connecting live feed':'No candles for this market');
+ }catch{if(token===generation)status(candles.length?'Candle refresh failed · Keeping chart · Retrying automatically':'Market request failed · Retrying automatically');}
+ finally{if(token===generation)snapshotBusy=false;}
+}
+function reconnect(token,coin,interval){
+ if(token!==generation||retry)return;
+ closeSocket();streamReceived=0;emit();
+ const delay=Math.min(15000,1000*2**Math.min(reconnectAttempt++,4));
+ status(`Disconnected · Reconnecting in ${delay/1000}s · Chart retained`);
+ retry=setTimeout(()=>{retry=null;if(token!==generation)return;startLive(token,coin,interval);refreshCandles(token,coin,interval);refreshContext(token,coin);},delay);
+}
+function startLive(token,coin,interval){
+ if(token!==generation)return;
+ let live;try{live=new WebSocket(hyperliquidNetwork($('marketNetwork').value).ws);}catch{reconnect(token,coin,interval);return;}
+ socket=live;socketAt=socketReceived=Date.now();
+ const current=()=>token===generation&&socket===live;
+ live.onopen=()=>{if(!current())return;for(const subscription of [{type:'candle',coin,interval},{type:'l2Book',coin,fast:$('bookDepth').value==='fast'},{type:'trades',coin},{type:'activeAssetCtx',coin}])live.send(JSON.stringify({method:'subscribe',subscription}));heartbeat=setInterval(()=>{if(current()&&live.readyState===1)live.send(JSON.stringify({method:'ping'}))},25000)};
+ live.onmessage=e=>{if(!current())return;socketReceived=Date.now();try{
  const msg=JSON.parse(e.data);
  if(['activeAssetCtx','activeSpotAssetCtx'].includes(msg.channel)&&msg.data?.coin===coin&&finite(msg.data.ctx?.markPx)){assetContext=msg.data.ctx;contextReceived=Date.now();paintContext();emit();}
- if(msg.channel==='l2Book'&&msg.data.coin===coin){const b=msg.data;if(!Array.isArray(b.levels)||b.levels.length!==2||!Number.isFinite(b.time)||Math.abs(Date.now()-b.time)>30000)return;if(!b.levels.every(xs=>Array.isArray(xs)&&xs.every(x=>Number(x.px)>0&&Number(x.sz)>=0)))return;if(b.levels[0].some((x,i,a)=>i&&Number(x.px)>Number(a[i-1].px))||b.levels[1].some((x,i,a)=>i&&Number(x.px)<Number(a[i-1].px)))return;if(b.levels[0][0]&&b.levels[1][0]&&Number(b.levels[0][0].px)>=Number(b.levels[1][0].px))return;if(book&&b.time<book.time)return;book=b;streamReceived=Date.now();dirty=true;emit();}
- if(msg.channel==='trades'&&Array.isArray(msg.data)){for(const t of msg.data){if(t.coin!==coin||!Number.isFinite(t.time)||!Number.isFinite(Number(t.px))||Number(t.px)<=0||Number(t.sz)<0||t.time>Date.now()+5000)continue;if(trades.some(x=>x.tid===t.tid&&x.time===t.time))continue;trades.push(t);}trades.sort((a,b)=>a.time-b.time);trades=trades.slice(-100);dirty=true;}
- if(msg.channel==='candle'){for(const raw of (Array.isArray(msg.data)?msg.data:[msg.data])){if(raw.s!==coin||raw.i!==interval)continue;const c=normalize(raw);if(!c)continue;const i=candles.findIndex(x=>x.t===c.t);if(i>=0)candles[i]=c;else candles.push(c);candles.sort((a,b)=>a.t-b.t);candles=candles.slice(-1000);lastUpdate=Date.now();candleFeed='live';dirty=true;}}
+ if(msg.channel==='l2Book'&&msg.data.coin===coin){const b=msg.data;if(!Array.isArray(b.levels)||b.levels.length!==2||!Number.isFinite(b.time)||Math.abs(Date.now()-b.time)>30000)return;if(!b.levels.every(xs=>Array.isArray(xs)&&xs.every(x=>Number(x.px)>0&&Number(x.sz)>=0)))return;if(b.levels[0].some((x,i,a)=>i&&Number(x.px)>Number(a[i-1].px))||b.levels[1].some((x,i,a)=>i&&Number(x.px)<Number(a[i-1].px)))return;if(b.levels[0][0]&&b.levels[1][0]&&Number(b.levels[0][0].px)>=Number(b.levels[1][0].px))return;if(book&&b.time<book.time)return;book=b;streamReceived=Date.now();reconnectAttempt=0;dirty=true;emit();}
+ if(msg.channel==='trades'&&Array.isArray(msg.data)){for(const t of msg.data){if(t.coin!==coin||!Number.isFinite(t.time)||!Number.isFinite(Number(t.px))||Number(t.px)<=0||!Number.isFinite(Number(t.sz))||Number(t.sz)<0||t.time>Date.now()+5000)continue;if(trades.some(x=>x.tid===t.tid&&x.time===t.time))continue;trades.push(t);pendingTrades.push(t);}pendingTrades=pendingTrades.slice(-1000);trades.sort((a,b)=>a.time-b.time);trades=trades.slice(-100);dirty=true;}
+ if(msg.channel==='candle'){for(const raw of (Array.isArray(msg.data)?msg.data:[msg.data])){if(raw?.s!==coin||raw.i!==interval)continue;const c=normalize(raw);if(!c||c.t>Date.now()+intervals[interval])continue;candles=normalizeCandles([...candles,c]);liveCandleRevisions.set(c.t,++candleRevision);for(const t of liveCandleRevisions.keys())if(t<candles[0].t)liveCandleRevisions.delete(t);lastCandleAt=lastUpdate=Date.now();candleFeed='live';dirty=true;}}
  }catch{status('Invalid market data')}};
- socket.onclose=()=>{if(token!==generation)return;clearInterval(heartbeat);status('Disconnected · Reconnecting in 5s');retry=setTimeout(selectMarket,5000)};
- socket.onerror=()=>status('Live connection error');
- }catch(e){if(token===generation)status('Market request failed · Refresh to retry')}finally{clearTimeout(timeout)}
+ live.onclose=live.onerror=()=>{if(current())reconnect(token,coin,interval);};
+}
+async function selectMarket(){
+ const token=++generation;cleanup();controller=new AbortController();snapshotBusy=false;snapshotAt=0;reconnectAttempt=0;
+ const coin=$('marketSymbol').value,interval=$('marketInterval').value,key=[$('marketNetwork').value,coin,interval].join(':');
+ const changed=key!==loadedKey;loadedKey=key;
+ if(changed){candles=[];candleFeed='snapshot';lastUpdate=0;liveCandleRevisions.clear();candleRevision=0;$('marketPrice').textContent='—';$('marketOHLC').textContent='';}
+ book=null;assetContext=null;contextReceived=0;paintContext();trades=[];pendingTrades=[];lastCandleAt=0;lastTradeTime=0;streamReceived=0;dirty=false;emit();paintBook();draw();status('Connecting');
+ if(!coin){status('No markets available');return;}
+ refreshContext(token,coin);contextTimer=setInterval(()=>{if(!document.hidden)refreshContext(token,coin)},30000);
+ // Live updates do not depend on the history endpoint succeeding.
+ startLive(token,coin,interval);await refreshCandles(token,coin,interval);
 }
 function buildMarketRows(payload,mode){
  const normalized=mode==='spot'
@@ -135,7 +179,7 @@ async function refreshCatalog(){
  }finally{clearTimeout(timeout)}
 }
 async function loadSymbols(){
- ++generation;cleanup();marketMeta=[];book=null;assetContext=null;contextReceived=0;paintContext();streamReceived=0;trades=[];lastTradeTime=0;lastUpdate=0;candleFeed='snapshot';$('marketPrice').textContent='—';$('marketSymbol').replaceChildren();emit();paintBook();candles=[];draw();status('Loading markets');
+ ++generation;cleanup();marketMeta=[];book=null;assetContext=null;contextReceived=0;paintContext();streamReceived=0;trades=[];pendingTrades=[];lastCandleAt=0;lastTradeTime=0;lastUpdate=0;candleFeed='snapshot';$('marketPrice').textContent='—';$('marketSymbol').replaceChildren();emit();paintBook();candles=[];draw();status('Loading markets');
  const mode=$('marketType').value,token=generation;const abort=new AbortController(),timeout=setTimeout(()=>abort.abort(),15000);
  try{
   const catalog=await fetchCatalog(mode,abort.signal);if(token!==generation)return;
@@ -145,12 +189,21 @@ async function loadSymbols(){
 $('bookDepth').onchange=selectMarket;$('marketNetwork').onchange=loadSymbols;$('marketType').onchange=loadSymbols;$('marketSymbol').onchange=()=>{marketPicker.sync();selectMarket()};$('marketInterval').onchange=selectMarket;$('marketRefresh').onclick=()=> $('marketSymbol').options.length?selectMarket():loadSymbols();
 new ResizeObserver(()=>chart.resize()).observe(canvas);
 setInterval(()=>{
- if(dirty){draw();paintBook();dirty=false;const t=trades.at(-1);if(t){lastTradeTime=t.time;$('marketPrice').textContent=Number(t.px).toLocaleString(undefined,{maximumFractionDigits:8})}}
+ // Keep a one-second real-time chart cadence, independent of order-book events.
+ if(!document.hidden){applyLatestTrade();draw();}
+ if(dirty){paintBook();dirty=false;const t=trades.at(-1);if(t){lastTradeTime=t.time;$('marketPrice').textContent=Number(t.px).toLocaleString(undefined,{maximumFractionDigits:8})}}
  const age=streamReceived?Date.now()-streamReceived:Infinity;
  paintContext();
  $('marketClock').textContent=new Date().toLocaleTimeString("en-US")+' · Refresh: 1s';
  if(age<5000&&socket?.readyState===1)status('Live · '+($('marketNetwork').value==='testnet'?'Testnet':'Mainnet')+' · Order book updated '+(age/1000).toFixed(1)+'s ago');
  else if(streamReceived)status('Stale order book · Orders locked');
  if(streamReceived)emit();
+ if(!document.hidden&&selection()){
+  const coin=selection().value,interval=$('marketInterval').value,now=Date.now();
+  if(socket&&(now-socketReceived>35000||now-(streamReceived||socketAt)>15000))reconnect(generation,coin,interval);
+  if(now-lastCandleAt>15000&&now-snapshotAt>15000)refreshCandles(generation,coin,interval);
+ }
 },1000);
+function resumeFeed(){if(document.hidden||!selection())return;const coin=selection().value,interval=$('marketInterval').value;if(!socket||socket.readyState!==1||Date.now()-(streamReceived||socketAt)>5000)reconnect(generation,coin,interval);refreshCandles(generation,coin,interval);refreshContext(generation,coin);}
+window.addEventListener('online',resumeFeed);document.addEventListener('visibilitychange',resumeFeed);
 window.addEventListener('pagehide',()=>{++generation;cleanup()});window.addEventListener('pageshow',e=>{if(e.persisted)loadSymbols()});setInterval(()=>refreshCatalog().catch(()=>{}),300000);loadSymbols();

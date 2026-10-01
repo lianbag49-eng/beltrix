@@ -1,4 +1,5 @@
 import QRCode from 'qrcode';
+import {mountQRScanner} from './qr-scanner.js';
 import {NETWORKS,network,readClient,readToken} from './wallet-data.js';
 import {address,same,cleanText} from './wallet-core.js';
 import {FUNDING_ROUTES,receivePayload,parsePaymentRequest} from './funding-core.js';
@@ -46,7 +47,7 @@ export function installPaymentRequestImport(){
  const mount=()=>{
   const recipient=host.querySelector('#wSendTo'),asset=host.querySelector('#wSendAsset'),quantity=host.querySelector('#wSendAmount');
   if(!recipient||host.querySelector('#fundingPaymentImport'))return;
-  const panel=document.createElement('details');panel.id='fundingPaymentImport';panel.innerHTML='<summary>Import payment QR text / image</summary><label class="w-field">Address or ethereum: request<textarea id="fundingPaymentText" class="w-input" rows="3" maxlength="1024"></textarea></label><input id="fundingQRFile" type="file" accept="image/*" hidden><div class="funding-grid"><button id="fundingApplyPayment" class="w-secondary" type="button">Apply request</button><button id="fundingReadQRImage" class="w-secondary" type="button">Read QR image</button></div><p class="w-note">Import only fills recipient and optional amount. It never approves a token, switches a network or sends funds. The normal transfer review is still required.</p><p id="fundingImportStatus" class="w-inline-status" role="status"></p>';
+  const panel=document.createElement('details');panel.id='fundingPaymentImport';panel.innerHTML='<summary>Scan QR / import payment</summary><div data-payment-scanner></div><label class="w-field">Address or ethereum: request<textarea id="fundingPaymentText" class="w-input" rows="3" maxlength="1024"></textarea></label><button id="fundingApplyPayment" class="w-secondary" type="button">Apply request</button><p class="w-note">Scan the recipient QR or choose a saved image, then apply the details and review your transfer.</p><p id="fundingImportStatus" class="w-inline-status" role="status"></p>';
   recipient.parentElement.after(panel);
   const q=id=>panel.querySelector('#'+id),status=t=>q('fundingImportStatus').textContent=cleanText(t,220);
   q('fundingApplyPayment').onclick=async()=>{
@@ -61,10 +62,24 @@ export function installPaymentRequestImport(){
     status(parsed.networkSpecified?'Request imported. Review the full recipient and amount.':'Address imported. No network was encoded; verify the selected network.');
    }catch(e){status(e.message);}
   };
-  const scan=q('fundingReadQRImage');
-  if(!globalThis.BarcodeDetector){scan.disabled=true;status('QR image scanning is unavailable in this browser. Paste the address or QR text instead.');}
-  scan.onclick=()=>q('fundingQRFile').click();
-  q('fundingQRFile').onchange=async()=>{let image;try{const f=q('fundingQRFile').files[0];if(!f||f.size>8*1024*1024)throw Error('Choose a QR image smaller than 8 MB.');image=await createImageBitmap(f);const results=await new BarcodeDetector({formats:['qr_code']}).detect(image);if(results.length!==1)throw Error('Use an image containing exactly one readable QR.');q('fundingPaymentText').value=results[0].rawValue;status('Decoded locally. Select Apply request, then review the transfer.');}catch(e){status(e.message);}finally{image?.close();q('fundingQRFile').value='';}};
+  const scanner=mountQRScanner({host:panel.querySelector('[data-payment-scanner]'),prefix:'funding',onResult:text=>{q('fundingPaymentText').value=text;status('QR decoded. Select Apply request to validate the network and asset.');}});
+  panel.addEventListener('toggle',()=>{if(!panel.open)scanner.stop();});
  };
  new MutationObserver(mount).observe(host,{childList:true,subtree:true});mount();
+}
+
+export function installWithdrawalQR({recipient,quantity,route,valid}){
+ const panel=document.createElement('details');panel.id='fundingWithdrawalQR';
+ panel.innerHTML='<summary>Scan recipient QR</summary><div data-withdrawal-scanner></div><label class="w-field">Address / USDC payment request<textarea class="w-input" data-withdrawal-text rows="2" maxlength="1024"></textarea></label><button type="button" class="w-secondary" data-withdrawal-apply>Apply recipient</button><p class="w-inline-status" role="status" data-withdrawal-status></p>';
+ recipient.parentElement.after(panel);const input=panel.querySelector('textarea'),status=panel.querySelector('[data-withdrawal-status]');
+ const scanner=mountQRScanner({host:panel.querySelector('[data-withdrawal-scanner]'),prefix:'withdrawal',isCurrent:valid,onResult:text=>{input.value=text;status.textContent='QR decoded. Apply the recipient, then review the withdrawal.';}});
+ panel.addEventListener('toggle',()=>{if(!panel.open)scanner.stop();});
+ panel.querySelector('[data-withdrawal-apply]').onclick=()=>{try{
+  if(!valid())return;const r=route(),parsed=parsePaymentRequest(input.value,{chainId:r.chainId,token:r.usdc,decimals:6});
+  if(same(parsed.recipient,r.usdc)||same(parsed.recipient,r.bridge))throw Error('A token or bridge contract is not a withdrawal recipient.');
+  recipient.value=parsed.recipient;if(parsed.value!==null)quantity.value=parsed.value;
+  for(const el of [recipient,quantity])el.dispatchEvent(new Event('input',{bubbles:true}));
+  status.textContent=parsed.networkSpecified?'Recipient imported. Check the full withdrawal details.':'Address imported. Verify the recipient uses the selected Arbitrum network.';
+ }catch(e){status.textContent=cleanText(e.message,250);}};
+ return scanner;
 }

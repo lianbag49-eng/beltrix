@@ -70,7 +70,7 @@ test('expanded chart restores the same canvas, inputs and scroll without any sig
 test('indicator period validation and failed-data retry never invent numbers',async({page})=>{
  const {state}=await setup(page);await expand(page);await page.locator('#chartSettingsToggle').click();await page.locator('#chartRsiPeriod').fill('999');await page.locator('#chartRsiPeriod').dispatchEvent('change');await expect(page.locator('#chartRsiPeriod')).toHaveAttribute('aria-invalid','true');
  await page.locator('#chartRsiPeriod').fill('7');await page.locator('#chartRsiPeriod').dispatchEvent('change');await expect(page.locator('#chartIndicatorReadout')).toContainText('RSI(7)');
- state.fail=true;await page.locator('#chartRetry').click();await expect(page.locator('#marketCanvas')).toHaveAttribute('data-chart-bars','0');await expect(page.locator('#chartCandleReadout')).toHaveText('No candles loaded');
+ state.fail=true;await page.locator('#chartRetry').click();await expect(page.locator('#marketCanvas')).toHaveAttribute('data-chart-bars','600');await expect(page.locator('#chartCandleReadout')).toContainText('UTC');
  state.fail=false;await page.locator('#chartRetry').click();await expect(page.locator('#marketCanvas')).toHaveAttribute('data-chart-bars','600');
 });
 test('Spot and Perps keep an unclipped chart at narrow and wide sizes',async({page})=>{

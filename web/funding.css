@@ -12,3 +12,4 @@
 
 /* Black Gold uses content-sized flex actions instead of equal grid cells. */
 html[data-clean-terminal] #markets .funding-bar button{width:auto}
+.w-qr-scanner{min-width:0}.w-qr-scanner [hidden]{display:none!important}.w-qr-scanner .funding-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.w-qr-scanner button{white-space:normal;min-height:44px}.w-qr-scanner [data-qr-status]{overflow-wrap:anywhere;font-size:12px}#fundingWithdrawalQR{margin:12px 0}#fundingWithdrawalQR textarea{width:100%;max-width:100%;font-size:16px}

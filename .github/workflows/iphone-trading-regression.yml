@@ -37,6 +37,12 @@ jobs:
       - run: npm run build
       - name: Install WebKit
         run: npx playwright install --with-deps webkit
+      - name: Verify one-second chart recovery and camera QR on iPhone
+        run: >
+          npx playwright test
+          web/tests/chart-stream.spec.cjs
+          web/tests/funding-qr-scanner.spec.cjs
+          --config=web/playwright.ios.config.cjs
       - name: Run iPhone trading regressions
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: test-results-ios/results.json
