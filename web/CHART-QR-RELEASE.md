@@ -15,14 +15,14 @@ User request: keep the chart live on a one-second cadence, fix interruptions, an
 
 - Personal deposit QR, network/token selection, copying, downloading and sharing remain available under Deposit → Wallet deposit QR. Existing USDT receive QRs cover the supported EVM, TRON and Solana routes.
 - Wallet send, trading USDC withdrawal and USDT send now expose camera scanning and local PNG/JPEG/WebP image decoding. The decoder does not depend on BarcodeDetector, including on iPhone/WebKit.
-- Camera denial/unavailability leaves image import available. Camera tracks stop on success, Stop, collapse, dialog close, view removal or backgrounding, including a permission request resolved after the dialog closes.
+- Camera denial/unavailability leaves image import available. Missing video frames time out after ten seconds. Camera tracks stop on success, Stop, collapse, dialog close, view removal or backgrounding, including a permission request resolved after the dialog closes.
 - Scan results fill payment details only. Network/token checks, recipient checks, normal review and wallet approval remain required. No arbitrary URLs or QR contract calls are executed.
 
 ## Verification
 
 - 118 unit tests passed.
-- Eleven focused Chromium tests passed: reconnect/history preservation, silent socket recovery, one-second cadence, trade-price projection, delayed snapshot race, timeframe isolation; QR image decoding without BarcodeDetector, Arbitrum network validation, camera denial fallback, delayed permission cleanup, and decoding real QR pixels from a camera stream.
+- Focused coverage: reconnect/history preservation, silent socket recovery, one-second cadence, trade-price projection, delayed snapshot race, timeframe isolation; QR image decoding without BarcodeDetector, Arbitrum network validation, preserving scanned addresses when connecting, camera denial fallback, delayed permission cleanup, QR pixel decoding and stalled video cleanup.
 - Existing deposit/withdrawal, chart interaction and USDT tests exercised locally; full desktop and iPhone WebKit gates run in GitHub Actions before release.
 - Official API reference: https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/websocket/subscriptions and /timeouts-and-heartbeats.
 
-Live prices require incoming venue data. During an actual outage, retained prices are marked stale and new orders remain locked; no fabricated prices are generated. Camera tests use synthetic local streams and do not access a user's physical camera or real funds.
+Live prices require incoming venue data. During an actual outage, retained prices are marked stale and new orders remain locked; no fabricated prices are generated. Camera tests use synthetic local streams and do not access a user's physical camera or real funds. Chromium exercises canvas.captureStream; Linux WebKit uses a deterministic media-frame adapter to deliver real QR pixels to the same scan loop because its synthetic capture stream did not deliver frames in CI.

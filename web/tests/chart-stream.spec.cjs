@@ -43,6 +43,7 @@ test('reconnecting keeps candles and history while refilling the feed',async({pa
  const {state,errors}=await setup(page);
  await page.locator('#cleanOpenChart').click();
  await page.locator('#marketCanvas').focus();await page.keyboard.press('Home');
+ await expect.poll(async()=>Number(await page.locator('#marketCanvas').getAttribute('data-history-offset'))).toBeGreaterThan(0);
  const offset=await page.locator('#marketCanvas').getAttribute('data-history-offset');
  expect(Number(offset)).toBeGreaterThan(0);
  state.hold=true;

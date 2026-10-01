@@ -31,10 +31,13 @@ export function mountQRScanner({host,onResult,isCurrent=()=>true,prefix='payment
   try{
    const opened=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
    if(mine!==version||!valid()){opened.getTracks().forEach(t=>t.stop());return;}
-   stream=opened;video.srcObject=stream;preview.hidden=false;await video.play();
+   stream=opened;video.muted=true;video.playsInline=true;video.srcObject=stream;preview.hidden=false;
+   const noFrames=()=>{if(mine!==version)return;stop();status('Camera video is unavailable. Use Read QR image or try the camera again.');};
+   const started=Date.now();timer=setTimeout(noFrames,10000);await video.play();
+   if(mine!==version)return;clearTimeout(timer);
    const scan=async()=>{
     if(mine!==version||!valid()){stop();return;}
-    try{if(video.readyState>=2&&video.videoWidth){const value=decode(video,video.videoWidth,video.videoHeight);if(value){await accept(value);return;}}}
+    try{if(video.readyState>=2&&video.videoWidth){const value=decode(video,video.videoWidth,video.videoHeight);if(value){await accept(value);return;}}else if(Date.now()-started>=10000){noFrames();return;}}
     catch(e){stop();status(e.message);return;}
     timer=setTimeout(scan,200);
    };scan();
