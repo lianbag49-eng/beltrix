@@ -31,6 +31,8 @@ test('trading withdrawal QR validates its network and token before filling field
  await page.locator('[data-withdrawal-apply]').click();await expect(page.locator('[data-withdrawal-status]')).toContainText('network differs');
  await expect(page.locator('#fundingDestination')).toHaveValue(B);await expect(page.locator('#fundingAmount')).toHaveValue('10');
  await expect(page.locator('#fundingReview')).toBeDisabled();expect(await page.evaluate(()=>walletFixture.sent.length)).toBe(0);
+ await page.locator('#fundingSwitch').click();await page.locator('#fundingConnect').click();await expect(page.locator('#fundingReview')).toBeEnabled();
+ await expect(page.locator('#fundingDestination')).toHaveValue(B);await expect(page.locator('#fundingAmount')).toHaveValue('10');
 });
 
 test('camera denial leaves image import usable',async({page})=>{

@@ -65,7 +65,7 @@ export function installFundingUI(){
     const guard=()=>{if(token!==scope||env!==currentEnv||!dialog.open)throw Error('Funding session changed or closed. Review again.');const now=window.beltrixWallet?.account;if(now&&!same(now,account))throw Error('Selected wallet address changed.');};
     service=new FundingService({provider:p,account,env,assertCurrent:guard});
     by('fundingAccount').textContent=account;
-    if(kind==='withdraw')by('fundingDestination').value=account;
+    if(kind==='withdraw'&&!by('fundingDestination').value.trim())by('fundingDestination').value=account;
     const data=await service.balances();if(!v.valid()||token!==scope)return;
     by('fundingWalletBalance').textContent=data.wallet===null?'Unavailable':data.wallet+' USDC';by('fundingAvailable').textContent=data.withdrawable===null?'Unavailable':data.withdrawable+' USDC';
     by('fundingReview').disabled=false;note('Connected. Check the full address and selected network.');
