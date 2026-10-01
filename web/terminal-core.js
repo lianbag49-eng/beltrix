@@ -1,5 +1,15 @@
 // Pure display and order-bound calculations. No wallet or network access.
 export const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
+// Mark freshness is independent of order-book freshness. During an outage retain
+// the last real Mark with its age; never substitute a trade/mid or refresh its age.
+export function markView(m,now=Date.now()){
+ const price=Number(m?.context?.markPx),received=m?.contextReceived,age=now-received;
+ if(!Number.isFinite(price)||price<=0||!Number.isFinite(received)||received<=0||age<0)return {price:'—',state:'loading',label:'Waiting for Mark price'};
+ const seconds=Math.floor(age/1000);
+ const state=age>=90000?'stale':m.contextSource==='live'&&m.contextStreaming&&age<5000?'live':m.contextSource==='snapshot'&&age<5000?'updated':'reconnecting';
+ const label=state==='live'?`Live · ${m.network}`:state==='updated'?`Updated ${seconds}s ago · ${m.network}`:`${state==='stale'?'Stale':'Reconnecting'} · Last update ${seconds}s ago`;
+ return {price:price.toLocaleString('en-US',{maximumFractionDigits:8}),state,label};
+}
 export function fundingView(rate,now=Date.now()){
  const next=(Math.floor(now/3600000)+1)*3600000,seconds=Math.ceil((next-now)/1000);
  if(!finite(rate))return {label:'Unavailable',direction:'Funding data unavailable',next,countdown:`${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`};

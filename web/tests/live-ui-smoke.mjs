@@ -9,6 +9,23 @@ await mkdir('test-results',{recursive:true});
 try{
  base.hash='markets';base.searchParams.set('release',process.env.GITHUB_SHA||'futures-v2');
  await page.goto(base.href,{waitUntil:'domcontentloaded'});await page.waitForSelector('#fastOrderBar');
+ // Real public venue data, no fixtures: verify both Mark displays stay equal,
+ // remain populated and receive fresh updates throughout a 30-second window.
+ await page.waitForFunction(()=>Number(document.getElementById('marketMark')?.textContent.replaceAll(',',''))>0,{},{timeout:45000});
+ evidence.markContinuity=[];
+ for(let i=0;i<30;i++){
+  const sample=await page.evaluate(()=>({
+   at:new Date().toISOString(),top:document.getElementById('marketMark').textContent,
+   book:document.getElementById('futuresBookPrice').textContent,
+   state:document.getElementById('futuresBookPrice').dataset.state,
+   feed:document.getElementById('futuresMarkFeed').textContent,
+   bookFeed:document.getElementById('futuresBookFeed').textContent
+  }));
+  assert.ok(Number(sample.top.replaceAll(',',''))>0,'Mark must remain populated');
+  assert.equal(sample.top,sample.book,'Both Mark displays must match');
+  assert.ok(['live','updated'].includes(sample.state),`Mark must keep receiving updates: ${sample.feed}`);
+  evidence.markContinuity.push(sample);await page.waitForTimeout(1000);
+ }
  for(const width of [320,390,430,1280]){
   await page.setViewportSize({width,height:844});await page.waitForTimeout(400);
   assert.equal(await page.locator('#futuresLong').isDisabled(),true);assert.equal(await page.locator('#futuresShort').isDisabled(),true);

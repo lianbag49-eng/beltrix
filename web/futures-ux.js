@@ -1,5 +1,6 @@
 import {freshMarket} from './order-validation.js';
 import {sizeFraction,closingSide} from './futures-sizing.js';
+import {markView} from './terminal-core.js';
 const $=id=>document.getElementById(id);
 const API={mainnet:'https://api.hyperliquid.xyz/info',testnet:'https://api.hyperliquid-testnet.xyz/info'};
 const TTL=20000;
@@ -25,9 +26,9 @@ const positionSnapshot=element('section','futures-position-snapshot','<div class
 $('tradeReview').before(positionSnapshot);
 const actions=element('div','futures-actions',`<button type="button" id="futuresLong" class="futures-long" disabled>Open Long</button><button type="button" id="futuresShort" class="futures-short" disabled>Open Short</button><small>Opens a review. Wallet approval is still required.</small>`);$('tradeReview').before(actions);
 const note=element('p','futures-note','');note.id='futuresModeHint';bar.after(note);
-const bookMid=element('div','futures-book-mid','<small>Mark price</small><strong id="futuresBookPrice">—</strong><small id="futuresBookFeed">Waiting for live book</small>');$('marketSpread').before(bookMid);
+const bookMid=element('div','futures-book-mid','<small>Mark price</small><strong id="futuresBookPrice">—</strong><small id="futuresMarkFeed">Waiting for Mark price</small>');$('marketSpread').before(bookMid);
 const funding=element('div','futures-funding','<small>Funding / 1h · indicative</small><strong id="futuresFunding">—</strong><span id="futuresFundingClock">—</span>');document.querySelector('.depth').prepend(funding);
-const imbalance=element('div','futures-imbalance',`<div><span id="futuresBidShare">Bids —</span><span id="futuresAskShare">Asks —</span></div><div class="futures-ratio-track"><i id="futuresRatioFill"></i></div><small>Displayed depth, not trader long/short ratio</small>`);$('marketBids').after(imbalance);
+const imbalance=element('div','futures-imbalance',`<div><span id="futuresBidShare">Bids —</span><span id="futuresAskShare">Asks —</span></div><div class="futures-ratio-track"><i id="futuresRatioFill"></i></div><small>Order book · <span id="futuresBookFeed">Waiting for live book</span></small><small>Displayed depth, not trader long/short ratio</small>`);$('marketBids').after(imbalance);
 const accountPanel=document.querySelector('.terminal-account'),chart=document.querySelector('.chart-panel'),layout=document.querySelector('.trade-layout');
 const chartDrawer=element('details','futures-chart','<summary>Chart <span>Expand / collapse</span></summary>');chartDrawer.id='futuresChart';accountPanel.after(chartDrawer);
 const mq=matchMedia('(max-width:680px)');function arrange(){leverageDrawer.open=!mq.matches;extra.open=!mq.matches;if(mq.matches){chartDrawer.append(chart);chartDrawer.hidden=false;}else{layout.prepend(chart);chartDrawer.hidden=true;}window.dispatchEvent(new Event('resize'));}mq.addEventListener('change',arrange);arrange();
@@ -141,7 +142,7 @@ function sync(){
   funding.hidden=spot;setText('futuresFunding',$('marketFunding').textContent);setText('futuresFundingClock',$('marketFundingCountdown').textContent);
   setText('futuresLong',spot?'Buy':close?'Close Long':'Open Long');setText('futuresShort',spot?'Sell':close?'Close Short':'Open Short');
   $('futuresLong').disabled=$('tradeReview').disabled||!edit||(close&&posSide!=='sell');$('futuresShort').disabled=$('tradeReview').disabled||!edit||(close&&posSide!=='buy');
-  const fresh=freshMarket(market),ctx=market?.context;setText('futuresBookPrice',fresh&&Number(ctx?.markPx)>0&&Date.now()-market.contextReceived<90000?Number(ctx.markPx).toLocaleString('en-US',{maximumFractionDigits:8}):'—');
+  const fresh=freshMarket(market),mark=markView(market);setText('futuresBookPrice',mark.price);setText('futuresMarkFeed',mark.label);$('futuresBookPrice').dataset.state=mark.state;$('futuresBookPrice').title=mark.label;
   setText('futuresBookFeed',fresh?'Live · '+market.network:'Stale / unavailable');
   const levels=market?.book?.levels,n=$('bookDepth').value==='deep'?20:5;
   const sum=i=>(levels?.[i]||[]).slice(0,n).reduce((s,l)=>s+Number(l.sz),0),bid=sum(0),ask=sum(1),total=bid+ask,valid=fresh&&total>0&&Number.isFinite(total),ratio=valid?bid/total*100:50;
