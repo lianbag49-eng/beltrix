@@ -28,3 +28,7 @@ Requested by the BELTRIX owner: retain the current Pearl Cobalt UI, separate des
 - No real order, signature, funds movement or user-wallet generation occurred during validation. Wallet tests use disposable isolated browser contexts and synthetic data.
 
 Source baseline: `2e9d34e9952a4e599a0276d0292f0d78e27a1e20`. Production release is not implied by this record; GitHub Actions deployment status is authoritative.
+
+## Release dependency repair
+
+The existing production audit gate rejected TronWeb's pinned Axios 1.18.0 dependency. The override and lockfile now resolve Axios 1.20.0, the patched version identified by the upstream advisories (including GHSA-vh66-26gq-q6x8 and GHSA-r4gj-5m52-g5wh). TronWeb remains 6.5.1; the audit gate and financial safeguards are unchanged. Moderate Node-only stream-json findings remain outside the shipped browser bundle, whose build checks already reject that dependency.
