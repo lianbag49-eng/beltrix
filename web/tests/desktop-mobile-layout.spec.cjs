@@ -34,6 +34,7 @@ for(const width of [1024,1366,1920]){
 test('desktop/mobile switching preserves inputs and restores the same chart after fullscreen',async({page})=>{
  await page.setViewportSize({width:1440,height:1000});
  const {posted}=await setup(page);await connect(page);
+ const advanced=await page.locator('#markets').getAttribute('data-trade-layout')==='advanced';
  await page.locator('#tradeSize').fill('0.2500');
  await page.evaluate(()=>{window.originalSizeInput=document.querySelector('#tradeSize');window.originalChart=document.querySelector('#marketCanvas')});
  await page.locator('#cleanOpenChart').click();
@@ -42,7 +43,8 @@ test('desktop/mobile switching preserves inputs and restores the same chart afte
  await page.locator('#chartExpand').click();
  await expect(page.locator('#markets')).toHaveAttribute('data-trade-surface','mobile');
  await expect(page.locator('#futuresChart')).toBeVisible();
- await expect(page.locator('#simpleMarketDetails')).not.toHaveAttribute('open','');
+ if(advanced)await expect(page.locator('#simpleMarketDetails')).toHaveAttribute('open','');
+ else await expect(page.locator('#simpleMarketDetails')).not.toHaveAttribute('open','');
  const ticket=await page.locator('.order-ticket').boundingBox(),book=await page.locator('.depth').boundingBox();
  expect(ticket.x+ticket.width).toBeLessThanOrEqual(book.x+1);
  await expect(page.locator('#tradeSize')).toHaveValue('0.2500');

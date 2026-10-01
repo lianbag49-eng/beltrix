@@ -23,6 +23,7 @@ Requested by the BELTRIX owner: retain the current Pearl Cobalt UI, separate des
 - Local unit suite: 118 passed.
 - Chromium 153: 9 targeted tests passed (1024/1366/1920 px desktop, 320/390/768/960 px compact layouts, fullscreen/resize input preservation, native-wallet lifecycle, atomic capacity/duplicates).
 - Existing chart/theme/trading regression suite: 41 passed; one live-network-dependent market label check could not load data locally. That UI synchronization test now uses the existing deterministic market fixture and retains all assertions. Public API and published-site network checks remain separate release gates.
+- The corrected synchronization case passed on recheck. All five layout cases passed again after the final disclosure/spacing refinement.
 - WebKit validation is required in existing GitHub Actions gates. Local WebKit could be downloaded but system library installation is unavailable in this runtime; this is not physical-device validation.
 - No real order, signature, funds movement or user-wallet generation occurred during validation. Wallet tests use disposable isolated browser contexts and synthetic data.
 
