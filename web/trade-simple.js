@@ -165,7 +165,7 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
       focusAnchor=snapshotFocusAnchor(input);
       focusAnchor.until=Date.now()+duration;
     }
-    focusAnchor.ignoreScrollUntil=focusAnchor.until;
+    if(focusAnchor.pointerFocus)focusAnchor.ignoreScrollUntil=focusAnchor.until;
     runFocusGuard();
   };
   // Explicit user scrolling always wins. Browser focus/caret scrolling during
@@ -215,7 +215,10 @@ if (ticket && required.every(id => $(id)) && !document.documentElement.dataset.s
     armFocusAnchor(input,1400);
     try { input.focus({ preventScroll: true }); }
     catch { input.focus(); }
-    if(focusAnchor?.input===input)focusAnchor.ignoreScrollUntil=focusAnchor.until;
+    if(focusAnchor?.input===input){
+      focusAnchor.pointerFocus=true;
+      focusAnchor.ignoreScrollUntil=focusAnchor.until;
+    }
   };
   document.addEventListener('pointerdown',event=>{
     if(!focusAnchor)return;
