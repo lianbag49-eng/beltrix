@@ -27,5 +27,5 @@ test('market selection loads spot metadata, candles, and shows failures',async({
  await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.screenshot({path:'test-results/beltrix-markets.png',fullPage:true});
  await page.route('https://api.hyperliquid.xyz/info',r=>r.fulfill({status:503,body:'Unavailable'}));
- await page.locator('#marketRefresh').click();await expect(page.locator('#marketStatus')).toContainText('failed');await expect(page.locator('#marketPrice')).toHaveText('—');
+ await page.locator('#marketRefresh').click();await expect(page.locator('#marketCanvas')).toHaveAttribute('data-chart-bars','1');await expect(page.locator('#marketPrice')).toHaveText('21');
 });

@@ -4,7 +4,7 @@ import {network} from './wallet-data.js';
 import {fundingRoute,DOCUMENTED_WITHDRAWAL_FEE} from './funding-core.js';
 import {FundingService} from './funding-service.js';
 import {readFundingJournal,TERMINAL} from './funding-journal.js';
-import {showFundingReceive,installPaymentRequestImport,escapeHTML as esc} from './funding-qr-ui.js';
+import {showFundingReceive,installPaymentRequestImport,installWithdrawalQR,escapeHTML as esc} from './funding-qr-ui.js';
 
 export function installFundingUI(){
  if(document.getElementById('fundingDialog'))return;
@@ -71,7 +71,11 @@ export function installFundingUI(){
     by('fundingReview').disabled=false;note('Connected. Check the full address and selected network.');
    }catch(e){if(v.valid())note(e.shortMessage||e.message);}finally{busy=false;if(v.valid())by('fundingConnect').disabled=false;}
   };
-  if(kind==='withdraw')by('fundingUseSelf').onclick=()=>{if(service)by('fundingDestination').value=service.account;};
+  if(kind==='withdraw'){
+   by('fundingUseSelf').onclick=()=>{if(service)by('fundingDestination').value=service.account;};
+   const scanner=installWithdrawalQR({recipient:by('fundingDestination'),quantity:by('fundingAmount'),route:()=>fundingRoute(currentEnv),valid:v.valid});
+   by('fundingEnv').addEventListener('change',()=>scanner.stop());
+  }
   if(kind==='deposit')by('fundingWalletQR').onclick=()=>receive(fundingRoute(currentEnv).chainId);
   by('fundingReview').onclick=async()=>{
    if(busy||!service)return;const client=service;busy=true;by('fundingReview').disabled=true;
