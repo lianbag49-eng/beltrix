@@ -81,12 +81,12 @@ test('camera decodes real QR pixels and stops after finding a recipient',async({
 test('a camera that never starts video releases its tracks and offers image import',async({page})=>{
  await sendForm(page);await page.clock.install();
  await page.evaluate(()=>{
-  window.qrStopped=0;const c=document.createElement('canvas'),stream=c.captureStream();
-  for(const track of stream.getTracks()){const stop=track.stop.bind(track);track.stop=()=>{window.qrStopped++;stop();};}
+  const c=document.createElement('canvas'),stream=c.captureStream();window.cameraCanvas=c;window.cameraStream=stream;
   Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>stream}});
   HTMLMediaElement.prototype.play=()=>new Promise(()=>{});
  });
+ await expect.poll(()=>page.evaluate(()=>window.cameraStream.getTracks().map(track=>track.readyState))).toEqual(['live']);
  await page.locator('[data-qr-camera]').click();await expect(page.locator('[data-qr-preview]')).toBeVisible();
  await page.clock.fastForward(11000);await expect(page.locator('[data-qr-status]')).toContainText('video is unavailable');
- await expect.poll(()=>page.evaluate(()=>qrStopped)).toBe(1);await expect(page.locator('[data-qr-preview]')).toBeHidden();await expect(page.locator('[data-qr-image]')).toBeEnabled();
+ await expect.poll(()=>page.evaluate(()=>window.cameraStream.getTracks().map(track=>track.readyState))).toEqual(['ended']);await expect(page.locator('[data-qr-preview]')).toBeHidden();await expect(page.locator('[data-qr-image]')).toBeEnabled();
 });
