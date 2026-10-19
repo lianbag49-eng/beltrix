@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: ourbit-bd-copilot
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: feature/ourbit-bd-mvp
+    dockerContext: ./ourbit-copilot
+    dockerfilePath: ./ourbit-copilot/Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: WEB_ORIGIN
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_URL_UNPOOLED
+        sync: false
+      - key: DATABASE_SCHEMA
+        value: ourbit
+      - key: BOOTSTRAP_TOKEN
+        generateValue: true
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_WEBHOOK_SECRET
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        sync: false
