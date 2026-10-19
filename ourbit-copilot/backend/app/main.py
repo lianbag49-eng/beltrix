@@ -357,7 +357,7 @@ def telegram(request: Request, payload: dict, db=Depends(get_db)):
     elif command.startswith('/kol '):
         term = command[5:105]
         matches = db.scalars(select(KOL).where(KOL.title.ilike('%'+term.replace('%','').replace('_','')+'%')).limit(5)).all()
-        reply = '\n\n'.join(k.title + '\n' + k.source_url for k in matches) or '저장된 KOL이 없습니다. 웹 CRM에서 공개 채널을 발굴하세요.'
+        reply = '\n\n'.join(f'#{k.id} {k.title}\n{k.source_url}' for k in matches) or '저장된 KOL이 없습니다. 웹 CRM에서 공개 채널을 발굴하세요.'
     elif command.startswith(('/analyze ', '/draft ')):
         try:
             kol_id=int(command.split(' ',1)[1])
