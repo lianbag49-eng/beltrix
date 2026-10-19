@@ -358,8 +358,28 @@ def telegram(request: Request, payload: dict, db=Depends(get_db)):
         term = command[5:105]
         matches = db.scalars(select(KOL).where(KOL.title.ilike('%'+term.replace('%','').replace('_','')+'%')).limit(5)).all()
         reply = '\n\n'.join(k.title + '\n' + k.source_url for k in matches) or '저장된 KOL이 없습니다. 웹 CRM에서 공개 채널을 발굴하세요.'
+    elif command.startswith(('/analyze ', '/draft ')):
+        try:
+            kol_id=int(command.split(' ',1)[1])
+            kol=require_kol(db,kol_id)
+            if now()-utc(kol.verified_at)>timedelta(days=30):
+                raise HTTPException(409,'웹 CRM에서 공개 출처를 다시 확인하세요.')
+            if command.startswith('/analyze '):
+                kol.analysis=ai_profile.analyze(kol)
+                reply='AI 콘텐츠 유형 추정: '+kol.analysis['ai']['label']+'\n원본 근거와 상세 검토: '+settings.web_origin
+                audit(db,user,'kol.ai_analyze',kol.id)
+            else:
+                body,generator=proposals.generate(kol)
+                proposal=Proposal(kol_id=kol.id,author_id=user.id,body=body,generator=generator)
+                db.add(proposal);db.flush()
+                audit(db,user,'proposal.create',proposal.id)
+                reply=f'제안문 #{proposal.id}을 검토 대기로 저장했습니다. 다른 검토자가 CRM에서 승인해야 합니다.\n'+settings.web_origin
+        except ValueError:
+            reply='KOL 번호를 입력하세요. 예: /analyze 1 또는 /draft 1'
+        except HTTPException as error:
+            reply=str(error.detail)
     else:
-        reply = 'Ourbit 내부 도우미\n/kol 검색어 — 저장된 KOL 조회\n/pending — 검토 대기 수\n발굴·제안 생성·승인: ' + settings.web_origin + '\n대외 메시지는 기존 계정에서 직접 발송하세요.'
+        reply = 'Ourbit 내부 도우미\n/kol 검색어 — 저장된 KOL 조회\n/analyze 번호 — 출처 기반 AI 분석\n/draft 번호 — 검토 대기 제안문 생성\n/pending — 검토 대기 수\n발굴·승인: ' + settings.web_origin + '\n대외 메시지는 기존 계정에서 직접 발송하세요.'
     if not settings.telegram_bot_token:
         raise HTTPException(503, 'Telegram 연결이 필요합니다.')
     try:

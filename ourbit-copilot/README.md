@@ -63,7 +63,7 @@ npm run dev
 Telegram 웹훅 URL은 `https://<실제 CRM 주소>/api/telegram/webhook`.
 서버의 등록 도구 `python -m app.telegram_setup --url <URL>`은 환경변수의 토큰과 웹훅 비밀값을 사용한다.
 직원이 내부 봇과 개인 대화를 먼저 시작해야 한다. 명령: `/start`, `/kol 검색어`, `/pending`.
-Telegram 응답은 내부 조회·검토 링크 안내이며 제안문 승인은 CRM에서 수행한다.
+Telegram은 내부 조회·출처 기반 AI 분석·검토 대기 제안 생성과 CRM 링크 안내를 지원한다. 제안문 승인은 CRM에서 수행한다.
 
 ## DB / API
 
