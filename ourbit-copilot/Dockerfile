@@ -5,6 +5,7 @@ RUN npm install --no-audit --no-fund
 COPY frontend/ ./
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run typecheck && npm run build
+RUN npm install --no-save --no-audit --no-fund playwright && npx playwright install --with-deps chromium && node tests/ui-smoke.mjs
 
 FROM python:3.12-slim-bookworm
 WORKDIR /app/backend
