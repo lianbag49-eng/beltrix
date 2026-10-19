@@ -18,8 +18,22 @@
 
 ## 현재 검증 상태
 
-Python 문법 검사와 TSX 구문 검사를 통과함. 로컬 Python/Node 패키지 설치는 네트워크·캐시 제한으로 실패함.
-런타임 테스트와 전체 빌드 결과는 배포 검증 후 이 문서를 갱신한다. 작성 완료와 실행 검증을 구분한다.
+Python 문법 검사와 TypeScript/TSX 구문 검사를 통과함. 로컬 Python/Node 패키지 설치는 네트워크·캐시 제한으로 실패함.
+Render 첫 빌드에서 백엔드 20개 테스트(6초), Next.js 타입 검사·프로덕션 빌드 통과. 첫 배포는 live 확인.
+Neon ourbit 스키마의 테이블 9개와 Alembic 버전 0001을 확인함. 직원·KOL 수는 각 0으로, 테스트 자격 증명과 샘플 데이터가 운영 DB에 생성되지 않았음.
+후속 빌드에서 브라우저 검증과 DB 준비·로그인 차단·클라이언트 스크립트 확인을 추가함. 최종 결과는 배포 확인 후 별도 기록.
+Codex 브라우저는 로딩 화면 이후 CDP 제어 연결이 시간 초과되어, 이 경로의 화면 검증은 완료하지 못함.
+
+## 연결 리소스
+
+- 소스: https://github.com/lianbag49-eng/beltrix/tree/feature/ourbit-bd-mvp/ourbit-copilot
+- 검토 PR: https://github.com/lianbag49-eng/beltrix/pull/53 (draft, main 미병합)
+- Render 서비스: ourbit-bd-copilot / srv-dbavo2ijnfac739b9c70
+- 서비스 URL: https://ourbit-bd-copilot.onrender.com
+- Render 관리: https://dashboard.render.com/web/srv-dbavo2ijnfac739b9c70
+- Neon 프로젝트: wild-wave-20591864 / 브랜치 br-round-paper-b3yi4vkz (ourbit-bd-mvp)
+- 실행용·마이그레이션용 DB 연결 문자열은 Render 비밀 변수로 전달했고 파일·문서에 저장하지 않았음.
+- 공개 Git URL 연결은 브랜치 갱신 후 자동 배포가 발생하지 않아, 최신 커밋을 확인한 뒤 Render API로 배포를 명시 실행함.
 
 ## 사용자 연결 필요
 
@@ -29,4 +43,4 @@ Telegram 웹훅 등록은 내부 봇 토큰 연결 후 실행한다.
 
 ## 다음 행동
 
-GitHub에 검토 가능한 소스 게시 → Render Docker 빌드 테스트 → Neon 마이그레이션 확인 → HTTPS 화면·API 확인 → 결과 기록.
+최종 빌드·준비 검사 결과 확인 → 사용자 첫 관리자 등록 → 비밀 변수 연결 → 실 YouTube 발굴·AI 분석·Telegram 내부 응답 확인.

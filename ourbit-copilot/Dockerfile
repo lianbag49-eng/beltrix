@@ -1,11 +1,10 @@
 FROM node:24-bookworm-slim AS web
 WORKDIR /web
 COPY frontend/package.json ./
-RUN npm install --no-audit --no-fund
+RUN npm install --no-audit --no-fund && npm install --no-save --no-audit --no-fund playwright && npx playwright install --with-deps chromium
 COPY frontend/ ./
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run typecheck && npm run build
-RUN npm install --no-save --no-audit --no-fund playwright && npx playwright install --with-deps chromium && node tests/ui-smoke.mjs
+RUN npm run typecheck && npm run build && node tests/ui-smoke.mjs
 
 FROM python:3.12-slim-bookworm
 WORKDIR /app/backend

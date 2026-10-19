@@ -21,6 +21,7 @@ def stop(*_):
 
 signal.signal(signal.SIGTERM,stop)
 signal.signal(signal.SIGINT,stop)
+exit_code=0
 try:
     port=os.environ.get('PORT','10000')
     base='http://127.0.0.1:'+port
@@ -61,6 +62,9 @@ try:
     print('LIVE_SMOKE_PASS: DB readiness 200; unauthenticated CRM 401; page and all client scripts 200',flush=True)
     while all(process.poll() is None for process in processes):
         time.sleep(.5)
+except Exception as error:
+    print('Startup verification failed: '+str(error),flush=True)
+    exit_code=1
 finally:
     stop()
     for process in processes:
@@ -68,4 +72,5 @@ finally:
             process.wait(timeout=15)
         except subprocess.TimeoutExpired:
             process.kill()
-    sys.exit(next((p.returncode for p in processes if p.returncode and p.returncode>0),0))
+    exit_code=exit_code or next((p.returncode for p in processes if p.returncode and p.returncode>0),0)
+sys.exit(exit_code)

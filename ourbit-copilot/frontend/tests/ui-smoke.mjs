@@ -1,8 +1,10 @@
 import {chromium} from 'playwright';
 import {spawn} from 'node:child_process';
 import assert from 'node:assert/strict';
+import {cp} from 'node:fs/promises';
 
-const server=spawn('node',['node_modules/next/dist/bin/next','start','-p','3100','--hostname','127.0.0.1'],{stdio:'inherit'});
+await cp('.next/static','.next/standalone/.next/static',{recursive:true});
+const server=spawn('node',['.next/standalone/server.js'],{stdio:'inherit',env:{...process.env,PORT:'3100',HOSTNAME:'127.0.0.1'}});
 let browser;
 try{
  for(let i=0;i<60;i++){
