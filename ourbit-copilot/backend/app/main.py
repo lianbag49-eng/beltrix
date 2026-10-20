@@ -63,8 +63,10 @@ def admin_user(user=Depends(current_user)):
 
 @app.post('/auth/bootstrap')
 def bootstrap(data: BootstrapInput, response: Response, db=Depends(get_db)):
-    if not settings.bootstrap_token or not secrets.compare_digest(data.token, settings.bootstrap_token):
-        raise HTTPException(403, '초기 설정 코드를 확인하세요.')
+    if not settings.bootstrap_token:
+        raise HTTPException(503, '서버에 초기 설정 코드가 아직 준비되지 않았습니다. 관리자가 Render에서 BOOTSTRAP_TOKEN을 설정한 뒤 배포해야 합니다.')
+    if not secrets.compare_digest(data.token, settings.bootstrap_token):
+        raise HTTPException(403, '초기 설정 코드가 일치하지 않습니다. Render의 BOOTSTRAP_TOKEN 값을 복사해 입력하세요. 로그인 비밀번호와는 다른 값입니다.')
     if db.scalar(select(User.id).limit(1)):
         raise HTTPException(409, '초기 계정 설정이 완료된 워크룸입니다.')
     user = User(id=1, email=data.email.strip().lower(), name=data.name, role='admin',
