@@ -188,6 +188,10 @@ test('Pearl Cobalt wallet workspace navigation covers Explore DeFi Boost and Tra
 
 test('Wallet and USDT surfaces inherit Pearl Cobalt light and dark tokens',async({page})=>{
  await page.goto('/web/#wallet');
+ if(await page.locator('html').getAttribute('data-theme')==='dark'){
+  await page.locator('#pcThemeToggle').click();
+ }
+ await expect(page.locator('html')).toHaveAttribute('data-theme','light');
  const light=await page.locator('.w-action-circle').first().evaluate(el=>({
   color:getComputedStyle(el).color,
   background:getComputedStyle(el).backgroundColor
