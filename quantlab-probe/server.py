@@ -19,7 +19,23 @@ def worker():
     STATE["results"][key]={"status":"ok" if rows else "empty","candles":len(rows),"first":datetime.datetime.fromtimestamp(rows[0][0]/1000,datetime.timezone.utc).isoformat() if rows else None}
    except Exception as e:
     STATE["results"][key]={"status":"error","detail":str(e)[:300]}
- STATE["status"]="probe_finished"
+ STATE["status"]="backtesting"
+ from backtest import candles,run
+ STATE["backtests"]={}
+ for venue in ("bingx","lbank","bybit"):
+  for coin in ("BTC","ETH"):
+   key=f"{venue}:{coin}"
+   if STATE["results"].get(key,{}).get("status")!="ok":
+    STATE["backtests"][key]={"status":"skipped","reason":"API probe unsuccessful"};continue
+   try:
+    rows=candles(venue,coin)
+    if len(rows)<100:
+     STATE["backtests"][key]={"status":"insufficient_data","candles":len(rows)};continue
+    gaps=sum(1 for k in range(1,len(rows)) if rows[k][0]-rows[k-1][0]!=3600000)
+    STATE["backtests"][key]={"status":"complete","candles":len(rows),"first":datetime.datetime.fromtimestamp(rows[0][0]/1000,datetime.timezone.utc).isoformat(),"last":datetime.datetime.fromtimestamp(rows[-1][0]/1000,datetime.timezone.utc).isoformat(),"gaps":gaps,"strategies":{v:run(rows,v) for v in ("V1","V2","V3","V4")}}
+   except Exception as e:
+    STATE["backtests"][key]={"status":"error","detail":str(e)[:300]}
+ STATE["status"]="finished"
 class Handler(BaseHTTPRequestHandler):
  def do_GET(self):
   if self.path not in ("/","/health","/status"):
