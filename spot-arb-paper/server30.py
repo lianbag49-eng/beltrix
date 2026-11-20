@@ -25,6 +25,9 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path not in ("/","/health","/latest"):
             self.send_error(404);return
+        if self.path=="/":
+            raw=(Path(__file__).parent/"dashboard.html").read_bytes()
+            self.send_response(200);self.send_header("Content-Type","text/html; charset=utf-8");self.send_header("Cache-Control","no-store");self.send_header("Content-Length",str(len(raw)));self.end_headers();self.wfile.write(raw);return
         payload={"status":"paper_only","scan_interval_seconds":interval,"last_scan":state["last_scan"],"attempts":state["attempts"],"last_error":state["last_error"]} if self.path!="/latest" else {"status":"no_scan_yet"}
         if self.path=="/latest" and Path("latest.json").exists():
             try: payload=json.loads(Path("latest.json").read_text())
