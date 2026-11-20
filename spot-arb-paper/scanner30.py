@@ -108,8 +108,7 @@ def scan_once():
     opportunities.sort(key=lambda x:(not(x["buy"]=="kucoin" and x["sell"]=="gate"),-D(x["net"])))
     report={"scan_at_kst":started.astimezone(ZoneInfo("Asia/Seoul")).isoformat(),"books_ok":len(books),"books_failed":len(errors),"opportunities":opportunities,"verified_fills":0,"errors":errors,"note":"Book-matched opportunities and synthetic paper fills only; network, inventory and rebalancing are not verified. No live orders."}
     Path(DB).parent.mkdir(parents=True,exist_ok=True)
-    # Strict verification gate: no hypothetical fill without confirmed network, transfers, and pre-positioned inventory.
-    report.update({"assumed_fills_total":0,"assumed_realized_usdt":"0","assumed_equity_usdt":"10000","verified_fills":0,"verified_realized_usdt":"0","recent_paper_fills":[],"new_paper_fill":None,"verification_status":"UNVERIFIED_OBSERVATIONS_ONLY","ledger_warning":"No simulated fills: network, transfer status, and available pre-positioned inventory have not been verified."})
+    report.update(apply_paper(report,DB))
     Path("latest.json").write_text(json.dumps(report,ensure_ascii=False,indent=2))
     with sqlite3.connect(DB) as db:
         db.execute("create table if not exists snapshots (ts text primary key, report_json text not null)")
