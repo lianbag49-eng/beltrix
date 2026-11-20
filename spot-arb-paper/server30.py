@@ -2,6 +2,7 @@
 import json, os, signal, threading, time
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
+from urllib.parse import urlsplit
 from scanner30 import scan_once
 
 interval=max(30,float(os.getenv("SCAN_INTERVAL_SECONDS","30")))
@@ -23,13 +24,14 @@ def background():
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        if self.path not in ("/","/health","/latest"):
-            self.send_error(404);return
-        if self.path=="/":
+        path=urlsplit(self.path).path.rstrip("/") or "/"
+        if path in ("/","/dashboard","/index.html") or path not in ("/health","/latest","/api/latest","/api/health"):
+            # Mobile in-app browsers sometimes open URL aliases/trailing slashes.
+            # Always serve a usable human-readable dashboard instead of a bare 404.
             raw=(Path(__file__).parent/"dashboard.html").read_bytes()
             self.send_response(200);self.send_header("Content-Type","text/html; charset=utf-8");self.send_header("Cache-Control","no-store");self.send_header("Content-Length",str(len(raw)));self.end_headers();self.wfile.write(raw);return
-        payload={"status":"paper_only","scan_interval_seconds":interval,"last_scan":state["last_scan"],"attempts":state["attempts"],"last_error":state["last_error"]} if self.path!="/latest" else {"status":"no_scan_yet"}
-        if self.path=="/latest" and Path("latest.json").exists():
+        payload={"status":"paper_only","scan_interval_seconds":interval,"last_scan":state["last_scan"],"attempts":state["attempts"],"last_error":state["last_error"]} if path not in ("/latest","/api/latest") else {"status":"no_scan_yet"}
+        if path in ("/latest","/api/latest") and Path("latest.json").exists():
             try: payload=json.loads(Path("latest.json").read_text())
             except Exception as exc:payload={"error":str(exc)}
         encoded=json.dumps(payload,ensure_ascii=False,default=str).encode()
