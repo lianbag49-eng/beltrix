@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spot Arbitrage · Paper Scanner</title>
+<style>
+:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#e9eef8;background:#0b1220}
+*{box-sizing:border-box}body{margin:0;padding:18px;max-width:1250px;margin:auto}h1{font-size:24px;margin:0 0 8px}h2{font-size:16px}small,.muted{color:#94a3b8}.top{display:flex;justify-content:space-between;gap:15px;align-items:center;flex-wrap:wrap}.pill{padding:5px 10px;border-radius:20px;background:#18304a;color:#cbd5e1;font-size:12px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:18px 0}.card{background:#121f32;border:1px solid #283b51;border-radius:12px;padding:15px}.value{font-size:25px;font-weight:750;margin-top:7px}.good{color:#65dfa4}.warn{color:#ffcb77}.err{color:#ff8892}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:18px 0}select,button{background:#1a2a42;border:1px solid #3a506b;border-radius:8px;color:#f1f5f9;padding:10px;cursor:pointer}button:hover{background:#274365}.table-wrap{overflow:auto;border-radius:12px;border:1px solid #283b51}table{border-collapse:collapse;width:100%;min-width:950px;background:#111d2d;font-size:13px}th,td{text-align:right;padding:12px 10px;border-bottom:1px solid #273449;white-space:nowrap}th{background:#19293f;color:#cbd5e1}td:first-child,th:first-child,td:nth-child(2),th:nth-child(2){text-align:left}tr.priority{background:#193448}tr:hover{background:#23334a}.note{padding:13px;background:#17253a;border-left:3px solid #e8b85a;border-radius:8px;font-size:13px;line-height:1.6}#error{margin:12px 0}.foot{margin-top:18px;color:#8294ac;font-size:12px;line-height:1.6}a{color:#9cc8ff}
+</style></head>
+<body>
+<div class="top"><div><h1>Spot Arbitrage <span class="good">Paper Scanner</span></h1><div class="muted">KuCoin → Gate 우선 · 가상자금 10,000 USDT · 주문 없는 모의 감시</div></div><span class="pill" id="status">연결 중</span></div>
+<div class="cards">
+ <div class="card"><small>최근 스캔 (KST)</small><div class="value" id="at">—</div></div>
+ <div class="card"><small>정상 주문장</small><div class="value" id="books">—</div></div>
+ <div class="card"><small>가격차 후보</small><div class="value" id="count">—</div></div>
+ <div class="card"><small>검증 모의체결</small><div class="value" id="fills">0건</div></div>
+</div>
+<div class="note"><strong>표의 예상 수익은 확정 수익이 아닙니다.</strong> 공개 호가 20단계를 매칭한 이론적 기회이며 매수·매도 계좌의 자산 보유량, 자산 네트워크 일치, 입출금 가능 여부와 실제 재배치비용은 미검증입니다. 수익 계산에는 거래 수수료 가정과 재배치 예비비 2 USDT가 반영됩니다. 실제 주문 기능은 없습니다.</div>
+<div class="toolbar">
+ <strong>현재 호가 기반 후보</strong>
+ <select id="filter"><option value="all">전체 거래소</option><option value="focus">KuCoin → Gate만</option></select>
+ <button id="refresh">지금 새로고침</button><small id="refresh-info">30초마다 자동 화면 갱신</small>
+</div>
+<div id="error" class="err" role="status"></div>
+<div class="table-wrap"><table><thead><tr><th>코인</th><th>매수 → 매도</th><th>매수 Ask</th><th>매도 Bid</th><th>매칭 수량</th><th>매수원가</th><th>가격차</th><th>수수료</th><th>재배치 예비비</th><th>예상 순이익</th><th>순수익률</th></tr></thead><tbody id="rows"><tr><td colspan="11" style="text-align:center">불러오는 중…</td></tr></tbody></table></div>
+<p class="foot">호가가 충분하지 않거나 수수료 차감 순수익률 0.15%에 못 미치는 후보는 표시되지 않습니다. 한 스캔의 후보 수와 실제 거래 건수는 다릅니다. Render 무료 서비스는 유휴 중단·재시작될 수 있으며 서버 내부 기록은 영구 저장되지 않습니다. <a href="/latest">원본 JSON</a> · <a href="/health">서버 상태</a></p>
+<script>
+const byId=id=>document.getElementById(id);
+let last=null;
+const fmt=(n,d=4)=>Number(n).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+function draw(){
+ const data=last;if(!data)return;
+ const items=(data.opportunities||[]).filter(x=>byId("filter").value==="all"||(x.buy==="kucoin"&&x.sell==="gate"));
+ byId("rows").replaceChildren();
+ if(!items.length){const tr=document.createElement("tr");const td=document.createElement("td");td.colSpan=11;td.style.textAlign="center";td.textContent="조건에 맞는 후보가 없습니다.";tr.appendChild(td);byId("rows").appendChild(tr);return;}
+ for(const x of items.slice(0,200)){
+   const tr=document.createElement("tr");if(x.buy==="kucoin"&&x.sell==="gate")tr.className="priority";
+   const vals=[x.coin,x.buy.toUpperCase()+" → "+x.sell.toUpperCase(),fmt(x.best_ask,8),fmt(x.best_bid,8),fmt(x.qty,5),"$"+fmt(x.buy_cost,2),fmt((Number(x.best_bid)/Number(x.best_ask)-1)*100,3)+"%","$"+fmt(x.fees,2),"$"+fmt(x.rebalance_reserve,2),"$"+fmt(x.net,2),fmt(x.net_roi_pct,3)+"%"];
+   vals.forEach((v,i)=>{const td=document.createElement("td");td.textContent=v;if(i===9||i===10)td.className="good";tr.appendChild(td)});byId("rows").appendChild(tr);
+ }
+}
+async function load(){
+ try{
+ const res=await fetch("/latest",{cache:"no-store"});if(!res.ok)throw new Error("HTTP "+res.status);const d=await res.json();if(!d.scan_at_kst)throw new Error("첫 스캔 대기 중");
+ last=d;byId("at").textContent=new Date(d.scan_at_kst).toLocaleTimeString("ko-KR",{timeZone:"Asia/Seoul",hour12:false});
+ byId("books").textContent=d.books_ok;byId("count").textContent=(d.opportunities||[]).length+"건";byId("fills").textContent=(d.verified_fills||0)+"건";
+ const age=(Date.now()-new Date(d.scan_at_kst).getTime())/1000;byId("status").textContent=age>120?"데이터 지연":"30초 스캔 실행 중";byId("status").className="pill "+(age>120?"err":"good");
+ byId("error").textContent=d.books_failed?d.books_failed+"개 시장 주문장 조회 실패 (일부 상장 미지원/일시 오류 포함)":"";
+ byId("refresh-info").textContent="마지막 화면 갱신 "+new Date().toLocaleTimeString("ko-KR",{timeZone:"Asia/Seoul",hour12:false});
+ draw();
+ }catch(e){byId("status").textContent="조회 오류";byId("status").className="pill err";byId("error").textContent="결과를 불러오지 못했습니다: "+e.message;}
+}
+byId("filter").addEventListener("change",draw);byId("refresh").addEventListener("click",load);load();setInterval(load,30000);
+</script></body></html>
