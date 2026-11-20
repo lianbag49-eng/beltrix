@@ -11,10 +11,10 @@
  <div class="card"><small>최근 스캔 (KST)</small><div class="value" id="at">—</div></div>
  <div class="card"><small>정상 주문장</small><div class="value" id="books">—</div></div>
  <div class="card"><small>가격차 후보</small><div class="value" id="count">—</div></div>
- <div class="card"><small>검증 모의체결</small><div class="value" id="fills">0건</div></div>
+ <div class="card"><small>가정 체결 누적</small><div class="value" id="fills">0건</div></div><div class="card"><small>가정 누적 실현손익</small><div class="value good" id="pnl">$0.00</div></div><div class="card"><small>가정 계좌 평가액</small><div class="value" id="equity">$10,000</div></div>
 </div>
-<div class="note"><strong>표의 예상 수익은 확정 수익이 아닙니다.</strong> 공개 호가 20단계를 매칭한 이론적 기회이며 매수·매도 계좌의 자산 보유량, 자산 네트워크 일치, 입출금 가능 여부와 실제 재배치비용은 미검증입니다. 수익 계산에는 거래 수수료 가정과 재배치 예비비 2 USDT가 반영됩니다. 실제 주문 기능은 없습니다.</div>
-<div class="toolbar">
+<div class="note"><strong>표의 예상 수익은 확정 수익이 아닙니다.</strong> 공개 호가 20단계를 매칭한 이론적 기회이며 매수·매도 계좌의 자산 보유량, 자산 네트워크 일치, 입출금 가능 여부와 실제 재배치비용은 미검증입니다. 매수·매도 주문장에 보이는 양쪽 수량만큼 가상 체결하고, 1시간 경로별 중복 체결 방지를 적용합니다. 수익 계산에는 수수료 및 재배치 예비비 2 USDT가 반영됩니다. 가정 누적 수익은 실제·검증 수익이 아닙니다. 실제 주문 기능은 없습니다.</div>
+<h2>최근 가정 체결 내역 · 실거래 아님</h2><div class="table-wrap"><table><thead><tr><th>가정 체결시각 (KST)</th><th>코인</th><th>매수 → 매도</th><th>체결 수량</th><th>가상 매수원가</th><th>가상 순이익</th><th>순수익률</th></tr></thead><tbody id="paperrows"><tr><td colspan="7" style="text-align:center">모의 체결 내역 대기 중</td></tr></tbody></table></div><div class="toolbar">
  <strong>현재 호가 기반 후보</strong>
  <select id="filter"><option value="all">전체 거래소</option><option value="focus">KuCoin → Gate만</option></select>
  <button id="refresh">지금 새로고침</button><small id="refresh-info">30초마다 자동 화면 갱신</small>
@@ -26,6 +26,7 @@
 const byId=id=>document.getElementById(id);
 let last=null;
 const fmt=(n,d=4)=>Number(n).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+function renderPaper(data){const body=byId("paperrows");body.replaceChildren();const items=data.recent_paper_fills||[];if(!items.length){const tr=document.createElement("tr");const td=document.createElement("td");td.colSpan=7;td.textContent="아직 가정 체결이 없습니다.";td.style.textAlign="center";tr.appendChild(td);body.appendChild(tr);return;}for(const x of items){const tr=document.createElement("tr");const vals=[new Date(x.fill_time_utc).toLocaleTimeString("ko-KR",{timeZone:"Asia/Seoul",hour12:false}),x.coin,x.buy.toUpperCase()+" → "+x.sell.toUpperCase(),fmt(x.qty,5),"$"+fmt(x.buy_cost,2),"$"+fmt(x.net,2),fmt(x.net_roi_pct,3)+"%"];vals.forEach((v,i)=>{let td=document.createElement("td");td.textContent=v;if(i>=5)td.className="good";tr.appendChild(td)});body.appendChild(tr)}}
 function draw(){
  const data=last;if(!data)return;
  const items=(data.opportunities||[]).filter(x=>byId("filter").value==="all"||(x.buy==="kucoin"&&x.sell==="gate"));
@@ -41,7 +42,7 @@ async function load(){
  try{
  const res=await fetch("/latest",{cache:"no-store"});if(!res.ok)throw new Error("HTTP "+res.status);const d=await res.json();if(!d.scan_at_kst)throw new Error("첫 스캔 대기 중");
  last=d;byId("at").textContent=new Date(d.scan_at_kst).toLocaleTimeString("ko-KR",{timeZone:"Asia/Seoul",hour12:false});
- byId("books").textContent=d.books_ok;byId("count").textContent=(d.opportunities||[]).length+"건";byId("fills").textContent=(d.verified_fills||0)+"건";
+ byId("books").textContent=d.books_ok;byId("count").textContent=(d.opportunities||[]).length+"건";byId("fills").textContent=(d.assumed_fills_total||0)+"건";byId("pnl").textContent="$"+fmt(d.assumed_realized_usdt||0,2);byId("equity").textContent="$"+fmt(d.assumed_equity_usdt||10000,2);renderPaper(d);
  const age=(Date.now()-new Date(d.scan_at_kst).getTime())/1000;byId("status").textContent=age>120?"데이터 지연":"30초 스캔 실행 중";byId("status").className="pill "+(age>120?"err":"good");
  byId("error").textContent=d.books_failed?d.books_failed+"개 시장 주문장 조회 실패 (일부 상장 미지원/일시 오류 포함)":"";
  byId("refresh-info").textContent="마지막 화면 갱신 "+new Date().toLocaleTimeString("ko-KR",{timeZone:"Asia/Seoul",hour12:false});
