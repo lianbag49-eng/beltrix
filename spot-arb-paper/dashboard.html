@@ -38,16 +38,41 @@ function draw(){
    vals.forEach((v,i)=>{const td=document.createElement("td");td.textContent=v;if(i===9||i===10)td.className="good";tr.appendChild(td)});byId("rows").appendChild(tr);
  }
 }
+let loading=false;let refreshTimer=null;
+function queue(ms){clearTimeout(refreshTimer);refreshTimer=setTimeout(load,ms);}
 async function load(){
+ if(loading)return;
+ loading=true;
+ const controller=new AbortController();
+ const abortTimer=setTimeout(()=>controller.abort(),15000);
  try{
- const res=await fetch("/latest",{cache:"no-store"});if(!res.ok)throw new Error("HTTP "+res.status);const d=await res.json();if(!d.scan_at_kst)throw new Error("첫 스캔 대기 중");
- last=d;byId("at").textContent=new Date(d.scan_at_kst).toLocaleTimeString("ko-KR",{timeZone:"Asia/Seoul",hour12:false});
- byId("books").textContent=d.books_ok;byId("count").textContent=(d.opportunities||[]).length+"건";byId("fills").textContent=(d.assumed_fills_total||0)+"건";byId("pnl").textContent="$"+fmt(d.assumed_realized_usdt||0,2);byId("equity").textContent="$"+fmt(d.assumed_equity_usdt||10000,2);renderPaper(d);
- const age=(Date.now()-new Date(d.scan_at_kst).getTime())/1000;byId("status").textContent=age>120?"데이터 지연":"30초 스캔 실행 중";byId("status").className="pill "+(age>120?"err":"good");
- byId("error").textContent=d.books_failed?d.books_failed+"개 시장 주문장 조회 실패 (일부 상장 미지원/일시 오류 포함)":"";
- byId("refresh-info").textContent="마지막 화면 갱신 "+new Date().toLocaleTimeString("ko-KR",{timeZone:"Asia/Seoul",hour12:false});
- draw();
- }catch(e){byId("status").textContent="조회 오류";byId("status").className="pill err";byId("error").textContent="결과를 불러오지 못했습니다: "+e.message;}
+  const res=await fetch("/latest?ts="+Date.now(),{cache:"no-store",signal:controller.signal,headers:{"Accept":"application/json"}});
+  if(!res.ok)throw new Error("HTTP "+res.status);
+  const d=await res.json();
+  if(!d.scan_at_kst)throw new Error("스캐너 시작 중");
+  last=d;
+  byId("at").textContent=new Date(d.scan_at_kst).toLocaleTimeString("ko-KR",{timeZone:"Asia/Seoul",hour12:false});
+  byId("books").textContent=d.books_ok;
+  byId("count").textContent=(d.opportunities||[]).length+"건";
+  byId("fills").textContent=(d.assumed_fills_total||0)+"건";
+  byId("pnl").textContent="$"+fmt(d.assumed_realized_usdt||0,2);
+  byId("equity").textContent="$"+fmt(d.assumed_equity_usdt||10000,2);
+  renderPaper(d);
+  const age=(Date.now()-new Date(d.scan_at_kst).getTime())/1000;
+  byId("status").textContent=age>120?"데이터 지연":"30초 스캔 확인";
+  byId("status").className="pill "+(age>120?"warn":"good");
+  byId("error").textContent=age>120?"서버가 재시작됐거나 스캔이 지연됐습니다. 최근 데이터가 갱신되기를 확인 중입니다.":d.books_failed?d.books_failed+"개 시장 주문장 조회 실패 (미상장·거래소 API 문제 포함)":"";
+  byId("refresh-info").textContent="마지막 화면 갱신 "+new Date().toLocaleTimeString("ko-KR",{timeZone:"Asia/Seoul",hour12:false});
+  draw();
+  queue(age>120?5000:30000);
+ }catch(e){
+  byId("status").textContent="서버 연결 재시도 중";
+  byId("status").className="pill warn";
+  byId("error").textContent="서버가 유휴 중지 상태에서 재시작 중이거나 네트워크 연결이 불안정합니다. 5초마다 자동 재시도합니다. 마지막 정상 데이터는 유지됩니다. ("+String(e.message||e)+")";
+  queue(5000);
+ }finally{clearTimeout(abortTimer);loading=false;}
 }
-byId("filter").addEventListener("change",draw);byId("refresh").addEventListener("click",load);load();setInterval(load,30000);
+byId("filter").addEventListener("change",draw);
+byId("refresh").addEventListener("click",()=>{clearTimeout(refreshTimer);load()});
+load();
 </script></body></html>
