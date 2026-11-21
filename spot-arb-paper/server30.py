@@ -17,6 +17,7 @@ def background():
             state["last_scan"]=result["scan_at_kst"]
             state["last_error"]=None
             print("scan complete",result["scan_at_kst"],"books",result["books_ok"],"opportunities",len(result["opportunities"]),flush=True)
+            print("paper ledger", "fills",result.get("assumed_fills_total",0),"net_after_provisions",result.get("paper_net_after_provisions_usdt","n/a"),"rebate_scenario",result.get("paper_rebate_scenario_total_usdt","n/a"),"block",result.get("paper_blocked_reason"),flush=True)
         except Exception as exc:
             state["last_error"]=str(exc)
             print("scan error",repr(exc),flush=True)
