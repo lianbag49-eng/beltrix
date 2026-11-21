@@ -3,7 +3,7 @@ import concurrent.futures, datetime, json, os, sqlite3, time, urllib.request, ur
 from decimal import Decimal as D
 from pathlib import Path
 from zoneinfo import ZoneInfo
-from paper_engine import apply_paper
+from paper_engine_v2 import apply_paper
 
 ASSETS=[x.strip().upper() for x in os.getenv("ASSETS","ETH,SOL,LINK,SUI,AVAX,ARB,ADA,XRP,CYBER,TEA,FORT,USTC,LUNC,INJ").split(",")]
 EXCHANGES=[x.strip() for x in os.getenv("EXCHANGES","kucoin,gate,okx,binance,mexc,bybit,bitget").split(",")]
@@ -106,9 +106,9 @@ def scan_once():
                     candidate=match(coin,buy_ex,sell_ex,b,s)
                     if candidate:opportunities.append(candidate)
     opportunities.sort(key=lambda x:(not(x["buy"]=="kucoin" and x["sell"]=="gate"),-D(x["net"])))
-    report={"scan_at_kst":started.astimezone(ZoneInfo("Asia/Seoul")).isoformat(),"books_ok":len(books),"books_failed":len(errors),"opportunities":opportunities,"verified_fills":0,"errors":errors,"note":"Book-matched opportunities and synthetic paper fills only; network, inventory and rebalancing are not verified. No live orders."}
+    report={"scan_at_kst":started.astimezone(ZoneInfo("Asia/Seoul")).isoformat(),"books_ok":len(books),"books_failed":len(errors),"opportunities":opportunities,"verified_fills":0,"errors":errors,"note":"Book-matched opportunities are unverified; paper inventory has fixed initial allocations and settles both balances. Referral rates are scenarios only. No actual orders, transfers, or verified rebates."}
     Path(DB).parent.mkdir(parents=True,exist_ok=True)
-    report.update(apply_paper(report,DB))
+    report.update(apply_paper(report,DB,books))
     Path("latest.json").write_text(json.dumps(report,ensure_ascii=False,indent=2))
     with sqlite3.connect(DB) as db:
         db.execute("create table if not exists snapshots (ts text primary key, report_json text not null)")
