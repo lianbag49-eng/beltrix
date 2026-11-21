@@ -1,5 +1,5 @@
 """Read-only spot paper arbitrage scanner. Never submits orders or transfers."""
-import concurrent.futures, datetime, json, os, sqlite3, time, urllib.request, urllib.parse
+import concurrent.futures, datetime, json, os, sqlite3, time, urllib.request, urllib.parse, tempfile
 from decimal import Decimal as D
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -13,7 +13,9 @@ FEE_SELL=D(os.getenv("SELL_FEE_PCT","0.1"))/100
 REBALANCE=D(os.getenv("REBALANCE_USDT","2"))
 MIN_ROI=D(os.getenv("MIN_NET_ROI_PCT","0.15"))/100
 MAX_SKEW=5
-DB=os.getenv("DB_PATH","paper.db")
+BASE_DIR=Path(__file__).resolve().parent
+DB=os.getenv("DB_PATH",str(BASE_DIR/"paper.db"))
+LATEST=BASE_DIR/"latest.json"
 
 def get(url):
     request=urllib.request.Request(url,headers={"User-Agent":"spot-paper-scanner/1.0","Accept":"application/json"})
@@ -109,7 +111,11 @@ def scan_once():
     report={"scan_at_kst":started.astimezone(ZoneInfo("Asia/Seoul")).isoformat(),"books_ok":len(books),"books_failed":len(errors),"opportunities":opportunities,"verified_fills":0,"errors":errors,"note":"Book-matched opportunities are unverified; paper inventory has fixed initial allocations and settles both balances. Referral rates are scenarios only. No actual orders, transfers, or verified rebates."}
     Path(DB).parent.mkdir(parents=True,exist_ok=True)
     report.update(apply_paper(report,DB,books))
-    Path("latest.json").write_text(json.dumps(report,ensure_ascii=False,indent=2))
+    # Atomically publish a complete snapshot so API readers never see partial JSON.
+    with tempfile.NamedTemporaryFile(mode="w",encoding="utf-8",dir=BASE_DIR,prefix=".latest-",suffix=".tmp",delete=False) as tmp:
+        tmp.write(json.dumps(report,ensure_ascii=False,indent=2))
+        temp_path=Path(tmp.name)
+    os.replace(temp_path,LATEST)
     with sqlite3.connect(DB) as db:
         db.execute("create table if not exists snapshots (ts text primary key, report_json text not null)")
         db.execute("insert or replace into snapshots values (?,?)",(started.isoformat(),json.dumps(report)))
