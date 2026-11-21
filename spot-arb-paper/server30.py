@@ -3,10 +3,10 @@ import json, os, signal, threading, time
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import urlsplit
-from scanner30 import scan_once
+from scanner30 import scan_once, LATEST
 
 interval=max(30,float(os.getenv("SCAN_INTERVAL_SECONDS","30")))
-state={"started":time.time(),"last_scan":None,"last_error":None,"attempts":0}
+state={"started":time.time(),"last_scan":None,"last_error":None,"attempts":0,"last_success_epoch":None}
 stop=threading.Event()
 def background():
     while not stop.is_set():
@@ -15,6 +15,7 @@ def background():
         try:
             result=scan_once()
             state["last_scan"]=result["scan_at_kst"]
+            state["last_success_epoch"]=time.time()
             state["last_error"]=None
             print("scan complete",result["scan_at_kst"],"books",result["books_ok"],"opportunities",len(result["opportunities"]),flush=True)
             print("paper ledger", "fills",result.get("assumed_fills_total",0),"net_after_provisions",result.get("paper_net_after_provisions_usdt","n/a"),"rebate_scenario",result.get("paper_rebate_scenario_total_usdt","n/a"),"block",result.get("paper_blocked_reason"),flush=True)
@@ -31,9 +32,10 @@ class Handler(BaseHTTPRequestHandler):
             # Always serve a usable human-readable dashboard instead of a bare 404.
             raw=(Path(__file__).parent/"dashboard.html").read_bytes()
             self.send_response(200);self.send_header("Content-Type","text/html; charset=utf-8");self.send_header("Cache-Control","no-store");self.send_header("Content-Length",str(len(raw)));self.end_headers();self.wfile.write(raw);return
-        payload={"status":"paper_only","scan_interval_seconds":interval,"last_scan":state["last_scan"],"attempts":state["attempts"],"last_error":state["last_error"]} if path not in ("/latest","/api/latest") else {"status":"no_scan_yet"}
-        if path in ("/latest","/api/latest") and Path("latest.json").exists():
-            try: payload=json.loads(Path("latest.json").read_text())
+        age=None if state["last_success_epoch"] is None else round(time.time()-state["last_success_epoch"],1)
+        payload={"status":"paper_only" if age is not None and age<=max(120,interval*3) else "scanner_stale","scan_interval_seconds":interval,"last_scan":state["last_scan"],"last_success_age_seconds":age,"attempts":state["attempts"],"last_error":state["last_error"]} if path not in ("/latest","/api/latest") else {"status":"no_scan_yet"}
+        if path in ("/latest","/api/latest") and LATEST.exists():
+            try: payload=json.loads(LATEST.read_text(encoding="utf-8"))
             except Exception as exc:payload={"error":str(exc)}
         encoded=json.dumps(payload,ensure_ascii=False,default=str).encode()
         self.send_response(200);self.send_header("Content-Type","application/json; charset=utf-8");self.send_header("Cache-Control","no-store");self.send_header("Content-Length",str(len(encoded)));self.end_headers();self.wfile.write(encoded)
