@@ -11,22 +11,23 @@
  <div class="card"><small>최근 스캔 (KST)</small><div class="value" id="at">—</div></div>
  <div class="card"><small>정상 주문장</small><div class="value" id="books">—</div></div>
  <div class="card"><small>가격차 후보</small><div class="value" id="count">—</div></div>
- <div class="card"><small>가정 체결 누적</small><div class="value" id="fills">0건</div></div><div class="card"><small>가정 누적 실현손익</small><div class="value good" id="pnl">$0.00</div></div><div class="card"><small>가정 계좌 평가액</small><div class="value" id="equity">$10,000</div></div>
+ <div class="card"><small>가정 체결 누적</small><div class="value" id="fills">0건</div></div><div class="card"><small>가정 스프레드 손익 (재배치 충당금 차감)</small><div class="value good" id="pnl">$0.00</div></div><div class="card"><small>가상 잔고 시가 평가액</small><div class="value" id="equity">$10,000</div></div>
 </div>
-<div class="note"><strong>표의 예상 수익은 확정 수익이 아닙니다.</strong> 공개 호가 20단계를 매칭한 이론적 기회이며 매수·매도 계좌의 자산 보유량, 자산 네트워크 일치, 입출금 가능 여부와 실제 재배치비용은 미검증입니다. 매수·매도 주문장에 보이는 양쪽 수량만큼 가상 체결하고, 1시간 경로별 중복 체결 방지를 적용합니다. 수익 계산에는 수수료 및 재배치 예비비 2 USDT가 반영됩니다. 가정 누적 수익은 실제·검증 수익이 아닙니다. 실제 주문 기능은 없습니다.</div>
-<h2>최근 가정 체결 내역 · 실거래 아님</h2><div class="table-wrap"><table><thead><tr><th>가정 체결시각 (KST)</th><th>코인</th><th>매수 → 매도</th><th>체결 수량</th><th>가상 매수원가</th><th>가상 순이익</th><th>순수익률</th></tr></thead><tbody id="paperrows"><tr><td colspan="7" style="text-align:center">모의 체결 내역 대기 중</td></tr></tbody></table></div><div class="toolbar">
+<div class="cards"><div class="card"><small>가정 현물 페이백 (미지급)</small><div class="value warn" id="rebate">$0.00</div></div><div class="card"><small>총 가정 매매 수수료</small><div class="value" id="totalfees">$0.00</div></div><div class="card"><small>재배치 비용 충당금</small><div class="value" id="reserve">$0.00</div></div></div><div class="note"><strong>표의 예상 수익은 확정 수익이 아닙니다.</strong> 공개 호가 20단계를 매칭한 이론적 기회이며 매수·매도 계좌의 자산 보유량, 자산 네트워크 일치, 입출금 가능 여부와 실제 재배치비용은 미검증입니다. 시작 가상잔고는 KuCoin USDT 5,000과 Gate ETH 2,500 · SOL 1,500 · LINK 1,000 USDT 상당이며, 거래 때마다 거래소별 USDT 및 코인 잔고를 실제로 차감합니다. 따라서 재고가 부족하면 거래하지 않습니다. 1시간 경로별 중복 체결 방지를 적용합니다. 수익 계산에는 수수료 및 재배치 예비비 2 USDT가 반영됩니다. 현물 페이백 30%는 시나리오이며 실제 지급/본인 귀속은 검증되지 않았으므로 가상 현금에는 더하지 않습니다. 가정 누적 손익은 실제·검증 수익이 아닙니다. 실제 주문 기능은 없습니다.</div>
+<h2>최근 가정 체결 내역 · 실거래 아님</h2><div class="table-wrap"><table><thead><tr><th>가정 체결시각 (KST)</th><th>코인</th><th>매수 → 매도</th><th>체결 수량</th><th>가상 매수원가</th><th>가상 순이익</th><th>순수익률</th></tr></thead><tbody id="paperrows"><tr><td colspan="7" style="text-align:center">모의 체결 내역 대기 중</td></tr></tbody></table></div><h2>거래소별 가상 보유잔고</h2><div class="table-wrap"><table><thead><tr><th>거래소</th><th>USDT</th><th>ETH</th><th>SOL</th><th>LINK</th></tr></thead><tbody id="balances"><tr><td colspan="5" style="text-align:center">가상잔고 로딩 중</td></tr></tbody></table></div><div class="toolbar">
  <strong>현재 호가 기반 후보</strong>
  <select id="filter"><option value="all">전체 거래소</option><option value="focus">KuCoin → Gate만</option></select>
  <button id="refresh">지금 새로고침</button><small id="refresh-info">30초마다 자동 화면 갱신</small>
 </div>
 <div id="error" class="err" role="status"></div>
 <div class="table-wrap"><table><thead><tr><th>코인</th><th>매수 → 매도</th><th>매수 Ask</th><th>매도 Bid</th><th>매칭 수량</th><th>매수원가</th><th>가격차</th><th>수수료</th><th>재배치 예비비</th><th>예상 순이익</th><th>순수익률</th></tr></thead><tbody id="rows"><tr><td colspan="11" style="text-align:center">불러오는 중…</td></tr></tbody></table></div>
-<p class="foot">호가가 충분하지 않거나 수수료 차감 순수익률 0.15%에 못 미치는 후보는 표시되지 않습니다. 한 스캔의 후보 수와 실제 거래 건수는 다릅니다. Render 무료 서비스는 유휴 중단·재시작될 수 있으며 서버 내부 기록은 영구 저장되지 않습니다. <a href="/latest">원본 JSON</a> · <a href="/health">서버 상태</a></p>
+<p class="foot">상단 가격차 후보는 모든 거래소의 탐색 결과이며, 실제 가정 체결은 KuCoin·Gate 초기 보유잔고에서만 가능합니다. 호가가 충분하지 않거나 수수료 차감 순수익률 0.15%에 못 미치는 후보는 표시되지 않습니다. 한 스캔의 후보 수와 실제 거래 건수는 다릅니다. Render 무료 서비스는 유휴 중단·재시작될 수 있으며 서버 내부 기록은 영구 저장되지 않습니다. <a href="/latest">원본 JSON</a> · <a href="/health">서버 상태</a></p>
 <script>
 const byId=id=>document.getElementById(id);
 let last=null;
 const fmt=(n,d=4)=>Number(n).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
 function renderPaper(data){const body=byId("paperrows");body.replaceChildren();const items=data.recent_paper_fills||[];if(!items.length){const tr=document.createElement("tr");const td=document.createElement("td");td.colSpan=7;td.textContent="아직 가정 체결이 없습니다.";td.style.textAlign="center";tr.appendChild(td);body.appendChild(tr);return;}for(const x of items){const tr=document.createElement("tr");const vals=[new Date(x.fill_time_utc).toLocaleTimeString("ko-KR",{timeZone:"Asia/Seoul",hour12:false}),x.coin,x.buy.toUpperCase()+" → "+x.sell.toUpperCase(),fmt(x.qty,5),"$"+fmt(x.buy_cost,2),"$"+fmt(x.net,2),fmt(x.net_roi_pct,3)+"%"];vals.forEach((v,i)=>{let td=document.createElement("td");td.textContent=v;if(i>=5)td.className="good";tr.appendChild(td)});body.appendChild(tr)}}
+function renderBalances(data){const tbody=byId("balances");tbody.replaceChildren();const b=data.paper_balances||{};for(const ex of ["kucoin","gate"]){const x=b[ex]||{};const tr=document.createElement("tr");[ex.toUpperCase(),fmt(x.USDT||0,2),fmt(x.ETH||0,6),fmt(x.SOL||0,6),fmt(x.LINK||0,6)].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td)});tbody.appendChild(tr);}}
 function draw(){
  const data=last;if(!data)return;
  const items=(data.opportunities||[]).filter(x=>byId("filter").value==="all"||(x.buy==="kucoin"&&x.sell==="gate"));
@@ -57,6 +58,10 @@ async function load(){
   byId("fills").textContent=(d.assumed_fills_total||0)+"건";
   byId("pnl").textContent="$"+fmt(d.assumed_realized_usdt||0,2);
   byId("equity").textContent="$"+fmt(d.assumed_equity_usdt||10000,2);
+  byId("rebate").textContent="$"+fmt(d.paper_rebate_scenario_total_usdt||0,2);
+  byId("totalfees").textContent="$"+fmt(d.paper_fee_paid_usdt||0,2);
+  byId("reserve").textContent="$"+fmt(d.paper_rebalance_reserves_usdt||0,2);
+  renderBalances(d);
   renderPaper(d);
   const age=(Date.now()-new Date(d.scan_at_kst).getTime())/1000;
   byId("status").textContent=age>120?"데이터 지연":"30초 스캔 확인";
