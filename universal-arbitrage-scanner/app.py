@@ -29,6 +29,7 @@ def ingest(ex,sym,bids,asks,ts=None):
         if not a or not b or a[0][0]<=b[0][0]: return
         BOOKS[(ex,sym)]={"bids":b,"asks":a,"received":time.monotonic(),"timestamp":datetime.now(timezone.utc),"source_ts":ts}
         COUNT["messages"]+=1
+        if FEEDS[ex]!="connected":log.info("FIRST_REAL_ORDERBOOK exchange=%s symbol=%s bid=%s ask=%s",ex,sym,b[0][0],a[0][0])
         FEEDS[ex]="connected"
     except Exception as e: log.warning("invalid book %s %s %s",ex,sym,e)
 async def binance():
