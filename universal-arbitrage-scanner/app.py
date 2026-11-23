@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO)
 log=logging.getLogger("scanner")
 SYMS=[s.strip().upper() for s in os.getenv("SYMBOLS","BTC,ETH,SOL,ARB,LINK").split(",") if s.strip()]
 SIZES=(100,1000,2000,5000)
-URL=os.environ["DATABASE_URL"]
+URL=os.getenv("DATABASE_URL")
 BOOKS={}
 COUNT={"messages":0,"snapshots":0,"paper":0}
 FEEDS={"Binance":"connecting","OKX":"connecting"}
@@ -49,7 +49,7 @@ async def okx():
     args=[{"channel":"books5","instId":s+"-USDT"} for s in SYMS]
     while True:
         try:
-            async with websockets.connect("wss://ws.okx.com:8443/ws/v5/public",ping_interval=20,ping_timeout=20) as ws:
+            async with websockets.connect("wss://ws.okx.com/ws/v5/public",ping_interval=20,ping_timeout=20) as ws:
                 await ws.send(json.dumps({"op":"subscribe","args":args}))
                 FEEDS["OKX"]="connected"
                 async for raw in ws:
@@ -84,6 +84,7 @@ async def store_loop():
             await asyncio.sleep(2)
             rows=[(ex,sym,b) for (ex,sym),b in list(BOOKS.items()) if time.monotonic()-b["received"]<4]
             if not rows:continue
+            if DB is None:continue
             async with DB.acquire() as c:
                 async with c.transaction():
                     for ex,sym,b in rows:
@@ -104,6 +105,7 @@ async def paper_loop():
                         if time.monotonic()-LAST[key]<30:continue
                         v=simulate(sym,buy,sell,size)
                         if not v or v["net"]<D(os.getenv("MIN_NET_USD","0.01")):continue
+                        if DB is None:continue
                         async with DB.acquire() as c:
                             await c.execute("""INSERT INTO paper_trades(strategy,symbol,buy_exchange,sell_exchange,notional_usd,gross_usd,fees_usd,rebate_usd,other_costs_usd,net_usd,status,reason,assumptions) VALUES('CEX_CEX',$1,$2,$3,$4,$5,$6,$7,$8,$9,'PAPER_FILLED','hypothetical prefunded inventory, no real execution',$10::jsonb)""",sym,buy,sell,size,v["gross"],v["fees"],v["rebate"],v["other"],v["net"],json.dumps({"fee":{k:str(a) for k,a in FEE.items()},"rebate":{k:str(a) for k,a in REB.items()},"sampled_depth":"Binance20/OKX5","paper_only":True}))
                         LAST[key]=time.monotonic();COUNT["paper"]+=1
@@ -112,12 +114,15 @@ async def paper_loop():
 @asynccontextmanager
 async def lifespan(app):
     global DB
-    DB=await asyncpg.create_pool(URL,ssl="require",min_size=1,max_size=3)
+    if URL:
+        DB=await asyncpg.create_pool(URL,ssl="require",min_size=1,max_size=3)
+    else:
+        log.warning("DATABASE_URL not configured; market feeds run but nothing persists")
     TASKS.extend([asyncio.create_task(binance()),asyncio.create_task(okx()),asyncio.create_task(store_loop()),asyncio.create_task(paper_loop())])
     yield
     for t in TASKS:t.cancel()
     await asyncio.gather(*TASKS,return_exceptions=True)
-    await DB.close()
+    if DB:await DB.close()
 app=FastAPI(lifespan=lifespan,title="Universal Arbitrage Scanner / paper only")
 @app.get("/health")
 async def health():
@@ -138,6 +143,7 @@ async def opportunities():
     return sorted(out,key=lambda x:x["net"],reverse=True)
 @app.get("/api/trades")
 async def trades():
+    if DB is None:return []
     async with DB.acquire() as c:
         data=await c.fetch("SELECT evaluated_at,symbol,buy_exchange,sell_exchange,notional_usd,net_usd FROM paper_trades ORDER BY id DESC LIMIT 50")
     return [{"at":r["evaluated_at"].isoformat(),"coin":r["symbol"],"route":r["buy_exchange"]+" → "+r["sell_exchange"],"size":float(r["notional_usd"]),"net":float(r["net_usd"])} for r in data]
